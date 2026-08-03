@@ -23,7 +23,7 @@ const TY=e=>(e&&TYPES[e.t])||FALLBACK;
 const TYT=t=>TYPES[t]||FALLBACK;
 
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
-let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,ac:null,acPick:null,
+let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,ac:null,acPick:null,
         busy:false,view:'list',err:''};
 let hist=[];
 const app=document.getElementById('app');
@@ -140,7 +140,7 @@ async function loadCamp(c){
      tiene sentido bajar la de todas las campañas para listar nombres */
   const [ents,als,cov]=await Promise.all([
     SB.from('entities')
-      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,tags')
+      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,tags,updated_at')
       .eq('campaign_id',c.id).is('archived_at',null).order('name'),
     SB.from('entity_aliases').select('alias,entities!inner(campaign_id,slug)')
       .eq('entities.campaign_id',c.id),
@@ -152,7 +152,7 @@ async function loadCamp(c){
   const amap={};
   (als.data||[]).forEach(x=>{const s=x.entities.slug;(amap[s]=amap[s]||[]).push(x.alias)});
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
-    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],img:e.image_url,pc:e.is_party?1:0,a:amap[e.slug]||[]}));
+    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,img:e.image_url,pc:e.is_party?1:0,a:amap[e.slug]||[]}));
   cur=c;rebuild();
   G.pos={};G.sel=null;                 // el grafo arranca limpio en cada campaña
   if(!st.ent||!byS[st.ent]){
@@ -373,7 +373,8 @@ function vFicha(){
         <div class="rs">${esc(x.sm)}</div></div>
         <span class="rc">${esc(TY(x).s)}</span></div>`).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2" data-act="graphof" data-v="${att(e.s)}">
-      Ver en el grafo</button></div>
+      Ver en el grafo</button>
+      <button class="btn sec2" data-act="hist" data-v="${att(e.s)}">Historial de cambios</button></div>
   </div>`;
 }
 
@@ -453,7 +454,8 @@ function edit(slug){
   /* objeto nuevo: sin _live, no arrastra borradores. Estado y etiquetas se
      copian de entrada porque se editan tocando botones, no escribiendo. */
   st.editing={slug:slug||null,isNew:!slug,
-    stt:(e&&e.st)||null, tags:((e&&e.tg)||[]).slice()};
+    stt:(e&&e.st)||null, tags:((e&&e.tg)||[]).slice(),
+    base:(e&&e.up)||null};   // versión sobre la que estoy editando
   st.tab='ed';st.ac=null;st.acPick=null;r();scrollTo(0,0);
 }
 function vEd(){
@@ -721,7 +723,7 @@ function autoSummary(body){
   const first=plain.split(/(?<=[.!?])\s/)[0];
   return (first.length>4&&first.length<=140?first:plain.slice(0,120)).trim();
 }
-async function save(){
+async function save(pisar){
   if(st.busy)return;
   const nameEl=document.getElementById('fn');
   const name=nameEl?nameEl.value.trim():'';
@@ -738,16 +740,25 @@ async function save(){
   tagAdd(document.getElementById('tagin')||{value:''});
   const status=E.stt||null, tags=(E.tags||[]).slice();
   const before=e?new Set([...(ADJ[e.s]||[])]):new Set();
+  const campo={name,body,notes,type,summary,status,tags,image_url:img,is_party:pc};
   st.busy=true;r();
   let res;
   if(e&&e.id){
-    res=await SB.from('entities').update({name,body,notes,type,summary,status,tags,image_url:img,is_party:pc})
-      .eq('id',e.id).select().single();
+    /* Guardado con testigo: solo escribe si la ficha sigue en la versión que
+       tenía cuando la abrí. Si alguien guardó en el medio no devuelve filas y
+       lo resolvemos preguntando, en vez de pisarlo sin avisar. */
+    let q=SB.from('entities').update(campo).eq('id',e.id);
+    if(!pisar&&E.base)q=q.eq('updated_at',E.base);
+    res=await q.select();
+    if(!res.error&&(!res.data||!res.data.length)){
+      st.busy=false;
+      return conflicto(e,campo,before);
+    }
+    res.data=res.data&&res.data[0];
   }else{
     let slug=slugify(name)||('f'+Date.now());
     if(byS[slug])slug=slug+'-'+Date.now().toString(36).slice(-4);
-    res=await SB.from('entities').insert({campaign_id:cur.id,slug,type,name,summary,status,tags,
-      body,notes,image_url:img,is_party:pc}).select().single();
+    res=await SB.from('entities').insert({campaign_id:cur.id,slug,...campo}).select().single();
   }
   st.busy=false;
   if(res.error){toast('No se guardó: '+res.error.message,'err');r();return}
@@ -756,6 +767,103 @@ async function save(){
   const added=[...(ADJ[st.ent]||[])].filter(x=>!before.has(x)).length;
   r();scrollTo(0,0);
   toast(added?`Guardado · ${added} vínculo${added>1?'s':''} nuevo${added>1?'s':''}`:'Guardado','ok');
+}
+
+/* ---------- conflicto: alguien guardó mientras yo editaba ---------- */
+function cuando(iso){
+  if(!iso)return '';
+  const d=new Date(iso), s=(Date.now()-d.getTime())/1000;
+  if(s<60)return 'recién';
+  if(s<3600)return 'hace '+Math.round(s/60)+' min';
+  if(s<86400)return 'hace '+Math.round(s/3600)+' h';
+  return d.toLocaleDateString('es',{day:'numeric',month:'short'})+
+    ' '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+}
+async function conflicto(e,campo,before){
+  /* traigo la versión que hay ahora para poder mostrar de qué se trata */
+  const {data}=await SB.from('entities')
+    .select('name,summary,updated_at').eq('id',e.id).single();
+  const otro=data||{};
+  st.conf={id:e.id,campo,before,slug:e.s,otro};
+  r();
+}
+function vConf(){
+  const C=st.conf,o=C.otro||{};
+  return `<div class="dlgwrap"><div class="dlg">
+    <div class="eyebrow">Guardado en conflicto</div>
+    <h2 class="dlgh">Alguien más guardó esta ficha</h2>
+    <div class="dlgtx">Mientras la editabas, otra persona guardó cambios
+      ${o.updated_at?'('+esc(cuando(o.updated_at))+')':''}. Si guardás lo tuyo,
+      lo de esa persona se reemplaza.</div>
+    <div class="dlgbox">
+      <div class="dlgl">Lo que hay ahora</div>
+      <div class="dlgv">${esc(o.name||'')}${o.summary?' · '+esc(o.summary):''}</div>
+    </div>
+    <div class="hint">Se guarda la versión anterior igual, así que nada se
+      pierde: podés recuperarla desde el historial de la ficha.</div>
+    <button class="btn pri" data-act="confpisar">Guardar lo mío igual</button>
+    <button class="btn sec2" data-act="confver">Descartar y ver lo que hay</button>
+    <button class="btn sec2" data-act="confvolver">Seguir editando</button>
+  </div></div>`;
+}
+
+/* ================= HISTORIAL ================= */
+async function openHist(slug){
+  const e=byS[slug];if(!e)return;
+  hist.push({tab:st.tab,ent:st.ent});
+  st.ent=slug;st.hist={slug,rows:null};st.tab='hist';r();scrollTo(0,0);
+  const {data,error}=await SB.from('entity_revisions')
+    .select('id,name,summary,body,notes,replaced_at')
+    .eq('entity_id',e.id).order('replaced_at',{ascending:false});
+  if(error){toast('No se pudo leer el historial','err');st.hist.rows=[];r();return}
+  st.hist.rows=data||[];r();
+}
+function vHist(){
+  const e=byS[st.ent], H=st.hist;
+  const plano=t=>String(t||'').replace(LK,(_,k)=>byS[k]?byS[k].n:'').replace(/\s+/g,' ').trim();
+  const cuerpo=H.rows===null
+    ? `<div class="card">${'<div class="row"><div class="grow"><div class="skel" style="height:13px;width:38%"></div><div class="skel" style="height:11px;width:80%;margin-top:8px"></div></div></div>'.repeat(3)}</div>`
+    : !H.rows.length
+    ? `<div class="empty"><div class="ei">🕰</div><div class="et">Sin versiones anteriores</div>
+       <div class="es">Se guarda una cada vez que cambia el nombre, la descripción,
+       el resumen o las notas.</div></div>`
+    : `<div class="card">
+        <div class="row hrow"><div class="grow">
+          <div class="rn">Versión actual</div>
+          <div class="rs">${esc(plano(e.b))||'Sin descripción'}</div></div>
+          <span class="rc">ahora</span></div>
+        ${H.rows.map(v=>`<div class="row hrow"><div class="grow">
+          <div class="rn">${esc(v.name||e.n)}</div>
+          <div class="rs">${esc(plano(v.body))||'Sin descripción'}</div>
+          <div class="hwhen">${esc(cuando(v.replaced_at))}</div></div>
+          <button class="gbtn" data-act="restaurar" data-v="${att(v.id)}">Restaurar</button>
+          </div>`).join('')}
+      </div>`;
+  return `<div class="top"><div class="topin">
+      <button class="back" data-act="back">← Atrás</button>
+      <span class="tag push">HISTORIAL</span></div></div>
+    <div class="page">
+      <div class="eyebrow">${esc(TY(e).s)}</div>
+      <h1>${esc(e.n)}</h1>
+      <div class="hint">Cada guardado deja la versión anterior acá.
+        Restaurar no borra nada: lo de ahora queda como una versión más.</div>
+      ${cuerpo}
+      ${H.rows&&H.rows.length?`<div class="hint">El historial guarda nombre,
+        resumen, descripción y notas. El estado, las etiquetas y la foto no
+        quedan registrados.</div>`:''}
+    </div>`;
+}
+async function restaurar(id){
+  const H=st.hist, v=(H.rows||[]).find(x=>x.id===id), e=byS[H.slug];
+  if(!v||!e)return;
+  st.busy=true;r();
+  const {error}=await SB.from('entities')
+    .update({name:v.name,summary:v.summary,body:v.body,notes:v.notes}).eq('id',e.id);
+  st.busy=false;
+  if(error){toast('No se pudo restaurar: '+error.message,'err');r();return}
+  await loadCamp(cur);
+  st.ent=H.slug;st.hist=null;st.tab='ficha';r();scrollTo(0,0);
+  toast('Versión restaurada','ok');
 }
 
 /* ---------- lightbox ---------- */
@@ -1224,8 +1332,9 @@ function r(){
   if(st.tab==='ficha'&&!byS[st.ent])st.tab='idx';
   if(st.tab==='ed'&&!st.editing)st.tab='idx';
   if(st.tab==='edcamp'&&!st.ecamp)st.tab='idx';
-  const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp}[st.tab]||vIdx;
-  app.innerHTML=v();
+  if(st.tab==='hist'&&(!st.hist||!byS[st.ent]))st.tab='idx';
+  const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist}[st.tab]||vIdx;
+  app.innerHTML=v()+(st.conf?vConf():'');
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
   document.getElementById('nav').innerHTML=[['idx','Índice'],['grafo','Grafo'],['nueva','Nueva']]
     .map(([k,l])=>`<button class="nb ${on===k?'on':''}" data-act="nav" data-v="${k}">
@@ -1256,6 +1365,12 @@ const ACT={
   nocover:()=>saveCover(null),
   edcamp:editCamp,
   savecamp:saveCamp,
+  hist:v=>openHist(v),
+  restaurar:v=>restaurar(v),
+  confpisar:()=>{st.conf=null;save(true)},
+  confver:()=>{const s2=st.conf.slug;st.conf=null;st.editing=null;
+    loadCamp(cur).then(()=>{st.ent=s2;st.tab='ficha';r();scrollTo(0,0)})},
+  confvolver:()=>{st.conf=null;r()},
   cancelcamp:()=>{st.ecamp=null;st.tab='idx';r();scrollTo(0,0)},
   edit:v=>edit(v),
   new:()=>edit(null),

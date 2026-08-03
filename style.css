@@ -459,6 +459,31 @@ canvas.pointing{cursor:pointer}
   color:var(--dim);font-size:var(--f-md);cursor:pointer;border-radius:var(--rf);line-height:1}
 .gcx:hover{color:var(--ink);background:var(--surf3)}
 
+/* ============ diálogo ============ */
+.dlgwrap{position:fixed;inset:0;z-index:85;display:flex;align-items:center;
+  justify-content:center;padding:var(--s5);
+  background:rgba(8,10,14,.82);backdrop-filter:blur(8px);animation:fade .18s ease-out}
+.dlg{width:100%;max-width:420px;max-height:86vh;overflow-y:auto;
+  padding:var(--s6);border:1px solid var(--line2);border-radius:var(--r4);
+  background:var(--surf2);box-shadow:var(--shadow);animation:rise .2s ease-out}
+.dlgh{font-family:var(--disp);font-size:var(--f-h2);font-weight:600;
+  line-height:var(--lh-tight);margin:0 0 var(--s3)}
+.dlgtx{font-size:var(--f-md);line-height:var(--lh-snug);color:var(--ink2)}
+.dlgbox{margin-top:var(--s4);padding:var(--s3) var(--s4);
+  background:var(--surf);border:1px solid var(--line);border-radius:var(--r2)}
+.dlgl{font-family:var(--mono);font-size:var(--f-xs);letter-spacing:var(--track);
+  text-transform:uppercase;color:var(--dim);margin-bottom:var(--s1)}
+.dlgv{font-size:var(--f-md);color:var(--ink);line-height:var(--lh-snug)}
+.dlg .btn{margin-top:var(--s3)}
+.dlg .hint{margin-bottom:var(--s5)}
+
+/* ============ historial ============ */
+.row.hrow{cursor:default}
+.row.hrow:hover{background:none}
+.row.hrow .gbtn{flex:none}
+.hwhen{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
+  margin-top:var(--s2);line-height:1}
+
 /* ============ lightbox ============ */
 .lightbox{position:fixed;inset:0;z-index:80;display:flex;align-items:center;
   justify-content:center;padding:var(--s6);
