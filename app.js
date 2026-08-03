@@ -23,7 +23,7 @@ const TY=e=>(e&&TYPES[e.t])||FALLBACK;
 const TYT=t=>TYPES[t]||FALLBACK;
 
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
-let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,ac:null,acPick:null,
+let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,me:null,pick:false,ac:null,acPick:null,
         busy:false,view:'list',err:''};
 let hist=[];
 const app=document.getElementById('app');
@@ -55,7 +55,7 @@ function av(e,size,o){
   const c=TY(e).c;
   const one=size<30;                                   // en chico, una sola letra
   const ini=initials(e.n,one);
-  const cls='av'+(o.sq?' sq':'')+(o.ring?' ring':'')+(o.big?' big':'');
+  const cls='av'+(o.sq?' sq':'')+(o.ring?' ring':'')+(o.big?' big':'')+(o.gmring?' gmring':'');
   const fs=Math.max(9,Math.round(size*(one?.46:.38)));
   const img=e.img
     ? `<img src="${att(e.img)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
@@ -140,7 +140,7 @@ async function loadCamp(c){
      tiene sentido bajar la de todas las campañas para listar nombres */
   const [ents,als,cov]=await Promise.all([
     SB.from('entities')
-      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,tags,updated_at')
+      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,is_gm,tags,updated_at,edited_by')
       .eq('campaign_id',c.id).is('archived_at',null).order('name'),
     SB.from('entity_aliases').select('alias,entities!inner(campaign_id,slug)')
       .eq('entities.campaign_id',c.id),
@@ -152,13 +152,52 @@ async function loadCamp(c){
   const amap={};
   (als.data||[]).forEach(x=>{const s=x.entities.slug;(amap[s]=amap[s]||[]).push(x.alias)});
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
-    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,img:e.image_url,pc:e.is_party?1:0,a:amap[e.slug]||[]}));
-  cur=c;rebuild();
+    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
+  cur=c;rebuild();loadMe();
   G.pos={};G.sel=null;                 // el grafo arranca limpio en cada campaña
   if(!st.ent||!byS[st.ent]){
     const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s)||b3(b)-b3(a))[0];
     st.ent=top?top.s:null;
   }
+}
+
+/* ---------- quién soy ----------
+   Sin login: es declarativo, sirve para atribuir cambios, no para restringir
+   nada. Se guarda por campaña porque los personajes son de una campaña, y una
+   sola vez: no se vuelve a preguntar en cada visita. */
+const meKey=()=>'codex.me.'+(cur?cur.id:'');
+function loadMe(){
+  try{st.me=localStorage.getItem(meKey())||null}catch(_){st.me=null}
+  if(st.me&&!byS[st.me])st.me=null;      // la ficha ya no existe
+}
+function setMe(slug){
+  st.me=slug||null;
+  try{slug?localStorage.setItem(meKey(),slug):localStorage.removeItem(meKey())}catch(_){}
+  st.pick=false;r();
+  if(slug)toast('Sos '+(byS[slug]?byS[slug].n:slug),'ok');
+}
+/* los que pueden ser "yo": el Máster primero, después el grupo */
+const quienes=()=>D.filter(e=>e.gm).concat(D.filter(e=>e.pc&&!e.gm));
+const yo=()=>st.me&&byS[st.me]||null;
+const nombreDe=slug=>slug?(byS[slug]?byS[slug].n:slug):null;
+
+function vPick(){
+  const lista=quienes();
+  return `<div class="dlgwrap"><div class="dlg">
+    <div class="eyebrow">Antes de empezar</div>
+    <h2 class="dlgh">¿Quién sos?</h2>
+    <div class="dlgtx">Para saber quién escribió cada cosa. Se guarda en este
+      navegador y no te lo vuelvo a preguntar.</div>
+    ${lista.length?`<div class="card pickl">${lista.map(e=>`
+      <div class="row" data-act="setme" data-v="${att(e.s)}">
+        ${av(e,AV.md,e.gm?{gmring:1}:{})}
+        <div class="grow"><div class="rn">${esc(e.n)}</div>
+          <div class="rs">${e.gm?'Máster':esc(cur.party_name||'Del grupo')}</div></div>
+        <span class="rc">→</span></div>`).join('')}</div>`
+    :`<div class="hint">Todavía no hay personajes del grupo ni Máster. Marcá
+      alguna ficha como del grupo o como Máster desde su editor.</div>`}
+    <button class="btn sec2" data-act="pickskip">Ahora no</button>
+  </div></div>`;
 }
 
 /* ---------- navegación ---------- */
@@ -180,7 +219,9 @@ function back(){
 }
 async function setCamp(i){
   hist=[];st.ent=null;await loadCamp(CAMPS[i]);
-  st.tab='idx';st.q='';st.editing=null;r();scrollTo(0,0);
+  st.tab='idx';st.q='';st.editing=null;
+  st.pick=!st.me&&quienes().length>0;
+  r();scrollTo(0,0);
 }
 function home(){hist=[];st.tab='home';st.q='';r();scrollTo(0,0)}
 
@@ -263,13 +304,13 @@ function vHome(){
 
 /* ================= ÍNDICE ================= */
 function rowHTML(e,via){
-  return `<div class="row" data-go="${att(e.s)}">${av(e,AV.md)}
+  return `<div class="row" data-go="${att(e.s)}">${av(e,AV.md,e.gm?{gmring:1}:{})}
     <div class="grow"><div class="rn">${esc(e.n)}</div>
       <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div>
     <span class="rc">${b3(e)}</span></div>`;
 }
 function cardHTML(e){
-  return `<div class="ccard" data-go="${att(e.s)}" style="--c:${TY(e).c}">${av(e,AV.xl)}
+  return `<div class="ccard" data-go="${att(e.s)}" style="--c:${TY(e).c}">${av(e,AV.xl,e.gm?{gmring:1}:{})}
     <div class="ccn">${esc(e.n)}</div>
     <div class="ccc">${b3(e)} menc.</div></div>`;
 }
@@ -285,17 +326,21 @@ function vIdx(){
     : `<div class="empty"><div class="ei">🔍</div><div class="et">Nada parecido</div>
        <div class="es">No encontré nada como "${esc(st.q)}". Probá con menos letras.</div></div>`;
   const body = st.q.trim() ? hitsBody : (()=>{
-    const pcs=D.filter(e=>e.pc);
-    let out=pcs.length?`<div class="grp">
+    const gms=D.filter(e=>e.gm);
+    let out=gms.length?`<div class="grp gmgrp">
+      <div class="grph">Máster<span class="ct">${gms.length}</span></div>
+      ${group(gms)}</div>`:'';
+    const pcs=D.filter(e=>e.pc&&!e.gm);
+    out+=pcs.length?`<div class="grp">
       <div class="grph" style="color:var(--ink)">${esc(cur.party_name||'Nuestro grupo')}
         <span class="ct">${pcs.length}</span></div>${group(pcs)}</div>`:'';
     out+=ORDER.map(t=>{
-      const g=D.filter(e=>e.t===t&&!e.pc).sort((a,b)=>b3(b)-b3(a)||a.n.localeCompare(b.n));
+      const g=D.filter(e=>e.t===t&&!e.pc&&!e.gm).sort((a,b)=>b3(b)-b3(a)||a.n.localeCompare(b.n));
       if(!g.length)return'';
       return `<div class="grp"><div class="grph" style="color:${TYT(t).c}">
         ${TYT(t).l}<span class="ct">${g.length}</span></div>${group(g)}</div>`;
     }).join('');
-    const rest=D.filter(e=>!e.pc&&!TYPES[e.t]);
+    const rest=D.filter(e=>!e.pc&&!e.gm&&!TYPES[e.t]);
     if(rest.length)out+=`<div class="grp"><div class="grph" style="color:${FALLBACK.c}">
       ${FALLBACK.l}<span class="ct">${rest.length}</span></div>${group(rest)}</div>`;
     return out;
@@ -312,6 +357,9 @@ function vIdx(){
           <h1>${esc(cur.name)}</h1>
           <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>
           <div class="bnact">
+            ${quienes().length?`<button class="gbtn glass yo" data-act="pickme">${
+              yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>Sos '+esc(yo().n)+'</span>'
+                 :'<span>¿Quién sos?</span>'}</button>`:''}
             <button class="gbtn glass" data-act="edcamp">Editar campaña</button>
             ${cov?'':`<label class="gbtn glass">Agregar portada
               <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>`}
@@ -338,19 +386,20 @@ function vIdx(){
 /* ================= FICHA ================= */
 function vFicha(){
   const e=byS[st.ent],c=TY(e).c,bl=BL[e.s]||[];
+  const ho=e.gm?{big:1,gmring:1}:{big:1};
   const rel=[...(ADJ[e.s]||[])].map(s=>byS[s]).filter(Boolean)
     .sort((a,b)=>deg(b.s)-deg(a.s)||a.n.localeCompare(b.n));
   return `<div class="top"><div class="topin">
       <button class="back" data-act="back">← Atrás</button>
       <button class="back push" data-act="edit" data-v="${att(e.s)}">Editar</button>
     </div></div>
-  <div class="page">
+  <div class="page${e.gm?' gmpage':''}">
     <div class="hero">
-      ${e.img?`<button class="avbtn" data-act="img" data-v="${att(e.s)}">${av(e,AV.hero,{big:1})}</button>`
-             :av(e,AV.hero,{big:1})}
+      ${e.img?`<button class="avbtn" data-act="img" data-v="${att(e.s)}">${av(e,AV.hero,ho)}</button>`
+             :av(e,AV.hero,ho)}
       <div class="grow">
-        <div class="eyebrow" style="color:${e.pc?'var(--gold)':c}">
-          ${e.pc?esc(cur.party_name||'Nuestro grupo'):esc(TY(e).s)}</div>
+        <div class="eyebrow" style="color:${e.gm?'var(--gm)':(e.pc?'var(--gold)':c)}">
+          ${e.gm?'Máster de la partida':(e.pc?esc(cur.party_name||'Nuestro grupo'):esc(TY(e).s))}</div>
         <h1>${esc(e.n)}</h1></div></div>
     ${e.a&&e.a.length?`<div class="aka">también: ${e.a.map(esc).join(' · ')}</div>`:''}
     <div class="meta">${e.st?`<span class="chip acc" style="--c:${c}">${esc(STATUS[e.st]||e.st)}</span>`:''}
@@ -465,6 +514,7 @@ function vEd(){
   const noteTxt=E.dc!==undefined?E.dc:(e?e.c:'');
   const img=E.img!==undefined?E.img:(e?e.img:null);
   const isPc=E.pc!==undefined?!!E.pc:(e?!!e.pc:false);
+  const isGm=E.gm!==undefined?!!E.gm:(e?!!e.gm:false);
   const type=E.type!==undefined?E.type:(e?e.t:'character');
   const prev={n:name||'?',t:type,img};
   return `<div class="top"><div class="topin">
@@ -473,7 +523,7 @@ function vEd(){
   <div class="page">
     <div class="eyebrow">Retrato</div>
     <div class="imgrow">
-      ${av(prev,AV.hero,{big:1})}
+      ${av(prev,AV.hero,isGm?{big:1,gmring:1}:{big:1})}
       <div class="grow">
         <div class="btnrow even">
           <label class="btn sec2">${img?'Cambiar':'Elegir foto'}
@@ -493,6 +543,8 @@ function vEd(){
 
     <button class="btn sec2 ${isPc?'on':''}" data-act="pc">
       ${isPc?'✓ ':''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
+    <button class="btn sec2 gm ${isGm?'on':''}" data-act="gm">
+      ${isGm?'✓ ':''}Es el Máster</button>
 
     <div class="eyebrow mt">Estado</div>
     <div class="btnrow">
@@ -735,12 +787,14 @@ async function save(pisar){
   const type=E.type!==undefined?E.type:(e?e.t:'character');
   const img=E.img!==undefined?E.img:(e?e.img:null);
   const pc=E.pc!==undefined?!!E.pc:(e?!!e.pc:false);
+  const gm=E.gm!==undefined?!!E.gm:(e?!!e.gm:false);
   const summary=autoSummary(body);
   // una etiqueta a medio escribir en el campo también cuenta
   tagAdd(document.getElementById('tagin')||{value:''});
   const status=E.stt||null, tags=(E.tags||[]).slice();
   const before=e?new Set([...(ADJ[e.s]||[])]):new Set();
-  const campo={name,body,notes,type,summary,status,tags,image_url:img,is_party:pc};
+  const campo={name,body,notes,type,summary,status,tags,image_url:img,
+    is_party:pc,is_gm:gm,edited_by:st.me||null};
   st.busy=true;r();
   let res;
   if(e&&e.id){
@@ -782,7 +836,7 @@ function cuando(iso){
 async function conflicto(e,campo,before){
   /* traigo la versión que hay ahora para poder mostrar de qué se trata */
   const {data}=await SB.from('entities')
-    .select('name,summary,updated_at').eq('id',e.id).single();
+    .select('name,summary,updated_at,edited_by').eq('id',e.id).single();
   const otro=data||{};
   st.conf={id:e.id,campo,before,slug:e.s,otro};
   r();
@@ -791,8 +845,8 @@ function vConf(){
   const C=st.conf,o=C.otro||{};
   return `<div class="dlgwrap"><div class="dlg">
     <div class="eyebrow">Guardado en conflicto</div>
-    <h2 class="dlgh">Alguien más guardó esta ficha</h2>
-    <div class="dlgtx">Mientras la editabas, otra persona guardó cambios
+    <h2 class="dlgh">${o.edited_by?esc(nombreDe(o.edited_by))+' guardó esta ficha':'Alguien más guardó esta ficha'}</h2>
+    <div class="dlgtx">Mientras la editabas, ${o.edited_by?esc(nombreDe(o.edited_by)):'otra persona'} guardó cambios
       ${o.updated_at?'('+esc(cuando(o.updated_at))+')':''}. Si guardás lo tuyo,
       lo de esa persona se reemplaza.</div>
     <div class="dlgbox">
@@ -813,7 +867,7 @@ async function openHist(slug){
   hist.push({tab:st.tab,ent:st.ent});
   st.ent=slug;st.hist={slug,rows:null};st.tab='hist';r();scrollTo(0,0);
   const {data,error}=await SB.from('entity_revisions')
-    .select('id,name,summary,body,notes,status,tags,replaced_at')
+    .select('id,name,summary,body,notes,status,tags,edited_by,replaced_at')
     .eq('entity_id',e.id).order('replaced_at',{ascending:false});
   if(error){toast('No se pudo leer el historial','err');st.hist.rows=[];r();return}
   st.hist.rows=data||[];r();
@@ -838,7 +892,8 @@ function vHist(){
         <div class="row hrow"><div class="grow">
           <div class="rn">Versión actual</div>
           <div class="rs">${esc(plano(e.b))||'Sin descripción'}</div>
-          ${marcas(e.st,e.tg)}</div>
+          ${marcas(e.st,e.tg)}
+          ${e.eb?`<div class="hwhen">por ${esc(nombreDe(e.eb))}</div>`:''}</div>
           <span class="rc">ahora</span></div>
         ${H.rows.map(v=>`<div class="row hrow"><div class="grow">
           <div class="rn">${esc(v.name||e.n)}</div>
@@ -846,7 +901,7 @@ function vHist(){
           ${v.tags===null
             ? '<div class="hwhen">estado y etiquetas no registrados</div>'
             : marcas(v.status,v.tags)}
-          <div class="hwhen">${esc(cuando(v.replaced_at))}</div></div>
+          <div class="hwhen">${esc(cuando(v.replaced_at))}${v.edited_by?' · por '+esc(nombreDe(v.edited_by)):''}</div></div>
           <button class="gbtn" data-act="restaurar" data-v="${att(v.id)}">Restaurar</button>
           </div>`).join('')}
       </div>`;
@@ -1350,7 +1405,7 @@ function r(){
   if(st.tab==='edcamp'&&!st.ecamp)st.tab='idx';
   if(st.tab==='hist'&&(!st.hist||!byS[st.ent]))st.tab='idx';
   const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist}[st.tab]||vIdx;
-  app.innerHTML=v()+(st.conf?vConf():'');
+  app.innerHTML=v()+(st.conf?vConf():'')+(st.pick?vPick():'');
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
   document.getElementById('nav').innerHTML=[['idx','Índice'],['grafo','Grafo'],['nueva','Nueva']]
     .map(([k,l])=>`<button class="nb ${on===k?'on':''}" data-act="nav" data-v="${k}">
@@ -1397,6 +1452,10 @@ const ACT={
   stt:v=>{keepDraft();st.editing.stt=v||null;r()},
   rmtag:v=>{keepDraft();(st.editing.tags||[]).splice(+v,1);r()},
   pc:()=>{keepDraft();st.editing.pc=!st.editing.pc;r()},
+  gm:()=>{keepDraft();st.editing.gm=!st.editing.gm;r()},
+  pickme:()=>{st.pick=true;r()},
+  setme:v=>setMe(v),
+  pickskip:()=>{st.pick=false;r()},
   noimg:()=>{keepDraft();st.editing.img=null;r()},
   img:v=>openImg(v),
   pick:v=>pick(v),
