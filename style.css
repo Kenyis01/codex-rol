@@ -285,22 +285,17 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .ours p{margin:0 0 var(--s3)}.ours p:last-child{margin:0}
 
 .rail{position:relative;padding-left:var(--s7);margin-top:var(--s2)}
+/* La línea de tiempo no lleva ningún estado: ni hover ni activo. En pantallas
+   táctiles el :hover queda pegado después de tocar, y el punto se veía
+   encendido sin motivo. El toque abre la ficha y con eso alcanza. */
 .bl{position:relative;padding:var(--s3) 0;cursor:pointer}
-/* Nada de mover el bloque al pasar por encima: el riel y el punto están
-   posicionados respecto de él, así que se corrían junto con el texto y la
-   línea de tiempo quedaba quebrada. El hover se marca con el punto y el
-   tramo de riel, que no se mueven de lugar. */
 .bl::before{content:'';position:absolute;left:calc(var(--s7) * -1);top:0;bottom:0;width:2px;
-  background:currentColor;opacity:.25;border-radius:2px;transition:opacity .15s}
+  background:currentColor;opacity:.25;border-radius:2px}
 .bl:first-child::before{top:var(--s5)}
 .bl:last-child::before{bottom:calc(100% - var(--s6) - 4px)}
 .bl::after{content:'';position:absolute;left:calc(var(--s7) * -1 - 4px);top:var(--s5);
   width:10px;height:10px;border-radius:50%;background:var(--bg);
-  border:2px solid currentColor;transition:box-shadow .15s}
-.bl:hover::before{opacity:.55}
-.bl:hover::after{box-shadow:0 0 0 4px color-mix(in srgb,currentColor 22%,transparent)}
-.bl:hover .blsnip{color:var(--ink2)}
-.blsnip{transition:color .15s}
+  border:2px solid currentColor}
 .blsrc{display:flex;align-items:center;gap:var(--s2);
   font-size:var(--f-md);font-weight:600;margin-bottom:var(--s1)}
 .blnote{font-size:var(--f-sm);font-weight:400;opacity:.55}
