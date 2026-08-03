@@ -333,8 +333,6 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   background:linear-gradient(160deg,var(--surf2),var(--surf));
   border:1px solid var(--line);border-radius:var(--r3);
   transition:transform .16s,border-color .16s,box-shadow .16s}
-.ccard::before{content:'';position:absolute;inset:0 0 auto;height:2px;
-  background:linear-gradient(to right,transparent,var(--c),transparent);opacity:.5}
 .ccard:hover{transform:translateY(-2px);
   border-color:color-mix(in srgb,var(--c) 40%,transparent);
   box-shadow:0 12px 28px rgba(0,0,0,.35)}
