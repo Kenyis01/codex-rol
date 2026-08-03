@@ -1190,7 +1190,17 @@ function r(){
   RENDERED=st.tab;
   if(st.tab==='ed'){wireEd();st.editing._live=true}
   if(st.tab==='grafo')requestAnimationFrame(gMount);
-  restFocus(f);
+  restFocus(f);syncNavH();
+}
+/* La navegación no siempre mide lo mismo (safe-area del teléfono, tamaño de
+   fuente del sistema), y de ese alto dependen el relleno de la página y dónde
+   se apoya la barra de guardar. Con un valor fijo quedaba un hueco
+   transparente entre el botón y la navegación, y por ahí se veía el texto. */
+function syncNavH(){
+  const n=document.querySelector('.nav');
+  if(!n||n.style.display==='none')return;
+  const h=n.offsetHeight;
+  if(h)document.documentElement.style.setProperty('--navh',h+'px');
 }
 
 /* ---------- un solo manejador de clicks para toda la app ---------- */
@@ -1245,7 +1255,8 @@ document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t&&t.id==='gsel')gCenter(t.value);
 });
-addEventListener('resize',()=>{if(st.tab==='grafo'&&G.cv){gSize();if(G.autofit)gFit();gDraw()}});
+addEventListener('resize',()=>{syncNavH();
+  if(st.tab==='grafo'&&G.cv){gSize();if(G.autofit)gFit();gDraw()}});
 addEventListener('keydown',ev=>{
   if(st.tab!=='grafo')return;
   if(ev.key==='Escape'&&G.full)gFull();

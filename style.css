@@ -345,9 +345,9 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    de esperar al final de un formulario largo. Al llegar al fondo se despega y
    apoya en su lugar natural. El degradado evita que el texto de atrás se
    confunda con el botón. */
-.savebar{position:sticky;bottom:calc(var(--navh) - var(--s1));z-index:15;
-  margin-top:var(--s6);padding:var(--s4) 0 var(--s3);
-  background:linear-gradient(to top,var(--bg) 62%,transparent)}
+.savebar{position:sticky;bottom:var(--navh);z-index:15;
+  margin-top:var(--s6);padding:var(--s5) 0 var(--s3);
+  background:linear-gradient(to top,var(--bg) 70%,transparent)}
 .savebar .btn{margin:0}
 
 .btnrow{display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
