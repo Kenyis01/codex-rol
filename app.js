@@ -60,8 +60,17 @@ function av(e,size,o){
   const img=e.img
     ? `<img src="${att(e.img)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
     : '';
+  /* decoración del Máster: chispas en órbita. --o es el radio, expresado como
+     porcentaje del alto de la propia chispa, que es como CSS mide el origen
+     de la rotación. Cada una con su velocidad y su desfase. */
+  const orb=o.gmring&&size>=28
+    ? `<span class="orb" aria-hidden="true">${
+        [[5.5,0,560],[7.5,-1.8,470],[6.5,-3.4,640],[8.5,-0.9,520]]
+        .map(([d,dl,r])=>`<i style="--d:${d}s;--dl:${dl}s;--o:${r}%"></i>`).join('')
+      }</span>`
+    : '';
   return `<span class="${cls}" style="--c:${c};width:${size}px;height:${size}px">`+
-    `<span class="avi" style="font-size:${fs}px">${esc(ini)}</span>${img}</span>`;
+    `<span class="avi" style="font-size:${fs}px">${esc(ini)}</span>${img}${orb}</span>`;
 }
 
 /* ---------- índices derivados ---------- */
@@ -394,6 +403,11 @@ function vFicha(){
       <button class="back push" data-act="edit" data-v="${att(e.s)}">Editar</button>
     </div></div>
   <div class="page${e.gm?' gmpage':''}">
+    ${e.gm?`<div class="gmfx" aria-hidden="true">${
+      [[6,12,0],[9,28,-2.5],[7,45,-5],[11,62,-1.2],[8,78,-3.8],[10,90,-6.4],
+       [7.5,20,-8],[9.5,70,-9.5]]
+      .map(([d,x,dl])=>`<i style="--d:${d}s;--x:${x}%;--dl:${dl}s"></i>`).join('')
+    }</div>`:''}
     <div class="hero">
       ${e.img?`<button class="avbtn" data-act="img" data-v="${att(e.s)}">${av(e,AV.hero,ho)}</button>`
              :av(e,AV.hero,ho)}

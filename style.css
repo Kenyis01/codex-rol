@@ -151,32 +151,88 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
 /* ============ el Máster ============
    Un poco de ceremonia, sin romper el sistema: mismo tamaño y misma forma que
    el resto, pero con un aura que gira despacio y su propio color. */
-/* overflow visible para que el aura pueda salir del círculo; como eso deja de
-   recortar la foto, la imagen se redondea sola */
-.av.gmring{overflow:visible;
-  box-shadow:inset 0 0 0 1px rgba(13,16,21,.6),0 0 24px rgba(224,178,92,.35)}
+/* Decoración del Máster, al estilo de las de Discord: un anillo nítido con un
+   destello que lo recorre, un halo que respira, y chispas en órbita.
+   overflow visible para que todo pueda salir del círculo; como eso deja de
+   recortar la foto, la imagen se redondea sola. */
+.av.gmring{overflow:visible}
 .av.gmring img{border-radius:50%}
-.av.gmring::after{content:'';position:absolute;inset:-12%;border-radius:50%;
-  z-index:-1;filter:blur(1.5px);
-  background:conic-gradient(from 0deg,var(--gm),#F4DFAE,#C9A0E8,var(--gm));
-  animation:girar 9s linear infinite}
 .av.gmring .avi{color:var(--gm)}
+/* anillo: el conic va enmascarado en aro para que no tape la foto */
+.av.gmring::before{content:'';position:absolute;inset:-7%;border-radius:50%;z-index:3;
+  background:conic-gradient(from 0deg,transparent 0deg,
+    color-mix(in srgb,var(--gm) 60%,transparent) 34deg,#FFF4D6 52deg,
+    color-mix(in srgb,var(--gm) 60%,transparent) 70deg,transparent 128deg);
+  -webkit-mask:radial-gradient(closest-side,transparent 79%,#000 81%);
+          mask:radial-gradient(closest-side,transparent 79%,#000 81%);
+  animation:girar 3.6s linear infinite}
+/* halo detrás, con latido */
+.av.gmring::after{content:'';position:absolute;inset:-26%;border-radius:50%;z-index:-1;
+  background:radial-gradient(closest-side,
+    rgba(232,197,114,.5),rgba(201,160,232,.22) 55%,transparent 72%);
+  animation:latir 3.4s ease-in-out infinite}
+/* chispas en órbita */
+.orb{position:absolute;inset:-7%;pointer-events:none;z-index:4}
+.orb i{position:absolute;left:50%;top:0;width:9%;height:9%;margin-left:-4.5%;
+  border-radius:50%;background:#FFF1CE;
+  box-shadow:0 0 7px 1.5px rgba(232,197,114,.85);
+  transform-origin:50% var(--o,560%);
+  animation:orbita var(--d,6s) linear infinite,chispa 2.2s ease-in-out infinite;
+  animation-delay:var(--dl,0s),var(--dl,0s)}
 @keyframes girar{to{transform:rotate(1turn)}}
+@keyframes orbita{to{transform:rotate(1turn)}}
+@keyframes latir{0%,100%{opacity:.6;transform:scale(1)}
+                 50%{opacity:1;transform:scale(1.07)}}
+@keyframes chispa{0%,100%{opacity:.35}50%{opacity:1}}
 
 .gmgrp .grph{color:var(--gm)}
-/* la ficha del Máster: resplandor de fondo y el nombre en degradado */
-.page.gmpage{position:relative}
-.page.gmpage::before{content:'';position:absolute;left:0;right:0;top:0;height:300px;
-  pointer-events:none;z-index:-1;
-  background:radial-gradient(120% 100% at 28% 0%,rgba(224,178,92,.15),transparent 70%)}
-.page.gmpage h1{background:linear-gradient(100deg,#F8E8C2,var(--gm),#D6ADE8);
-  -webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---- la ficha del Máster ----
+   Resplandor de fondo, pavesas que suben, y una entrada con destello. */
+.page.gmpage{position:relative;isolation:isolate}
+/* el :not es necesario: si no, la capa de pavesas pierde su position:absolute,
+   pasa a ocupar su alto en el flujo y empuja toda la ficha hacia abajo */
+.page.gmpage > :not(.gmfx){position:relative;z-index:1}
+.page.gmpage::before{content:'';position:absolute;left:0;right:0;top:0;height:340px;
+  pointer-events:none;z-index:0;
+  background:radial-gradient(130% 100% at 28% 0%,rgba(232,197,114,.17),transparent 68%)}
+.gmfx{position:absolute;left:0;right:0;top:0;height:360px;
+  overflow:hidden;pointer-events:none;z-index:0}
+.gmfx i{position:absolute;bottom:-8px;left:var(--x,50%);
+  width:3px;height:3px;border-radius:50%;background:var(--gm);
+  box-shadow:0 0 9px 2px rgba(232,197,114,.55);opacity:0;
+  animation:pavesa var(--d,8s) linear infinite;animation-delay:var(--dl,0s)}
+@keyframes pavesa{
+  0%{transform:translate(0,0) scale(.5);opacity:0}
+  12%{opacity:.95}
+  50%{transform:translate(14px,-180px) scale(1)}
+  88%{opacity:.45}
+  100%{transform:translate(-6px,-360px) scale(1.15);opacity:0}}
+
+/* entrada: el retrato aparece con un pequeño empuje */
+.page.gmpage .hero{animation:invocar .75s cubic-bezier(.2,.85,.25,1) both}
+@keyframes invocar{
+  from{opacity:0;transform:translateY(12px) scale(.95)}
+  to{opacity:1;transform:none}}
+
+/* el nombre en degradado, con un destello que lo recorre una vez al entrar */
+.page.gmpage h1{background:linear-gradient(100deg,
+    #F8E8C2 0%,var(--gm) 30%,#FFFDF6 45%,var(--gm) 60%,#D6ADE8 100%);
+  background-size:280% 100%;background-position:100% 0;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:destello 1.6s ease-out .25s both}
+@keyframes destello{from{background-position:100% 0}to{background-position:0 0}}
 .btn.sec2.gm.on{border-color:var(--gm);color:var(--gm)}
 /* quién sos, en el banner */
 .gbtn.yo{gap:var(--s2);padding-left:var(--s1);text-transform:none;letter-spacing:0;
   font-family:var(--body);font-size:var(--f-cap)}
 .pickl{margin-top:var(--s4)}
-@media(prefers-reduced-motion:reduce){.av.gmring::after{animation:none}}
+/* con movimiento reducido queda todo quieto, pero sigue distinguiéndose */
+@media(prefers-reduced-motion:reduce){
+  .av.gmring::before,.av.gmring::after,.orb i,
+  .gmfx i,.page.gmpage .hero,.page.gmpage h1{animation:none}
+  .orb,.gmfx{display:none}
+  .page.gmpage h1{background-position:0 0}}
 
 /* ============ menciones y enlaces del editor ============
    Tanto en la prosa como dentro del editor, una mención es texto: el nombre en
