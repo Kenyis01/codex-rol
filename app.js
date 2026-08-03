@@ -36,7 +36,9 @@ const slugify=s=>nm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 /* ---------- avatares ----------
    Un solo componente para toda la app. Debajo van siempre las iniciales;
    la foto se dibuja encima y, si falla, se borra sola y quedan las iniciales.
-   Ese era el motivo de los avatares "rotos". */
+   Ese era el motivo de los avatares "rotos".
+   Los tamaños salen de esta escala y de ninguna otra parte. */
+const AV={xs:18,sm:28,md:36,lg:44,xl:56,hero:72};
 function initials(name,one){
   const w=String(name||'?').replace(/^(la|el|los|las|the)\s+/i,'')
     .split(/\s+/).filter(x=>x.length>1);
@@ -201,7 +203,7 @@ function prose(txt){
       const e=byS[k];
       if(!e)return m;
       return `<a class="men" data-go="${att(k)}" style="--c:${TY(e).c}" title="${att(TY(e).s)}">`+
-             av(e,18)+`<span class="mtx">${esc(e.n)}</span></a>`;
+             av(e,AV.xs)+`<span class="mtx">${esc(e.n)}</span></a>`;
     })+'</p>').join('');
 }
 
@@ -214,15 +216,15 @@ function vHome(){
     ? CAMPS.map((c,i)=>`
       <div class="row" data-act="camp" data-v="${i}">
         <span class="dot" style="color:var(--gold);background:var(--gold)"></span>
-        <div style="flex:1;min-width:0">
-          <div style="font-family:var(--disp);font-size:20px;font-weight:600">${esc(c.name)}</div>
+        <div class="grow">
+          <div class="campn">${esc(c.name)}</div>
           <div class="rs">${esc(c.blurb||'')}</div></div>
         <span class="rc">→</span></div>`).join('')
-    : `<div class="row"><div style="flex:1"><div class="skel" style="height:15px;width:45%"></div>
+    : `<div class="row"><div class="grow"><div class="skel" style="height:15px;width:45%"></div>
        <div class="skel" style="height:11px;width:70%;margin-top:8px"></div></div></div>`.repeat(3);
-  return `<div class="page" style="padding-top:calc(34px + env(safe-area-inset-top))">
+  return `<div class="page first">
     <div class="eyebrow">Codex</div>
-    <h1 style="margin-bottom:6px">Tus campañas</h1>
+    <h1>Tus campañas</h1>
     <div class="hint">Cada una tiene sus propias fichas, su propio grafo y su propia memoria.</div>
     <div class="card">${list}</div>
     <div class="sec"><div class="sech">Empezar otra</div>
@@ -233,13 +235,13 @@ function vHome(){
 
 /* ================= ÍNDICE ================= */
 function rowHTML(e,via){
-  return `<div class="row" data-go="${att(e.s)}">${av(e,36)}
-    <div style="flex:1;min-width:0"><div class="rn">${esc(e.n)}</div>
+  return `<div class="row" data-go="${att(e.s)}">${av(e,AV.md)}
+    <div class="grow"><div class="rn">${esc(e.n)}</div>
       <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div>
     <span class="rc">${b3(e)}</span></div>`;
 }
 function cardHTML(e){
-  return `<div class="ccard" data-go="${att(e.s)}" style="--c:${TY(e).c}">${av(e,60,{ring:1})}
+  return `<div class="ccard" data-go="${att(e.s)}" style="--c:${TY(e).c}">${av(e,AV.xl,{ring:1})}
     <div class="ccn">${esc(e.n)}</div>
     <div class="ccc">${b3(e)} menc.</div></div>`;
 }
@@ -277,17 +279,16 @@ function vIdx(){
         value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()"></div></div>
     <div class="page">
       ${st.q.trim()?'':`<div class="eyebrow">Campaña</div>
-      <h1 style="margin-bottom:5px">${esc(cur.name)}</h1>
+      <h1>${esc(cur.name)}</h1>
       <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>`}
-      ${D.length?`<div style="display:flex;justify-content:flex-end;margin:0 0 18px">
+      ${D.length?`<div class="segrow">
         <div class="seg">
           <button class="${st.view==='list'?'on':''}" data-act="view" data-v="list">Lista</button>
           <button class="${st.view==='cards'?'on':''}" data-act="view" data-v="cards">Cards</button>
         </div></div>`+body
       :`<div class="empty"><div class="ei">📜</div><div class="et">Campaña en blanco</div>
         <div class="es">Todavía no hay fichas acá. Creá la primera y empezá a enlazar.</div>
-        <button class="btn pri" style="margin-top:20px;max-width:260px;margin-inline:auto"
-          data-act="new">Crear la primera ficha</button></div>`}
+        <button class="btn pri narrow" data-act="new">Crear la primera ficha</button></div>`}
     </div>`;
 }
 
@@ -298,14 +299,14 @@ function vFicha(){
     .sort((a,b)=>deg(b.s)-deg(a.s)||a.n.localeCompare(b.n));
   return `<div class="top"><div class="topin">
       <button class="back" data-act="back">← Atrás</button>
-      <button class="back" style="margin-left:auto" data-act="edit" data-v="${att(e.s)}">Editar</button>
+      <button class="back push" data-act="edit" data-v="${att(e.s)}">Editar</button>
     </div></div>
   <div class="page">
     <div class="hero">
-      ${e.img?`<button class="avbtn" data-act="img" data-v="${att(e.s)}">${av(e,84,{big:1})}</button>`
-             :av(e,84,{big:1})}
-      <div class="htx">
-        <div class="eyebrow" style="color:${e.pc?'var(--gold)':c};margin-bottom:4px">
+      ${e.img?`<button class="avbtn" data-act="img" data-v="${att(e.s)}">${av(e,AV.hero,{big:1})}</button>`
+             :av(e,AV.hero,{big:1})}
+      <div class="grow">
+        <div class="eyebrow" style="color:${e.pc?'var(--gold)':c}">
           ${e.pc?esc(cur.party_name||'Nuestro grupo'):esc(TY(e).s)}</div>
         <h1>${esc(e.n)}</h1></div></div>
     ${e.a&&e.a.length?`<div class="aka">también: ${e.a.map(esc).join(' · ')}</div>`:''}
@@ -318,13 +319,13 @@ function vFicha(){
     ${bl.length?`<div class="sec"><div class="sech">Se lo menciona en</div>
       <div class="rail">${bl.map(b=>{const src=byS[b.s];if(!src)return'';
         return `<div class="bl" style="color:${TY(src).c}" data-go="${att(b.s)}">
-          <div class="blsrc">${av(src,20)}<span>${esc(src.n)}</span>${
-            b.where==='ours'?'<span style="opacity:.5;font-weight:400;font-size:12px">· con nosotros</span>':''}</div>
+          <div class="blsrc">${av(src,AV.xs)}<span>${esc(src.n)}</span>${
+            b.where==='ours'?'<span class="blnote">· con nosotros</span>':''}</div>
           <div class="blsnip">${esc(b.snip).replace(/§(.*?)§/g,'<em>$1</em>')}</div></div>`}).join('')}
       </div></div>`:''}
     ${rel.length?`<div class="sec"><div class="sech">Conectado con</div>
-      <div class="card">${rel.map(x=>`<div class="row" data-go="${att(x.s)}">${av(x,30)}
-        <div style="flex:1;min-width:0"><div class="rn">${esc(x.n)}</div>
+      <div class="card">${rel.map(x=>`<div class="row" data-go="${att(x.s)}">${av(x,AV.sm)}
+        <div class="grow"><div class="rn">${esc(x.n)}</div>
         <div class="rs">${esc(x.sm)}</div></div>
         <span class="rc">${esc(TY(x).s)}</span></div>`).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2" data-act="graphof" data-v="${att(e.s)}">
@@ -348,40 +349,40 @@ function vEd(){
   const prev={n:name||'?',t:type,img};
   return `<div class="top"><div class="topin">
       <button class="back" data-act="cancel">← Cancelar</button>
-      <span style="margin-left:auto;font-family:var(--mono);font-size:10.5px;
-        letter-spacing:.12em;color:var(--dim)">${e?'EDITANDO':'FICHA NUEVA'}</span></div></div>
+      <span class="tag push">${e?'EDITANDO':'FICHA NUEVA'}</span></div></div>
   <div class="page">
     <div class="eyebrow">Retrato</div>
-    <div style="display:flex;gap:14px;align-items:center;margin-bottom:22px">
-      ${av(prev,64,{big:1})}
-      <div style="flex:1;min-width:0">
-        <label class="btn sec2" style="margin:0;display:block;text-align:center">
-          ${img?'Cambiar foto':'Elegir foto'}
-          <input type="file" accept="image/*" style="display:none" onchange="upImg(event)"></label>
-        ${img?`<button class="btn sec2" data-act="noimg">Quitar</button>`
-             :`<div class="hint" style="margin:8px 0 0">Sin foto se usan las iniciales.</div>`}
+    <div class="imgrow">
+      ${av(prev,AV.hero,{big:1})}
+      <div class="grow">
+        <div class="btnrow even">
+          <label class="btn sec2">${img?'Cambiar':'Elegir foto'}
+            <input type="file" accept="image/*" style="display:none" onchange="upImg(event)"></label>
+          ${img?`<button class="btn sec2" data-act="noimg">Quitar</button>`:''}
+        </div>
+        ${img?'':`<div class="hint">Sin foto se usan las iniciales.</div>`}
       </div></div>
 
     <div class="eyebrow">Nombre</div>
     <input class="sfield" id="fn" value="${att(name)}" placeholder="Nombre de la ficha">
 
-    <div class="eyebrow" style="margin-top:20px">Tipo</div>
-    <div class="gctl" style="padding:0">${ORDER.map(t=>`<button class="gbtn ${type===t?'on':''}"
+    <div class="eyebrow mt">Tipo</div>
+    <div class="btnrow">${ORDER.map(t=>`<button class="gbtn ${type===t?'on':''}"
       style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
       data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}</div>
 
-    <button class="btn sec2" style="margin-top:14px;${isPc?'border-color:var(--gold);color:var(--gold)':''}"
-      data-act="pc">${isPc?'✓ ':''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
+    <button class="btn sec2 ${isPc?'on':''}" data-act="pc">
+      ${isPc?'✓ ':''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
 
-    <div class="eyebrow" style="margin-top:22px">Descripción — qué es</div>
+    <div class="eyebrow mt">Descripción — qué es</div>
     <div class="acwrap">
       <div class="ed" id="edB" contenteditable="true"
         data-ph="Escribí acá. Poné @ para enlazar con otra ficha."
         oninput="onEd(this)" onkeyup="onEd(this)" onclick="onEd(this)">${toHTML(bodyTxt)}</div>
     </div>
-    <div class="eyebrow" style="margin-top:22px">Con nosotros — qué nos pasó</div>
+    <div class="eyebrow mt">Con nosotros — qué nos pasó</div>
     <div class="acwrap">
-      <div class="ed" id="edC" contenteditable="true" style="min-height:130px"
+      <div class="ed short" id="edC" contenteditable="true"
         data-ph="Lo que hicimos, lo que sospechamos, lo que nos deben."
         oninput="onEd(this)" onkeyup="onEd(this)" onclick="onEd(this)">${toHTML(noteTxt)}</div>
     </div>
@@ -395,7 +396,7 @@ function vEd(){
 function toHTML(txt){
   return esc(txt||'').replace(LK,(m,k)=>{const e=byS[k];
     return e?`<span class="tok" contenteditable="false" data-s="${att(k)}" style="--c:${TY(e).c}">`+
-      av(e,18)+`<span class="mtx">${esc(e.n)}</span></span>`:m;
+      av(e,AV.xs)+`<span class="mtx">${esc(e.n)}</span></span>`:m;
   }).replace(/\n/g,'<br>');
 }
 function fromDOM(el){
@@ -498,18 +499,17 @@ function acInner(){
     return `<div class="tp">${ORDER.map(t=>
       `<button class="tpb" style="--c:${TYT(t).c}" onmousedown="event.preventDefault()"
         data-act="mknew" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}
-      <div style="width:100%;font-family:var(--mono);font-size:10px;color:var(--dim);padding-top:6px">
-        ¿Qué tipo es "${esc(q)}"?</div></div>`;
+      <div class="tpq">¿Qué tipo es "${esc(q)}"?</div></div>`;
   const rows=hits.map(({e,via,s})=>
     `<div class="acr" onmousedown="event.preventDefault()" data-act="pick" data-v="${att(e.s)}">
-      ${av(e,30)}<div style="flex:1;min-width:0"><div class="acn">${esc(e.n)}</div>
+      ${av(e,AV.sm)}<div class="grow"><div class="acn">${esc(e.n)}</div>
       <div class="acs">${esc(TY(e).s).toUpperCase()}${via?' · POR "'+esc(via).toUpperCase()+'"':''}${
         s<.9?' · APROX':''}</div></div></div>`).join('');
   const create=q.trim()
     ? `<div class="acr" onmousedown="event.preventDefault()" data-act="acnew">
         <span class="dot" style="color:var(--location);background:var(--location)"></span>
         <div class="acnew">Crear ficha "${esc(q)}"</div></div>`:'';
-  return rows+create||`<div class="hint" style="padding:16px;margin:0">Seguí escribiendo…</div>`;
+  return rows+create||`<div class="hint">Seguí escribiendo…</div>`;
 }
 function pick(slug){
   const c=caretQ();if(!c)return;
@@ -633,7 +633,7 @@ function vGrafo(){
     .map(x=>`<option value="${att(x.s)}"${x.s===st.ent?' selected':''}>${esc(x.n)}</option>`).join('');
   return `<div class="top"><div class="topin">
       <button class="back" data-act="back">← Atrás</button>
-      <select class="sfield" id="gsel" style="flex:1" data-act="center">${opts}</select>
+      <select class="sfield" id="gsel" data-act="center">${opts}</select>
     </div></div>
   <div class="gwrap" id="gwrap">
     <canvas id="cv"></canvas>
@@ -642,9 +642,12 @@ function vGrafo(){
         <svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
       <button data-act="zoom" data-v="out" aria-label="Alejar">
         <svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
-      <button data-act="fit" aria-label="Encuadrar">
+      <button data-act="fit" aria-label="Encuadrar" title="Encuadrar">
         <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-      <button data-act="full" aria-label="Pantalla completa">
+      <button data-act="reheat" aria-label="Reordenar" title="Reordenar">
+        <svg viewBox="0 0 24 24"><path d="M20 11A8 8 0 0 0 6.3 5.7L4 8"/><path d="M4 4v4h4"/>
+          <path d="M4 13a8 8 0 0 0 13.7 5.3L20 16"/><path d="M20 20v-4h-4"/></svg></button>
+      <button data-act="full" aria-label="Pantalla completa" title="Pantalla completa">
         <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg></button>
     </div>
     <div class="ghint" id="ghint">tocá un nodo para verlo · arrastrá para mover · rueda o pellizco para zoom</div>
@@ -659,9 +662,7 @@ function gControls(){
   return b('1','1 salto',G.mode==='ego'&&G.depth===1)+
          b('2','2 saltos',G.mode==='ego'&&G.depth===2)+
          b('3','3 saltos',G.mode==='ego'&&G.depth===3)+
-         b('all','Todo',G.mode==='all')+
-         `<span class="spacer"></span>
-          <button class="gbtn" data-act="reheat">Reordenar</button>`;
+         b('all','Todo',G.mode==='all');
 }
 function gLegend(){
   return ORDER.map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
@@ -713,8 +714,8 @@ function gTick(){
     if(d2<1){dx=Math.random()-.5;dy=Math.random()-.5;d2=1}
     const d=Math.sqrt(d2);
     let f=rep/d2;
-    const minD=a.r+b.r+12;
-    if(d<minD)f+=(minD-d)*.55;              // evita que se pisen los avatares
+    const minD=a.r+b.r+16;
+    if(d<minD)f+=(minD-d)*.8;               // evita que se pisen los avatares
     const fx=dx/d*f,fy=dy/d*f;
     a.vx-=fx;a.vy-=fy;b.vx+=fx;b.vy+=fy;
   }
@@ -835,18 +836,23 @@ function gDraw(){
     cands.push({n,strong,on,x,y});
   });
   cands.sort((a,b)=>(b.strong-a.strong)||(b.n.d-a.n.d));
-  const placed=[];
-  const clashes=rc=>placed.some(p=>
-    rc.x0<p.x1&&rc.x1>p.x0&&rc.y0<p.y1&&rc.y1>p.y0);
+  /* los círculos ocupan lugar: una etiqueta no se dibuja encima de otro nodo
+     (el suyo propio no cuenta, si no ninguna encontraría lugar) */
+  const placed=G.nodes.map(n=>{
+    const r=n.r*cam.k+2,x=sxf(n.x),y=syf(n.y);
+    return{id:n.id,x0:x-r,x1:x+r,y0:y-r,y1:y+r};
+  });
+  const clashes=(rc,self)=>placed.some(p=>
+    p.id!==self&&rc.x0<p.x1&&rc.x1>p.x0&&rc.y0<p.y1&&rc.y1>p.y0);
   cands.forEach(({n,strong,on,x,y})=>{
     cx.font=(strong?'600 12.5px ':'500 11px ')+"'Inter Tight',system-ui,sans-serif";
     const t=n.e.n,w=cx.measureText(t).width,ph=strong?17:15;
-    const off=n.r*cam.k+11;
+    const off=n.r*cam.k+ph/2+7;
     let rc=null;
     for(const dy of [off,-off]){                 // primero debajo, si no arriba
       const cy=y+dy;
       const t2={x0:x-w/2-7,x1:x+w/2+7,y0:cy-ph/2-2,y1:cy+ph/2+2,cy};
-      if(!clashes(t2)){rc=t2;break}
+      if(!clashes(t2,n.id)){rc=t2;break}
     }
     if(!rc){
       if(!strong)return;                          // los secundarios se callan
@@ -905,12 +911,14 @@ function gHit(sx,sy){
 function gCard(){
   const host=document.getElementById('gcard');if(!host)return;
   const n=G.sel&&G.map[G.sel];
-  if(!n){host.innerHTML='';return}
+  const hint=document.getElementById('ghint');
+  if(!n){host.innerHTML='';if(hint)hint.hidden=false;return}
+  if(hint)hint.hidden=true;              // si no, la tarjeta lo tapa
   const e=n.e;
-  host.innerHTML=`<div class="gcard">${av(e,42,{ring:1})}
-    <div style="flex:1;min-width:0">
+  host.innerHTML=`<div class="gcard">${av(e,AV.lg,{ring:1})}
+    <div class="grow">
       <div class="gcn">${esc(e.n)}</div>
-      <div class="gcs">${esc(e.sm||TY(e).s)} · ${n.d} vínculo${n.d===1?'':'s'}</div></div>
+      <div class="gcs">${esc(TY(e).s)} · ${n.d} vínculo${n.d===1?'':'s'}</div></div>
     <button class="gco" data-go="${att(e.s)}">Abrir</button>
     <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button></div>`;
 }
