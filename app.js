@@ -1417,7 +1417,7 @@ const G={
   sel:null,selUser:false,hot:null,selEdge:null,
   picking:false,path:null,pathA:null,pathB:null,
   drag:null,panning:null,moved:false,downNode:null,
-  depth:2,mode:'ego',off:new Set(),full:false,
+  depth:2,mode:'ego',off:new Set(),full:false,panel:false,
   ro:null,pts:new Map(),pinch:null
 };
 const IMGC={};                                  // cache de imágenes para el canvas
@@ -1461,7 +1461,11 @@ function vGrafo(){
   </div>
   <div class="gctl" id="gctl">${gControls()}</div>
   <div class="glegend" id="glegend">${gLegend()}</div>
-  <div class="page"><div class="hint" id="gstat"></div></div>`;
+  <div class="page"><div class="hint" id="gstat"></div>
+    <button class="btn sec2 ${G.panel?'on':''}" data-act="gsalud">
+      ${ic('crosshair')}${G.panel?'Ocultar':'Qué falta trabajar'}</button>
+    <div id="gsalud">${G.panel?vSalud():''}</div>
+  </div>`;
 }
 function gControls(){
   const b=(v,l,on)=>`<button class="gbtn ${on?'on':''}" data-act="gmode" data-v="${v}">${l}</button>`;
@@ -1811,6 +1815,54 @@ function partirFrases(t){
   if(resto)out.push(resto);
   return out;
 }
+/* ---------- qué falta trabajar ----------
+   Nodos puente: si sacás uno, el grafo se parte en dos. En una campaña suele
+   ser el personaje que sostiene dos tramas a la vez, y casi siempre nadie se
+   dio cuenta. Es distinto de "el que más aparece": mide de qué depende el
+   resto, no cuánto se lo nombra.
+   Tarjan clásico. Con decenas de fichas la recursión no es problema. */
+function puentes(){
+  const disc={},low={},padre={},art=new Set();
+  let t=0;
+  const dfs=u=>{
+    disc[u]=low[u]=++t;
+    let hijos=0;
+    for(const v of (ADJ[u]||[])){
+      if(!disc[v]){
+        hijos++;padre[v]=u;dfs(v);
+        low[u]=Math.min(low[u],low[v]);
+        if(padre[u]!==undefined&&low[v]>=disc[u])art.add(u);
+      }else if(v!==padre[u])low[u]=Math.min(low[u],disc[v]);
+    }
+    if(padre[u]===undefined&&hijos>1)art.add(u);   // la raíz, con otra regla
+  };
+  D.forEach(e=>{if(!disc[e.s])dfs(e.s)});
+  return [...art].sort((a,b)=>deg(b)-deg(a));
+}
+function vSalud(){
+  const sueltas=D.filter(e=>deg(e.s)===0);
+  const mudas=D.filter(e=>deg(e.s)>0&&b3(e)===0);
+  const pts=puentes().map(s=>byS[s]).filter(Boolean);
+  const viejas=D.filter(e=>e.up).sort((a,b)=>new Date(a.up)-new Date(b.up)).slice(0,5);
+  const bloque=(titulo,lista,pie,extra)=>lista.length?`<div class="sec">
+    <div class="sech">${titulo}<span class="ct">${lista.length}</span></div>
+    <div class="hint">${pie}</div>
+    <div class="card">${lista.slice(0,12).map(e=>`
+      <div class="row" data-act="gcentrar" data-v="${att(e.s)}">
+        ${av(e,AV.sm)}
+        <div class="grow"><div class="rn">${esc(e.n)}</div>
+          <div class="rs">${esc(e.sm||TY(e).s)}</div></div>
+        <span class="rc">${extra?esc(extra(e)):''}</span></div>`).join('')}</div>
+  </div>`:'';
+  const cuerpo=
+    bloque('Sueltas',sueltas,'No están enlazadas con nada. Escribí @ en alguna ficha para conectarlas.')+
+    bloque('Nadie las nombra',mudas,'Ellas mencionan a otras, pero nadie las menciona a ellas. Son puntas sueltas de la historia.')+
+    bloque('Sostienen el mapa',pts,'Si sacaras una, el grafo se partiría en dos. Suelen ser las que atan dos tramas.',e=>deg(e.s)+' vínc.')+
+    bloque('Hace más que no se tocan',viejas,'Las últimas en haberse editado.',e=>cuando(e.up));
+  return cuerpo||`<div class="hint">Nada para señalar: todas las fichas están
+    conectadas y al día.</div>`;
+}
+
 /* ---------- camino entre dos fichas ----------
    "¿Cómo llegamos de este a este otro?" es la pregunta que uno hace en la
    mesa. Anchura sobre todos los vínculos, no solo los que están dibujados:
@@ -2205,6 +2257,8 @@ const ACT={
   full:gFull,
   gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();gCard();gPaint()},
   gpath:pedirCamino,
+  gsalud:()=>{G.panel=!G.panel;r()},
+  gcentrar:v=>{gCenter(v);G.panel=false;r();scrollTo(0,0)},
   center:()=>{},
   search:()=>{}
 };
