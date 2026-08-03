@@ -135,15 +135,19 @@ async function loadCamps(){
 }
 async function loadCamp(c){
   st.busy=true;r();
-  const [ents,als]=await Promise.all([
+  /* la portada se pide acá y no en loadCamps: es una imagen embebida y no
+     tiene sentido bajar la de todas las campañas para listar nombres */
+  const [ents,als,cov]=await Promise.all([
     SB.from('entities')
       .select('id,slug,type,name,summary,body,notes,status,image_url,is_party')
       .eq('campaign_id',c.id).is('archived_at',null).order('name'),
     SB.from('entity_aliases').select('alias,entities!inner(campaign_id,slug)')
-      .eq('entities.campaign_id',c.id)
+      .eq('entities.campaign_id',c.id),
+    SB.from('campaigns').select('cover_url').eq('id',c.id).single()
   ]);
   st.busy=false;
   if(ents.error){toast('No se pudieron cargar las fichas','err');return}
+  c=Object.assign({},c,{cover_url:(cov.data&&cov.data.cover_url)||null});
   const amap={};
   (als.data||[]).forEach(x=>{const s=x.entities.slug;(amap[s]=amap[s]||[]).push(x.alias)});
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
@@ -180,13 +184,19 @@ async function setCamp(i){
 function home(){hist=[];st.tab='home';st.q='';r();scrollTo(0,0)}
 
 /* ---------- toasts (sin re-render: antes borraban lo que estabas escribiendo) ---------- */
-function toast(m,kind){
-  const host=document.getElementById('toasts');if(!host)return;
+/* devuelve una función para cerrarlo antes de tiempo; con sticky no se va solo */
+function toast(m,kind,sticky){
+  const host=document.getElementById('toasts');if(!host)return()=>{};
   const d=document.createElement('div');
   d.className='toast'+(kind?' '+kind:'');
   d.textContent=m;host.appendChild(d);
-  setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .25s';
-    setTimeout(()=>d.remove(),260)},2800);
+  const cerrar=()=>{
+    if(!d.isConnected)return;
+    d.style.transition='opacity .25s';d.style.opacity='0';
+    setTimeout(()=>d.remove(),260);
+  };
+  if(!sticky)setTimeout(cerrar,2800);
+  return cerrar;
 }
 
 async function newCamp(){
@@ -276,14 +286,26 @@ function vIdx(){
     return out;
   })();
   const links=EDGES.length;
+  const cov=cur.cover_url;
+  const banner=st.q.trim()?'':`<div class="banner${cov?' has':''}"${
+      cov?` style="--cover:url('${att(cov)}')"`:''}>
+      <div class="bnact">
+        <label class="gbtn glass">${cov?'Cambiar portada':'Agregar portada'}
+          <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>
+        ${cov?`<button class="gbtn glass" data-act="nocover" title="Quitar portada"
+          aria-label="Quitar portada">✕</button>`:''}
+      </div>
+      <div class="bnin">
+        <div class="eyebrow">Campaña</div>
+        <h1>${esc(cur.name)}</h1>
+        <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>
+      </div></div>`;
   return `<div class="top"><div class="topin">
       <button class="back" data-act="home">‹ Campañas</button>
       <input class="sfield" id="q" placeholder="Buscar (aguanta errores de tipeo)"
         value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()"></div></div>
+    ${banner}
     <div class="page">
-      ${st.q.trim()?'':`<div class="eyebrow">Campaña</div>
-      <h1>${esc(cur.name)}</h1>
-      <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>`}
       ${D.length?`<div class="segrow">
         <div class="seg">
           <button class="${st.view==='list'?'on':''}" data-act="view" data-v="list">Lista</button>
@@ -424,19 +446,38 @@ function keepDraft(){
     const e=st.editing.slug?byS[st.editing.slug]:null;st.editing.pc=e?!!e.pc:false;
   }
 }
-function shrink(file){
+function shrink(file,max,q){
+  const S=max||384, Q=q||.82;
   return new Promise((res,rej)=>{
     const rd=new FileReader();
     rd.onload=()=>{const im=new Image();
-      im.onload=()=>{const S=384,sc=Math.min(S/im.width,S/im.height,1);
+      im.onload=()=>{const sc=Math.min(S/im.width,S/im.height,1);
         const w=Math.max(1,Math.round(im.width*sc)),h=Math.max(1,Math.round(im.height*sc));
         const cv=document.createElement('canvas');cv.width=w;cv.height=h;
         cv.getContext('2d').drawImage(im,0,0,w,h);
-        res(cv.toDataURL('image/jpeg',.82))};
+        res(cv.toDataURL('image/jpeg',Q))};
       im.onerror=()=>rej();im.src=rd.result};
     rd.onerror=()=>rej();rd.readAsDataURL(file);
   });
 }
+/* ---------- portada de la campaña ---------- */
+async function saveCover(url){
+  const {error}=await SB.from('campaigns').update({cover_url:url}).eq('id',cur.id);
+  if(error){toast('No se pudo guardar la portada: '+error.message,'err');return}
+  cur.cover_url=url;r();
+  toast(url?'Portada actualizada':'Portada quitada','ok');
+}
+async function upCover(ev){
+  const f=ev.target.files&&ev.target.files[0];if(!f)return;
+  ev.target.value='';                       // permite volver a elegir el mismo archivo
+  const listo=toast('Procesando la imagen…',null,true);
+  let url;
+  try{url=await shrink(f,1200,.74)}         // más ancha que un retrato: es un banner
+  catch(_){listo();toast('No se pudo leer la imagen','err');return}
+  listo();
+  await saveCover(url);
+}
+
 async function upImg(ev){
   const f=ev.target.files&&ev.target.files[0];if(!f)return;
   keepDraft();
@@ -1067,6 +1108,7 @@ const ACT={
   camp:v=>setCamp(+v),
   newcamp:newCamp,
   view:v=>{st.view=v;r()},
+  nocover:()=>saveCover(null),
   edit:v=>edit(v),
   new:()=>edit(null),
   cancel:()=>{const E=st.editing;st.editing=null;
