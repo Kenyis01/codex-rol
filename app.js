@@ -129,7 +129,7 @@ function find(q,limit=7){
 /* ---------- carga desde Supabase ---------- */
 async function loadCamps(){
   const {data,error}=await SB.from('campaigns')
-    .select('id,name,slug,blurb,party_name').order('created_at');
+    .select('id,name,slug,blurb,party_name,cover_url').order('created_at');
   if(error){st.err='No se pudo conectar con la base. Revisá la conexión y recargá.';toast('No se pudo conectar','err');return}
   st.err='';CAMPS=data||[];
 }
@@ -220,6 +220,17 @@ function prose(txt){
     })+'</p>').join('');
 }
 
+/* ---------- portada estilo libro ----------
+   Tapa vertical con lomo y sombra, no un avatar redondo. Si no hay imagen
+   (o si falla), queda la tapa en blanco con las iniciales de la campaña. */
+function book(c,extra){
+  const cov=c&&c.cover_url;
+  const cls='book'+(cov?'':' ph')+(extra?' '+extra:'');
+  const img=cov?`<img src="${att(cov)}" alt="" loading="lazy" decoding="async"
+    onerror="this.parentNode.classList.add('ph');this.remove()">`:'';
+  return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}</div>`;
+}
+
 /* ================= HOME ================= */
 function vHome(){
   const list = st.err
@@ -228,12 +239,13 @@ function vHome(){
     : CAMPS.length
     ? CAMPS.map((c,i)=>`
       <div class="row" data-act="camp" data-v="${i}">
-        <span class="dot" style="color:var(--gold);background:var(--gold)"></span>
+        ${book(c,'sm')}
         <div class="grow">
           <div class="campn">${esc(c.name)}</div>
           <div class="rs">${esc(c.blurb||'')}</div></div>
         <span class="rc">→</span></div>`).join('')
-    : `<div class="row"><div class="grow"><div class="skel" style="height:15px;width:45%"></div>
+    : `<div class="row"><div class="skel" style="width:42px;height:63px;border-radius:2px 6px 6px 2px"></div>
+       <div class="grow"><div class="skel" style="height:15px;width:45%"></div>
        <div class="skel" style="height:11px;width:70%;margin-top:8px"></div></div></div>`.repeat(3);
   return `<div class="page first">
     <div class="eyebrow">Codex</div>
@@ -287,18 +299,22 @@ function vIdx(){
   })();
   const links=EDGES.length;
   const cov=cur.cover_url;
+  /* la misma portada, desenfocada, hace de fondo del banner */
   const banner=st.q.trim()?'':`<div class="banner${cov?' has':''}"${
       cov?` style="--cover:url('${att(cov)}')"`:''}>
-      <div class="bnact">
-        <label class="gbtn glass">${cov?'Cambiar portada':'Agregar portada'}
-          <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>
-        ${cov?`<button class="gbtn glass" data-act="nocover" title="Quitar portada"
-          aria-label="Quitar portada">✕</button>`:''}
-      </div>
       <div class="bnin">
-        <div class="eyebrow">Campaña</div>
-        <h1>${esc(cur.name)}</h1>
-        <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>
+        ${book(cur)}
+        <div class="bntx">
+          <div class="eyebrow">Campaña</div>
+          <h1>${esc(cur.name)}</h1>
+          <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>
+          <div class="bnact">
+            <label class="gbtn glass">${cov?'Cambiar portada':'Agregar portada'}
+              <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>
+            ${cov?`<button class="gbtn glass" data-act="nocover" title="Quitar portada"
+              aria-label="Quitar portada">✕</button>`:''}
+          </div>
+        </div>
       </div></div>`;
   return `<div class="top"><div class="topin">
       <button class="back" data-act="home">‹ Campañas</button>
@@ -464,7 +480,12 @@ function shrink(file,max,q){
 async function saveCover(url){
   const {error}=await SB.from('campaigns').update({cover_url:url}).eq('id',cur.id);
   if(error){toast('No se pudo guardar la portada: '+error.message,'err');return}
-  cur.cover_url=url;r();
+  cur.cover_url=url;
+  /* la lista de campañas tiene su propia copia: sin esto la home seguiría
+     mostrando la tapa vieja hasta recargar */
+  const i=CAMPS.findIndex(c=>c.id===cur.id);
+  if(i>=0)CAMPS[i]=Object.assign({},CAMPS[i],{cover_url:url});
+  r();
   toast(url?'Portada actualizada':'Portada quitada','ok');
 }
 async function upCover(ev){
@@ -472,7 +493,7 @@ async function upCover(ev){
   ev.target.value='';                       // permite volver a elegir el mismo archivo
   const listo=toast('Procesando la imagen…',null,true);
   let url;
-  try{url=await shrink(f,1200,.74)}         // más ancha que un retrato: es un banner
+  try{url=await shrink(f,900,.78)}          // tapa de libro: se ve chica y desenfocada de fondo
   catch(_){listo();toast('No se pudo leer la imagen','err');return}
   listo();
   await saveCover(url);

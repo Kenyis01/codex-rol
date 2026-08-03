@@ -201,32 +201,57 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 /* separación después de un texto de apoyo, según qué venga a continuación */
 .hint + .card,.hint + .cgrid,.hint + .segrow,.hint + .grp,.hint + .empty{margin-top:var(--s6)}
 
-/* ============ portada de campaña ============
-   La imagen va en un ::before para poder atenuarla sin tocar el texto, y el
-   degradado del ::after garantiza contraste sea cual sea la foto que suban. */
-.banner{position:relative;overflow:hidden;display:flex;align-items:flex-end;
-  min-height:clamp(182px,32vw,260px);
-  padding:var(--s8) var(--gut) var(--s5);
+/* ============ portada de campaña, estilo libro ============
+   Tapa vertical (2:3) con lomo, canto de hojas y sombra proyectada, como una
+   tapa en una mesa de librería. Nada de círculos: el resto de la app usa
+   avatares redondos y la portada tiene que leerse distinta. */
+.book{--bw:96px;position:relative;flex:none;width:var(--bw);aspect-ratio:2/3;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  border-radius:2px 7px 7px 2px;
+  background:linear-gradient(150deg,var(--surf3),var(--surf));
+  box-shadow:0 16px 32px rgba(0,0,0,.5), 0 3px 9px rgba(0,0,0,.42),
+             inset 0 0 0 1px rgba(237,231,218,.10)}
+.book.sm{--bw:42px;border-radius:1px 4px 4px 1px;
+  box-shadow:0 6px 14px rgba(0,0,0,.45),inset 0 0 0 1px rgba(237,231,218,.10)}
+.book img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  display:block;z-index:1}
+/* lomo: sombra del pliegue más una luz en el filo */
+.book::before{content:'';position:absolute;left:0;top:0;bottom:0;width:9%;z-index:2;
+  background:linear-gradient(to right,rgba(0,0,0,.5),rgba(0,0,0,.1) 44%,
+    rgba(255,255,255,.14) 58%,rgba(0,0,0,.18) 74%,transparent)}
+/* barniz: un brillo diagonal muy tenue */
+.book::after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:linear-gradient(118deg,rgba(255,255,255,.15),transparent 38%)}
+.bkini{font-family:var(--title);font-weight:600;letter-spacing:.08em;
+  font-size:calc(var(--bw) * .24);color:rgba(224,178,92,.5);line-height:1}
+/* tapa sin imagen: un recuadro grabado, como una encuadernación lisa */
+.book.ph{background:linear-gradient(150deg,#242C3A,#151A22)}
+.book.ph .bkini{padding:calc(var(--bw) * .1) calc(var(--bw) * .07);
+  box-shadow:0 0 0 1px rgba(224,178,92,.22),0 0 0 4px rgba(224,178,92,.07)}
+.book.sm.ph .bkini{box-shadow:0 0 0 1px rgba(224,178,92,.22)}
+
+.banner{position:relative;overflow:hidden;padding:var(--s6) var(--gut);
   border-bottom:1px solid var(--line);
   background:linear-gradient(150deg,var(--surf2),var(--surf))}
-.banner::before{content:'';position:absolute;inset:0;
+/* el fondo es la misma portada, ampliada y desenfocada */
+.banner::before{content:'';position:absolute;inset:-12%;
   background-image:var(--cover);background-size:cover;background-position:center;
-  transform:scale(1.02)}
-.banner::after{content:'';position:absolute;inset:0;background:linear-gradient(
-  to top,rgba(13,16,21,.94) 0%,rgba(13,16,21,.72) 42%,rgba(13,16,21,.32) 100%)}
+  filter:blur(30px) saturate(140%);opacity:.5}
+.banner::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(13,16,21,.9),rgba(13,16,21,.55))}
 /* sin portada: apenas un resplandor, sin degradado que oscurezca de más */
-.banner:not(.has)::before{background:radial-gradient(120% 100% at 20% 0%,
-  rgba(224,178,92,.13),transparent 65%)}
+.banner:not(.has)::before{inset:0;filter:none;opacity:1;
+  background:radial-gradient(120% 100% at 20% 0%,rgba(224,178,92,.13),transparent 65%)}
 .banner:not(.has)::after{background:none}
-.banner > *{position:relative;z-index:1}
-.bnin{min-width:0}
-.bnin h1{text-shadow:0 2px 18px rgba(13,16,21,.6)}
-.bnin .hint{margin-top:var(--s2)}
-.bnact{position:absolute;top:var(--s3);right:var(--gut);z-index:2;
-  display:flex;gap:var(--s2)}
+.bnin{position:relative;z-index:1;display:flex;gap:var(--s5);align-items:flex-end}
+.bntx{min-width:0;flex:1}
+.bntx h1{text-shadow:0 2px 20px rgba(13,16,21,.75)}
+.bntx .hint{margin-top:var(--s2)}
+.bnact{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)}
 .gbtn.glass{background:rgba(13,16,21,.62);backdrop-filter:blur(10px);
   border-color:rgba(237,231,218,.22);color:var(--ink)}
 .gbtn.glass:hover{background:rgba(13,16,21,.82);border-color:rgba(237,231,218,.4)}
+@media(min-width:680px){.banner .book{--bw:132px}}
 
 /* ============ ficha ============ */
 .hero{display:flex;gap:var(--s4);align-items:center;margin-bottom:var(--s4)}
