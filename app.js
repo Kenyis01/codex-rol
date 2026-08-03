@@ -358,7 +358,7 @@ function vIdx(){
           <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>
           <div class="bnact">
             ${quienes().length?`<button class="gbtn glass yo" data-act="pickme">${
-              yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>Sos '+esc(yo().n)+'</span>'
+              yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>'+esc(yo().n)+'</span>'
                  :'<span>¿Quién sos?</span>'}</button>`:''}
             <button class="gbtn glass" data-act="edcamp">Editar campaña</button>
             ${cov?'':`<label class="gbtn glass">Agregar portada
