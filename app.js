@@ -20,7 +20,8 @@ const TY=e=>(e&&TYPES[e.t])||FALLBACK;
 const TYT=t=>TYPES[t]||FALLBACK;
 
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
-let st={tab:'home',ent:null,q:'',editing:null,ac:null,acPick:null,busy:false,view:'list',err:''};
+let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,ac:null,acPick:null,
+        busy:false,view:'list',err:''};
 let hist=[];
 const app=document.getElementById('app');
 
@@ -165,17 +166,17 @@ function go(id){
   if(!byS[id])return;
   hist.push({tab:st.tab,ent:st.ent});
   if(hist.length>60)hist.shift();
-  st.ent=id;st.tab='ficha';st.editing=null;r();scrollTo(0,0);
+  st.ent=id;st.tab='ficha';st.editing=null;st.ecamp=null;r();scrollTo(0,0);
 }
 function tab(t){
   hist.push({tab:st.tab,ent:st.ent});
   if(hist.length>60)hist.shift();
-  st.tab=t;st.editing=null;st.q='';r();scrollTo(0,0);
+  st.tab=t;st.editing=null;st.ecamp=null;st.q='';r();scrollTo(0,0);
 }
 function back(){
   const prev=hist.pop();
   if(prev){st.tab=prev.tab;st.ent=prev.ent}else st.tab='idx';
-  st.editing=null;r();scrollTo(0,0);
+  st.editing=null;st.ecamp=null;r();scrollTo(0,0);
 }
 async function setCamp(i){
   hist=[];st.ent=null;await loadCamp(CAMPS[i]);
@@ -309,10 +310,9 @@ function vIdx(){
           <h1>${esc(cur.name)}</h1>
           <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>
           <div class="bnact">
-            <label class="gbtn glass">${cov?'Cambiar portada':'Agregar portada'}
-              <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>
-            ${cov?`<button class="gbtn glass" data-act="nocover" title="Quitar portada"
-              aria-label="Quitar portada">✕</button>`:''}
+            <button class="gbtn glass" data-act="edcamp">Editar campaña</button>
+            ${cov?'':`<label class="gbtn glass">Agregar portada
+              <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>`}
           </div>
         </div>
       </div></div>`;
@@ -372,6 +372,76 @@ function vFicha(){
     <div class="sec"><button class="btn sec2" data-act="graphof" data-v="${att(e.s)}">
       Ver en el grafo</button></div>
   </div>`;
+}
+
+/* ================= EDITAR CAMPAÑA ================= */
+function editCamp(){st.ecamp={};st.tab='edcamp';r();scrollTo(0,0)}
+/* mismo criterio que el editor de fichas: rescatar lo tipeado antes de
+   cualquier re-render, si no un toast o una subida de portada lo borran */
+function keepCampDraft(){
+  if(!st.ecamp)return;
+  const g=id=>{const el=document.getElementById(id);return el?el.value:undefined};
+  const n=g('cn'),b=g('cb'),p=g('cp');
+  if(n!==undefined)st.ecamp.dn=n;
+  if(b!==undefined)st.ecamp.db=b;
+  if(p!==undefined)st.ecamp.dp=p;
+}
+function vEdCamp(){
+  const E=st.ecamp;
+  const name =E.dn!==undefined?E.dn:(cur.name||'');
+  const blurb=E.db!==undefined?E.db:(cur.blurb||'');
+  const party=E.dp!==undefined?E.dp:(cur.party_name||'');
+  const cov=cur.cover_url;
+  return `<div class="top"><div class="topin">
+      <button class="back" data-act="cancelcamp">← Cancelar</button>
+      <span class="tag push">EDITANDO CAMPAÑA</span></div></div>
+  <div class="page">
+    <div class="eyebrow">Portada</div>
+    <div class="imgrow">
+      ${book({name:name||'?',cover_url:cov})}
+      <div class="grow">
+        <div class="btnrow even">
+          <label class="btn sec2">${cov?'Cambiar':'Elegir tapa'}
+            <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>
+          ${cov?`<button class="btn sec2" data-act="nocover">Quitar</button>`:''}
+        </div>
+        <div class="hint">Conviene una imagen vertical: se recorta en proporción
+          de tapa de libro. La portada se guarda apenas la elegís.</div>
+      </div></div>
+
+    <div class="eyebrow mt">Nombre</div>
+    <input class="sfield" id="cn" value="${att(name)}" placeholder="Nombre de la campaña">
+
+    <div class="eyebrow mt">Descripción corta</div>
+    <input class="sfield" id="cb" value="${att(blurb)}" placeholder="Una línea que la resuma">
+    <div class="hint">Es lo que se lee debajo del nombre en la lista de campañas.</div>
+
+    <div class="eyebrow mt">Cómo se llama el grupo</div>
+    <input class="sfield" id="cp" value="${att(party)}" placeholder="Nuestro grupo">
+    <div class="hint">Las fichas marcadas como del grupo se juntan bajo este título,
+      en el índice y en cada ficha.</div>
+
+    <button class="btn pri" data-act="savecamp" ${st.busy?'disabled':''}>
+      ${st.busy?'Guardando…':'Guardar'}</button>
+  </div>`;
+}
+async function saveCamp(){
+  if(st.busy)return;
+  keepCampDraft();
+  const name=(st.ecamp.dn!==undefined?st.ecamp.dn:cur.name||'').trim();
+  if(!name){toast('Falta el nombre','err');return}
+  const blurb=(st.ecamp.db!==undefined?st.ecamp.db:cur.blurb||'').trim();
+  const party=(st.ecamp.dp!==undefined?st.ecamp.dp:cur.party_name||'').trim();
+  st.busy=true;r();
+  const {error}=await SB.from('campaigns')
+    .update({name,blurb,party_name:party||null}).eq('id',cur.id);
+  st.busy=false;
+  if(error){toast('No se guardó: '+error.message,'err');r();return}
+  Object.assign(cur,{name,blurb,party_name:party||null});
+  const i=CAMPS.findIndex(c=>c.id===cur.id);
+  if(i>=0)CAMPS[i]=Object.assign({},CAMPS[i],{name,blurb,party_name:party||null});
+  st.ecamp=null;st.tab='idx';r();scrollTo(0,0);
+  toast('Campaña actualizada','ok');
 }
 
 /* ================= EDITOR ================= */
@@ -1099,6 +1169,7 @@ function restFocus(f){
 function r(){
   /* si veníamos del editor, primero rescatamos lo tipeado */
   if(RENDERED==='ed'&&st.editing&&st.editing._live)keepDraft();
+  if(RENDERED==='edcamp'&&st.ecamp)keepCampDraft();
   if(RENDERED==='grafo')gStop();
   if(G.full){G.full=false;document.body.style.overflow=''}
   const f=snapFocus();
@@ -1110,7 +1181,8 @@ function r(){
   if((st.tab==='ficha'||st.tab==='grafo')&&!byS[st.ent]&&st.tab!=='grafo')st.tab='idx';
   if(st.tab==='ficha'&&!byS[st.ent])st.tab='idx';
   if(st.tab==='ed'&&!st.editing)st.tab='idx';
-  const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd}[st.tab]||vIdx;
+  if(st.tab==='edcamp'&&!st.ecamp)st.tab='idx';
+  const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp}[st.tab]||vIdx;
   app.innerHTML=v();
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
   document.getElementById('nav').innerHTML=[['idx','Índice'],['grafo','Grafo'],['nueva','Nueva']]
@@ -1130,6 +1202,9 @@ const ACT={
   newcamp:newCamp,
   view:v=>{st.view=v;r()},
   nocover:()=>saveCover(null),
+  edcamp:editCamp,
+  savecamp:saveCamp,
+  cancelcamp:()=>{st.ecamp=null;st.tab='idx';r();scrollTo(0,0)},
   edit:v=>edit(v),
   new:()=>edit(null),
   cancel:()=>{const E=st.editing;st.editing=null;
