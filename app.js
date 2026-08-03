@@ -420,8 +420,8 @@ function vEdCamp(){
     <div class="hint">Las fichas marcadas como del grupo se juntan bajo este título,
       en el índice y en cada ficha.</div>
 
-    <button class="btn pri" data-act="savecamp" ${st.busy?'disabled':''}>
-      ${st.busy?'Guardando…':'Guardar'}</button>
+    <div class="savebar"><button class="btn pri" data-act="savecamp" ${st.busy?'disabled':''}>
+      ${st.busy?'Guardando…':'Guardar'}</button></div>
   </div>`;
 }
 async function saveCamp(){
@@ -499,8 +499,8 @@ function vEd(){
     <div class="hint">Escribí @ y las primeras letras. Encuentra igual si le errás.<br>
       Para sacar un nombre ya enlazado, tocalo una vez (queda marcado) y tocalo de nuevo.
       La tecla de borrar también funciona.</div>
-    <button class="btn pri" data-act="save" ${st.busy?'disabled':''}>
-      ${st.busy?'Guardando…':'Guardar'}</button>
+    <div class="savebar"><button class="btn pri" data-act="save" ${st.busy?'disabled':''}>
+      ${st.busy?'Guardando…':'Guardar'}</button></div>
   </div>`;
 }
 function toHTML(txt){
