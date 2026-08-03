@@ -216,8 +216,10 @@ function prose(txt){
     '<p>'+esc(p).replace(LK,(m,k)=>{
       const e=byS[k];
       if(!e)return m;
-      return `<a class="men" data-go="${att(k)}" style="--c:${TY(e).c}" title="${att(TY(e).s)}">`+
-             av(e,'em')+`<span class="mtx">${esc(e.n)}</span></a>`;
+      /* dentro del párrafo va solo el nombre subrayado: el avatar acá metía
+         ruido y cortaba la lectura. En el resto de la app sí se muestra. */
+      return `<a class="men" data-go="${att(k)}" style="--c:${TY(e).c}"
+        title="${att(TY(e).s)}">${esc(e.n)}</a>`;
     })+'</p>').join('');
 }
 

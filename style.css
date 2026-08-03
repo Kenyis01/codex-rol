@@ -143,14 +143,25 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
 .av.big{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c,#95A1B4) 40%,transparent),
   0 10px 30px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.04)}
 
-/* ============ menciones y tokens ============
-   Van como texto: `display:inline`, no inline-flex. Es la diferencia
-   entre que la mención se apoye en la misma línea base que la frase o
-   que el navegador le invente una desde el borde inferior de la caja.
-   Además, el relleno vertical de un elemento inline no agranda la línea,
-   así que una mención nunca separa un renglón del siguiente.
-   Todo se mide en em para que siga el cuerpo del texto que la contiene. */
-.men,.tok{display:inline;white-space:nowrap;cursor:pointer;
+/* ============ menciones en la prosa ============
+   Dentro de un párrafo la mención es texto: el nombre en el color del tipo y
+   subrayado, sin avatar ni píldora. Con subrayado real (no un borde) para que
+   parta bien si el nombre cae en el corte de renglón, y sin ninguna caja que
+   pueda alterar el interlineado. */
+.men{color:var(--c);font-weight:500;cursor:pointer;
+  text-decoration:underline;
+  text-decoration-color:color-mix(in srgb,var(--c) 45%,transparent);
+  text-decoration-thickness:1.5px;text-underline-offset:.18em;
+  transition:text-decoration-color .15s,color .15s}
+.men:hover{text-decoration-color:var(--c)}
+
+/* ============ tokens del editor ============
+   Acá sí van como píldora con avatar: hay que poder verlos y tocarlos para
+   sacarlos, así que necesitan cuerpo. Van como `display:inline`, no
+   inline-flex, para apoyarse en la misma línea base que la frase; el relleno
+   vertical de un elemento inline tampoco agranda el renglón.
+   Todo en em para que sigan el cuerpo del texto que los contiene. */
+.tok{display:inline;white-space:nowrap;cursor:pointer;
   /* Relleno vertical asimétrico a propósito: la caja de un elemento inline se
      apoya en las métricas de la fuente, que sobresalen mucho más por arriba de
      la línea base que por abajo. Con relleno parejo el fondo queda alto.
@@ -160,10 +171,7 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   box-decoration-break:clone;-webkit-box-decoration-break:clone;
   font-size:inherit;font-weight:500;color:var(--c);text-decoration:none;
   background:color-mix(in srgb,var(--c) 13%,transparent);
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 27%,transparent);
-  transition:background .15s,box-shadow .15s}
-.men:hover{background:color-mix(in srgb,var(--c) 22%,transparent);
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 52%,transparent)}
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 27%,transparent)}
 .tok.sel{box-shadow:inset 0 0 0 1px var(--c),
   0 0 0 2px color-mix(in srgb,var(--c) 35%,transparent)}
 .tok.sel::after{content:'✕';font-family:var(--mono);font-size:.72em;
