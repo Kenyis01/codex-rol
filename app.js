@@ -50,18 +50,15 @@ function av(e,size,o){
   if(!e) return '';
   o=o||{};
   const c=TY(e).c;
-  /* size 'em': el avatar se mide en relación al texto que lo rodea. Lo usan las
-     menciones en línea, que tienen que seguir el cuerpo del párrafo. */
-  const em=size==='em';
-  const one=em||size<30;                               // en chico, una sola letra
+  const one=size<30;                                   // en chico, una sola letra
   const ini=initials(e.n,one);
-  const cls='av'+(em?' em':'')+(o.sq?' sq':'')+(o.ring?' ring':'')+(o.big?' big':'');
-  const style=em?`--c:${c}`:`--c:${c};width:${size}px;height:${size}px`;
-  const ifs=em?'':` style="font-size:${Math.max(9,Math.round(size*(one?.46:.38)))}px"`;
+  const cls='av'+(o.sq?' sq':'')+(o.ring?' ring':'')+(o.big?' big':'');
+  const fs=Math.max(9,Math.round(size*(one?.46:.38)));
   const img=e.img
     ? `<img src="${att(e.img)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
     : '';
-  return `<span class="${cls}" style="${style}"><span class="avi"${ifs}>${esc(ini)}</span>${img}</span>`;
+  return `<span class="${cls}" style="--c:${c};width:${size}px;height:${size}px">`+
+    `<span class="avi" style="font-size:${fs}px">${esc(ini)}</span>${img}</span>`;
 }
 
 /* ---------- índices derivados ---------- */
@@ -508,8 +505,8 @@ function vEd(){
 }
 function toHTML(txt){
   return esc(txt||'').replace(LK,(m,k)=>{const e=byS[k];
-    return e?`<span class="tok" contenteditable="false" data-s="${att(k)}" style="--c:${TY(e).c}">`+
-      av(e,'em')+`<span class="mtx">${esc(e.n)}</span></span>`:m;
+    return e?`<span class="tok" contenteditable="false" data-s="${att(k)}"`+
+      ` style="--c:${TY(e).c}">${esc(e.n)}</span>`:m;
   }).replace(/\n/g,'<br>');
 }
 function fromDOM(el){
@@ -655,7 +652,7 @@ function pick(slug){
   const sp=document.createElement('span');
   sp.className='tok';sp.contentEditable='false';sp.dataset.s=slug;
   sp.style.setProperty('--c',TY(e).c);
-  sp.innerHTML=av(e,'em')+`<span class="mtx">${esc(e.n)}</span>`;
+  sp.textContent=e.n;
   const sep=document.createTextNode('\u00a0');
   rg.insertNode(sep);rg.insertNode(sp);
   const nr=document.createRange();nr.setStartAfter(sep);nr.collapse(true);
