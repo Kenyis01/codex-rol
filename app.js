@@ -14,6 +14,9 @@ const TYPES={
   creature :{l:'Criaturas' ,s:'Criatura' ,c:'#6F9AD6'}
 };
 const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3'};
+/* La base acepta solo estos cuatro estados (o ninguno); acá van sus nombres */
+const STATUS={alive:'Vivo',dead:'Muerto',missing:'Desaparecido',unknown:'Se desconoce'};
+const STORDER=['alive','dead','missing','unknown'];
 const ORDER=['character','faction','location','item','creature'];
 /* nunca explota si la base trae un tipo que no conocemos */
 const TY=e=>(e&&TYPES[e.t])||FALLBACK;
@@ -137,7 +140,7 @@ async function loadCamp(c){
      tiene sentido bajar la de todas las campañas para listar nombres */
   const [ents,als,cov]=await Promise.all([
     SB.from('entities')
-      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party')
+      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,tags')
       .eq('campaign_id',c.id).is('archived_at',null).order('name'),
     SB.from('entity_aliases').select('alias,entities!inner(campaign_id,slug)')
       .eq('entities.campaign_id',c.id),
@@ -149,7 +152,7 @@ async function loadCamp(c){
   const amap={};
   (als.data||[]).forEach(x=>{const s=x.entities.slug;(amap[s]=amap[s]||[]).push(x.alias)});
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
-    b:e.body||'',c:e.notes||'',st:e.status,img:e.image_url,pc:e.is_party?1:0,a:amap[e.slug]||[]}));
+    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],img:e.image_url,pc:e.is_party?1:0,a:amap[e.slug]||[]}));
   cur=c;rebuild();
   G.pos={};G.sel=null;                 // el grafo arranca limpio en cada campaña
   if(!st.ent||!byS[st.ent]){
@@ -350,7 +353,8 @@ function vFicha(){
           ${e.pc?esc(cur.party_name||'Nuestro grupo'):esc(TY(e).s)}</div>
         <h1>${esc(e.n)}</h1></div></div>
     ${e.a&&e.a.length?`<div class="aka">también: ${e.a.map(esc).join(' · ')}</div>`:''}
-    <div class="meta">${e.st?`<span class="chip acc" style="--c:${c}">${esc(e.st)}</span>`:''}
+    <div class="meta">${e.st?`<span class="chip acc" style="--c:${c}">${esc(STATUS[e.st]||e.st)}</span>`:''}
+      ${(e.tg||[]).map(t=>`<span class="chip mine">${esc(t)}</span>`).join('')}
       <span class="chip">${bl.length} menciones</span>
       <span class="chip">${rel.length} conexiones</span></div>
     <div class="prose">${prose(e.b)||'<p style="color:var(--dim)">Sin descripción todavía.</p>'}</div>
@@ -445,7 +449,11 @@ async function saveCamp(){
 
 /* ================= EDITOR ================= */
 function edit(slug){
-  st.editing={slug:slug||null,isNew:!slug};   // objeto nuevo: sin _live, no arrastra borradores
+  const e=slug?byS[slug]:null;
+  /* objeto nuevo: sin _live, no arrastra borradores. Estado y etiquetas se
+     copian de entrada porque se editan tocando botones, no escribiendo. */
+  st.editing={slug:slug||null,isNew:!slug,
+    stt:(e&&e.st)||null, tags:((e&&e.tg)||[]).slice()};
   st.tab='ed';st.ac=null;st.acPick=null;r();scrollTo(0,0);
 }
 function vEd(){
@@ -483,6 +491,23 @@ function vEd(){
 
     <button class="btn sec2 ${isPc?'on':''}" data-act="pc">
       ${isPc?'✓ ':''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
+
+    <div class="eyebrow mt">Estado</div>
+    <div class="btnrow">
+      <button class="gbtn ${!E.stt?'on':''}" data-act="stt" data-v="">Sin estado</button>
+      ${STORDER.map(k=>`<button class="gbtn ${E.stt===k?'on':''}"
+        data-act="stt" data-v="${k}">${esc(STATUS[k])}</button>`).join('')}
+    </div>
+
+    <div class="eyebrow mt">Etiquetas</div>
+    <div class="tagbox">
+      ${(E.tags||[]).map((t,i)=>`<span class="tagch">${esc(t)}<button data-act="rmtag"
+        data-v="${i}" aria-label="Quitar ${att(t)}">✕</button></span>`).join('')}
+      <input class="taginput" id="tagin" placeholder="Agregar etiqueta"
+        onkeydown="tagKey(event)" onblur="tagAdd(this)">
+    </div>
+    <div class="hint">Escribí y presioná Enter. Va donde el estado no alcanza:
+      "revivido", "nos debe plata", "no confiar".</div>
 
     <div class="eyebrow mt">Descripción — qué es</div>
     <div class="acwrap">
@@ -531,6 +556,21 @@ function keepDraft(){
     const e=st.editing.slug?byS[st.editing.slug]:null;st.editing.pc=e?!!e.pc:false;
   }
 }
+/* ---------- etiquetas ---------- */
+function tagAdd(el){
+  const v=(el.value||'').trim();
+  el.value='';
+  if(!v||!st.editing)return false;
+  const t=st.editing.tags=st.editing.tags||[];
+  if(t.some(x=>nm(x)===nm(v)))return false;   // no repetir
+  t.push(v);return true;
+}
+function tagKey(ev){
+  if(ev.key!=='Enter'&&ev.key!==',')return;
+  ev.preventDefault();
+  if(tagAdd(ev.target))r();
+}
+
 function shrink(file,max,q){
   const S=max||384, Q=q||.82;
   return new Promise((res,rej)=>{
@@ -694,16 +734,19 @@ async function save(){
   const img=E.img!==undefined?E.img:(e?e.img:null);
   const pc=E.pc!==undefined?!!E.pc:(e?!!e.pc:false);
   const summary=autoSummary(body);
+  // una etiqueta a medio escribir en el campo también cuenta
+  tagAdd(document.getElementById('tagin')||{value:''});
+  const status=E.stt||null, tags=(E.tags||[]).slice();
   const before=e?new Set([...(ADJ[e.s]||[])]):new Set();
   st.busy=true;r();
   let res;
   if(e&&e.id){
-    res=await SB.from('entities').update({name,body,notes,type,summary,image_url:img,is_party:pc})
+    res=await SB.from('entities').update({name,body,notes,type,summary,status,tags,image_url:img,is_party:pc})
       .eq('id',e.id).select().single();
   }else{
     let slug=slugify(name)||('f'+Date.now());
     if(byS[slug])slug=slug+'-'+Date.now().toString(36).slice(-4);
-    res=await SB.from('entities').insert({campaign_id:cur.id,slug,type,name,summary,
+    res=await SB.from('entities').insert({campaign_id:cur.id,slug,type,name,summary,status,tags,
       body,notes,image_url:img,is_party:pc}).select().single();
   }
   st.busy=false;
@@ -1220,6 +1263,8 @@ const ACT={
     if(E&&E.slug&&byS[E.slug]){st.tab='ficha';st.ent=E.slug;r();scrollTo(0,0)}else tab('idx')},
   save,
   type:v=>{keepDraft();st.editing.type=v;r()},
+  stt:v=>{keepDraft();st.editing.stt=v||null;r()},
+  rmtag:v=>{keepDraft();(st.editing.tags||[]).splice(+v,1);r()},
   pc:()=>{keepDraft();st.editing.pc=!st.editing.pc;r()},
   noimg:()=>{keepDraft();st.editing.img=null;r()},
   img:v=>openImg(v),

@@ -194,6 +194,27 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   background:var(--surf);border:1px solid var(--line);border-radius:var(--rf)}
 .chip.acc{color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);
   border-color:color-mix(in srgb,var(--c) 30%,transparent)}
+/* etiquetas puestas a mano: se leen más fuerte que menciones y conexiones,
+   que son números calculados */
+.chip.mine{color:var(--ink);background:var(--surf2);border-color:var(--line2)}
+
+/* ---- editor de etiquetas ---- */
+.tagbox{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;
+  min-height:var(--h-md);padding:var(--s2);background:var(--surf);
+  border:1px solid var(--line);border-radius:var(--r2)}
+.tagbox:focus-within{border-color:rgba(224,178,92,.55);
+  box-shadow:0 0 0 3px rgba(224,178,92,.10)}
+.tagch{display:inline-flex;align-items:center;gap:var(--s1);height:var(--h-chip);
+  padding:0 var(--s1) 0 var(--s3);border-radius:var(--rf);
+  background:var(--surf3);border:1px solid var(--line2);color:var(--ink);
+  font-family:var(--mono);font-size:var(--f-xs);line-height:1;white-space:nowrap}
+.tagch button{width:20px;height:20px;padding:0;border:none;background:none;
+  color:var(--dim);font-size:var(--f-xs);cursor:pointer;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;line-height:1}
+.tagch button:hover{color:var(--ink);background:rgba(237,231,218,.12)}
+.taginput{flex:1;min-width:120px;height:var(--h-chip);border:none;background:none;
+  color:var(--ink);font-family:var(--body);font-size:var(--f-md);outline:none;padding:0 var(--s2)}
+.taginput::placeholder{color:var(--dim)}
 .prose{font-size:var(--f-base);line-height:var(--lh-body);color:var(--ink2)}
 .prose p{margin:0 0 var(--s4)}
 .prose p:last-child{margin:0}
