@@ -51,6 +51,9 @@
   /* ---- otros ---- */
   --appmax:560px;
   --shadow:0 18px 44px rgba(0,0,0,.45);
+  /* onda de los rótulos de sección: un período de 18px que se repite en x.
+     Va como máscara, así toma el color del rótulo (gris o el del tipo). */
+  --wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='9' viewBox='0 0 18 9'%3E%3Cpath d='M0 4.5q4.5-5 9 0t9 0' fill='none' stroke='%23000' stroke-width='1.35' stroke-linecap='round'/%3E%3C/svg%3E");
   --navh:calc(72px + env(safe-area-inset-bottom));
   --gut:var(--s4);          /* margen lateral de página */
 }
@@ -182,6 +185,17 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .eyebrow,.sech,.grph{font-family:var(--title);font-size:var(--f-xs);font-weight:600;
   letter-spacing:var(--track);text-transform:uppercase;line-height:var(--lh-snug)}
 .eyebrow{color:var(--muted);margin-bottom:var(--s2)}
+/* Rótulo de sección: el título al medio y una onda a cada lado.
+   La onda es una máscara, así toma el color del propio rótulo — gris en las
+   secciones, el color del tipo en los grupos del índice. */
+.sech,.grph{display:flex;align-items:center;justify-content:center;
+  gap:var(--s4);text-align:center}
+.sech::before,.sech::after,.grph::before,.grph::after{
+  content:'';flex:1 1 24px;min-width:14px;height:9px;
+  background-color:currentColor;opacity:.42;
+  -webkit-mask-image:var(--wave);mask-image:var(--wave);
+  -webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;
+  -webkit-mask-position:center;mask-position:center}
 .aka{font-family:var(--mono);font-size:var(--f-sm);color:var(--dim);margin-top:var(--s3)}
 .meta{display:flex;gap:var(--s2);flex-wrap:wrap;margin:var(--s4) 0 var(--s5)}
 .aka + .meta{margin-top:var(--s3)}
@@ -194,8 +208,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .prose p{margin:0 0 var(--s4)}
 .prose p:last-child{margin:0}
 .sec{margin-top:var(--s7)}
-.sech{color:var(--muted);display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4)}
-.sech::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--line),transparent)}
+.sech{color:var(--muted);margin-bottom:var(--s4)}
 .hint{font-family:var(--mono);font-size:var(--f-sm);color:var(--dim);
   line-height:var(--lh-snug);margin:var(--s3) 0 0}
 /* separación después de un texto de apoyo, según qué venga a continuación */
@@ -282,10 +295,9 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 
 /* ============ listas y cards ============ */
 .grp{margin-bottom:var(--s6)}
-.grph{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s3)}
+.grph{margin-bottom:var(--s3)}
 .grph .ct{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
   letter-spacing:0;font-weight:400}
-.grph::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--line),transparent)}
 .card{background:var(--surf);border:1px solid var(--line);border-radius:var(--r3);overflow:hidden}
 .row{display:flex;gap:var(--s3);align-items:center;cursor:pointer;
   padding:var(--s3) var(--s4);border-bottom:1px solid var(--line);transition:background .14s}
