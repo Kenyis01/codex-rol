@@ -106,6 +106,13 @@ body{
 .back:active,.btn:active,.gbtn:active,.lgb:active,.gzoom button:active,.tpb:active,.gco:active{
   transform:scale(.97)}
 
+/* ============ iconos ============
+   Los de game-icons.net vienen macizos en una caja de 512. Se pintan con
+   el color del control que los contiene y cada contexto decide el tamaño:
+   así un icono nunca queda con un color o un peso que no le corresponde. */
+.gi{display:block;flex:none;fill:currentColor;stroke:none}
+.gi.r{transform:rotate(-90deg)}   /* la flecha, apuntando a la derecha */
+
 /* ============ barra superior ============ */
 .top{position:sticky;top:0;z-index:20;
   background:linear-gradient(to bottom,rgba(13,16,21,.96),rgba(13,16,21,.86));
@@ -114,13 +121,22 @@ body{
   padding:var(--s3) var(--gut);padding-top:calc(var(--s3) + env(safe-area-inset-top))}
 /* botón y campo comparten alto: la barra superior queda pareja */
 .back{height:var(--h-md);flex:none;background:var(--surf);border-color:var(--line);
-  color:var(--muted);border-radius:var(--r2);padding:0 var(--s4);
+  color:var(--muted);border-radius:var(--r2);padding:0 var(--s4);gap:var(--s2);
   font-size:var(--f-md);font-weight:500}
+.back .gi{width:15px;height:15px}
+/* con icono el botón arranca antes: el dibujo ya aporta el aire de la izquierda */
+.back:has(.gi){padding-left:var(--s3)}
 @media(hover:hover){.back:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
 .sfield{height:var(--h-md);width:100%;background:var(--surf);border-color:var(--line);
   color:var(--ink);border-radius:var(--r2);padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--body);outline:none}
 .topin .sfield{flex:1}
+/* el buscador lleva la lupa adentro, a la izquierda */
+.searchw{position:relative;flex:1;display:flex}
+.searchw .gi{position:absolute;left:var(--s4);top:50%;margin-top:-8px;
+  width:16px;height:16px;color:var(--dim);pointer-events:none}
+.searchw .sfield{padding-left:calc(var(--s4) + 16px + var(--s2))}
+.searchw:focus-within .gi{color:var(--gold)}
 .tag{flex:none;font-family:var(--mono);font-size:var(--f-xs);letter-spacing:var(--track);
   text-transform:uppercase;color:var(--dim);line-height:1}
 @media(hover:hover){.sfield:hover{border-color:var(--line2)}}
@@ -409,6 +425,12 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .rs{font-size:var(--f-cap);color:var(--muted);line-height:var(--lh-snug);margin-top:2px;
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .rc{font-family:var(--mono);font-size:var(--f-sm);color:var(--dim);flex:none}
+.rc .gi{width:11px;height:11px;opacity:.75}
+/* el crédito de los iconos: obligatorio por la licencia, pero al fondo */
+.credits{margin-top:var(--s8);padding-top:var(--s5);border-top:1px solid var(--line);
+  font-size:var(--f-sm);line-height:var(--lh-snug);color:var(--dim);text-align:center}
+.credits a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+@media(hover:hover){.credits a:hover{color:var(--ink)}}
 .campn{font-family:var(--disp);font-size:var(--f-h2);font-weight:600;line-height:var(--lh-tight)}
 .dot{width:8px;height:8px;border-radius:50%;flex:none;
   box-shadow:0 0 0 3px color-mix(in srgb,currentColor 18%,transparent)}
@@ -438,7 +460,8 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .seg button.on{background:var(--surf3);color:var(--ink)}
 
 .btn{width:100%;height:var(--h-lg);padding:0 var(--s5);border-radius:var(--r2);
-  font-size:var(--f-md);font-weight:600;white-space:nowrap}
+  font-size:var(--f-md);font-weight:600;white-space:nowrap;gap:var(--s2)}
+.btn .gi{width:16px;height:16px;opacity:.85}
 .btn.pri{background:linear-gradient(160deg,#F0D9A8,var(--gold));color:#20180A;
   box-shadow:0 8px 22px rgba(224,178,92,.20)}
 @media(hover:hover){.btn.pri:hover{filter:brightness(1.07)}}
@@ -516,8 +539,9 @@ canvas.pointing{cursor:pointer}
   background:rgba(30,36,47,.85);backdrop-filter:blur(8px);
   border-color:var(--line2);color:var(--muted)}
 @media(hover:hover){.gzoom button:hover{color:var(--ink);background:var(--surf3)}}
-.gzoom svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;
-  stroke-linecap:round;stroke-linejoin:round}
+.gzoom .gi{width:17px;height:17px}
+/* la mira es de trazo fino: al mismo tamaño se ve más floja que el resto */
+.gzoom [data-act="fit"] .gi{width:20px;height:20px}
 /* los dos rieles de control comparten margen y separación */
 .gctl,.glegend{display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center;
   padding:0 var(--gut)}
@@ -613,8 +637,7 @@ canvas.pointing{cursor:pointer}
   gap:var(--s1);padding:var(--s3) var(--s1);background:none;border:none;cursor:pointer;
   color:var(--dim);font-family:var(--mono);font-size:10px;letter-spacing:.1em;
   text-transform:uppercase;line-height:1;transition:color .15s}
-.nb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;
-  stroke-linecap:round;stroke-linejoin:round}
+.nb .gi{width:22px;height:22px}
 @media(hover:hover){.nb:hover{color:var(--muted)}}
 .nb.on{color:var(--gold)}
 .nb.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
@@ -626,7 +649,8 @@ canvas.pointing{cursor:pointer}
   background:linear-gradient(90deg,var(--surf) 25%,var(--surf2) 37%,var(--surf) 63%);
   background-size:400% 100%;animation:sh 1.4s ease-in-out infinite}
 .empty{text-align:center;padding:var(--s9) var(--s6);color:var(--muted)}
-.empty .ei{font-size:32px;line-height:1;margin-bottom:var(--s3);opacity:.6}
+.empty .ei{line-height:1;margin-bottom:var(--s4);opacity:.5;color:var(--muted)}
+.empty .ei .gi{width:44px;height:44px;margin:0 auto}
 .empty .et{font-family:var(--disp);font-size:var(--f-h2);color:var(--ink);
   line-height:var(--lh-tight);margin-bottom:var(--s2)}
 .empty .es{font-size:var(--f-md);line-height:var(--lh-snug);max-width:34ch;margin:0 auto}

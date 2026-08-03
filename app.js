@@ -202,7 +202,7 @@ function vPick(){
         ${av(e,AV.md,e.gm?{gmring:1}:{})}
         <div class="grow"><div class="rn">${esc(e.n)}</div>
           <div class="rs">${e.gm?'Máster':esc(cur.party_name||'Del grupo')}</div></div>
-        <span class="rc">→</span></div>`).join('')}</div>`
+        <span class="rc">${ic("arrow","r")}</span></div>`).join('')}</div>`
     :`<div class="hint">Todavía no hay personajes del grupo ni Máster. Marcá
       alguna ficha como del grupo o como Máster desde su editor.</div>`}
     <button class="btn sec2" data-act="pickskip">Ahora no</button>
@@ -287,7 +287,7 @@ function book(c,extra){
 /* ================= HOME ================= */
 function vHome(){
   const list = st.err
-    ? `<div class="empty"><div class="ei">⚠</div><div class="et">Sin conexión</div>
+    ? `<div class="empty"><div class="ei">${ic("hazard")}</div><div class="et">Sin conexión</div>
        <div class="es">${esc(st.err)}</div></div>`
     : CAMPS.length
     ? CAMPS.map((c,i)=>`
@@ -296,7 +296,7 @@ function vHome(){
         <div class="grow">
           <div class="campn">${esc(c.name)}</div>
           <div class="rs">${esc(c.blurb||'')}</div></div>
-        <span class="rc">→</span></div>`).join('')
+        <span class="rc">${ic("arrow","r")}</span></div>`).join('')
     : `<div class="row"><div class="skel" style="width:42px;height:63px;border-radius:2px 6px 6px 2px"></div>
        <div class="grow"><div class="skel" style="height:15px;width:45%"></div>
        <div class="skel" style="height:11px;width:70%;margin-top:8px"></div></div></div>`.repeat(3);
@@ -308,6 +308,9 @@ function vHome(){
     <div class="sec"><div class="sech">Empezar otra</div>
       <input class="sfield" id="newc" placeholder="Nombre de la campaña nueva">
       <button class="btn sec2" data-act="newcamp">Crear campaña</button></div>
+    <div class="credits">Iconos de <a href="https://game-icons.net/" target="_blank"
+      rel="noopener">game-icons.net</a> (Lorc y Delapouite), bajo licencia
+      <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</div>
   </div>`;
 }
 
@@ -332,7 +335,7 @@ function vIdx(){
   const hitsBody = hits.length
     ? (st.view==='cards' ? `<div class="cgrid">${hits.map(({e})=>cardHTML(e)).join('')}</div>`
        : `<div class="card">${hits.map(({e,via})=>rowHTML(e,via)).join('')}</div>`)
-    : `<div class="empty"><div class="ei">🔍</div><div class="et">Nada parecido</div>
+    : `<div class="empty"><div class="ei">${ic("search")}</div><div class="et">Nada parecido</div>
        <div class="es">No encontré nada como "${esc(st.q)}". Probá con menos letras.</div></div>`;
   const body = st.q.trim() ? hitsBody : (()=>{
     const gms=D.filter(e=>e.gm);
@@ -376,9 +379,11 @@ function vIdx(){
         </div>
       </div></div>`;
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="home">‹ Campañas</button>
-      <input class="sfield" id="q" placeholder="Buscar (aguanta errores de tipeo)"
-        value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()"></div></div>
+      <button class="back" data-act="home">${ic("back")}Campañas</button>
+      <label class="searchw">${ic('search')}
+        <input class="sfield" id="q" placeholder="Buscar"
+          value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()">
+      </label></div></div>
     ${banner}
     <div class="page">
       ${D.length?`<div class="segrow">
@@ -386,7 +391,7 @@ function vIdx(){
           <button class="${st.view==='list'?'on':''}" data-act="view" data-v="list">Lista</button>
           <button class="${st.view==='cards'?'on':''}" data-act="view" data-v="cards">Cards</button>
         </div></div>`+body
-      :`<div class="empty"><div class="ei">📜</div><div class="et">Campaña en blanco</div>
+      :`<div class="empty"><div class="ei">${ic("scroll")}</div><div class="et">Campaña en blanco</div>
         <div class="es">Todavía no hay fichas acá. Creá la primera y empezá a enlazar.</div>
         <button class="btn pri narrow" data-act="new">Crear la primera ficha</button></div>`}
     </div>`;
@@ -399,8 +404,8 @@ function vFicha(){
   const rel=[...(ADJ[e.s]||[])].map(s=>byS[s]).filter(Boolean)
     .sort((a,b)=>deg(b.s)-deg(a.s)||a.n.localeCompare(b.n));
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">← Atrás</button>
-      <button class="back push" data-act="edit" data-v="${att(e.s)}">Editar</button>
+      <button class="back" data-act="back">${ic("back")}Atrás</button>
+      <button class="back push" data-act="edit" data-v="${att(e.s)}">${ic('quill')}Editar</button>
     </div></div>
   <div class="page${e.gm?' gmpage':''}">
     ${e.gm?`<div class="gmfx" aria-hidden="true">${
@@ -436,8 +441,9 @@ function vFicha(){
         <div class="rs">${esc(x.sm)}</div></div>
         <span class="rc">${esc(TY(x).s)}</span></div>`).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2" data-act="graphof" data-v="${att(e.s)}">
-      Ver en el grafo</button>
-      <button class="btn sec2" data-act="hist" data-v="${att(e.s)}">Historial de cambios</button></div>
+      ${ic('web')}Ver en el grafo</button>
+      <button class="btn sec2" data-act="hist" data-v="${att(e.s)}">
+      ${ic('time')}Historial de cambios</button></div>
   </div>`;
 }
 
@@ -460,7 +466,7 @@ function vEdCamp(){
   const party=E.dp!==undefined?E.dp:(cur.party_name||'');
   const cov=cur.cover_url;
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancelcamp">← Cancelar</button>
+      <button class="back" data-act="cancelcamp">${ic("back")}Cancelar</button>
       <span class="tag push">EDITANDO CAMPAÑA</span></div></div>
   <div class="page">
     <div class="eyebrow">Portada</div>
@@ -532,7 +538,7 @@ function vEd(){
   const type=E.type!==undefined?E.type:(e?e.t:'character');
   const prev={n:name||'?',t:type,img};
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancel">← Cancelar</button>
+      <button class="back" data-act="cancel">${ic("back")}Cancelar</button>
       <span class="tag push">${e?'EDITANDO':'FICHA NUEVA'}</span></div></div>
   <div class="page">
     <div class="eyebrow">Retrato</div>
@@ -899,7 +905,7 @@ function vHist(){
   const cuerpo=H.rows===null
     ? `<div class="card">${'<div class="row"><div class="grow"><div class="skel" style="height:13px;width:38%"></div><div class="skel" style="height:11px;width:80%;margin-top:8px"></div></div></div>'.repeat(3)}</div>`
     : !H.rows.length
-    ? `<div class="empty"><div class="ei">🕰</div><div class="et">Sin versiones anteriores</div>
+    ? `<div class="empty"><div class="ei">${ic("hourglass")}</div><div class="et">Sin versiones anteriores</div>
        <div class="es">Se guarda una cada vez que cambia el nombre, la descripción,
        el resumen o las notas.</div></div>`
     : `<div class="card">
@@ -920,7 +926,7 @@ function vHist(){
           </div>`).join('')}
       </div>`;
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">← Atrás</button>
+      <button class="back" data-act="back">${ic("back")}Atrás</button>
       <span class="tag push">HISTORIAL</span></div></div>
     <div class="page">
       <div class="eyebrow">${esc(TY(e).s)}</div>
@@ -995,30 +1001,25 @@ const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function vGrafo(){
   if(!D.length)return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">← Atrás</button></div></div>
-    <div class="empty"><div class="ei">🕸</div><div class="et">Nada que dibujar</div>
+      <button class="back" data-act="back">${ic("back")}Atrás</button></div></div>
+    <div class="empty"><div class="ei">${ic("web")}</div><div class="et">Nada que dibujar</div>
     <div class="es">Creá algunas fichas y enlazalas con @ para ver el grafo.</div></div>`;
   if(!byS[st.ent]){const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s))[0];st.ent=top?top.s:null}
   const opts=D.slice().sort((a,b)=>a.n.localeCompare(b.n))
     .map(x=>`<option value="${att(x.s)}"${x.s===st.ent?' selected':''}>${esc(x.n)}</option>`).join('');
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">← Atrás</button>
+      <button class="back" data-act="back">${ic("back")}Atrás</button>
       <select class="sfield" id="gsel" data-act="center">${opts}</select>
     </div></div>
   <div class="gwrap" id="gwrap">
     <canvas id="cv"></canvas>
     <div class="gzoom">
-      <button data-act="zoom" data-v="in" aria-label="Acercar">
-        <svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
-      <button data-act="zoom" data-v="out" aria-label="Alejar">
-        <svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
-      <button data-act="fit" aria-label="Encuadrar" title="Encuadrar">
-        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-      <button data-act="reheat" aria-label="Reordenar" title="Reordenar">
-        <svg viewBox="0 0 24 24"><path d="M20 11A8 8 0 0 0 6.3 5.7L4 8"/><path d="M4 4v4h4"/>
-          <path d="M4 13a8 8 0 0 0 13.7 5.3L20 16"/><path d="M20 20v-4h-4"/></svg></button>
-      <button data-act="full" aria-label="Pantalla completa" title="Pantalla completa">
-        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg></button>
+      <button data-act="zoom" data-v="in" aria-label="Acercar">${ic('mas')}</button>
+      <button data-act="zoom" data-v="out" aria-label="Alejar">${ic('menos')}</button>
+      <button data-act="fit" aria-label="Encuadrar" title="Encuadrar">${ic('crosshair')}</button>
+      <button data-act="reheat" aria-label="Reordenar" title="Reordenar">${ic('cycle')}</button>
+      <button data-act="full" aria-label="${G.full?'Salir de pantalla completa':'Pantalla completa'}"
+        title="${G.full?'Salir de pantalla completa':'Pantalla completa'}">${ic(G.full?'contract':'expand')}</button>
     </div>
     <div class="ghint" id="ghint">tocá un nodo para verlo · arrastrá para mover · rueda o pellizco para zoom</div>
     <div id="gcard"></div>
@@ -1376,17 +1377,19 @@ function gFull(){
   const w=document.getElementById('gwrap');if(!w)return;
   w.classList.toggle('full',G.full);
   document.body.style.overflow=G.full?'hidden':'';
+  /* el botón cambia de sentido: al entrar muestra cómo salir */
+  const b=w.querySelector('[data-act="full"]');
+  if(b){const t=G.full?'Salir de pantalla completa':'Pantalla completa';
+    b.innerHTML=ic(G.full?'contract':'expand');b.title=t;b.setAttribute('aria-label',t)}
   requestAnimationFrame(()=>{gSize();gFit();gDraw()});
 }
 
 /* ============================================================
    SHELL
    ============================================================ */
-const IC={
-  idx:'<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h4"/>',
-  grafo:'<circle cx="12" cy="5" r="2.4"/><circle cx="5" cy="17" r="2.4"/><circle cx="19" cy="17" r="2.4"/><path d="M10.5 7 6.6 14.8M13.5 7l3.9 7.8M7.4 17h9.2"/>',
-  nueva:'<path d="M12 5v14M5 12h14"/>'
-};
+/* pestaña -> icono. El índice es un libro abierto, el grafo la telaraña de
+   vínculos y la ficha nueva la pluma con la que se escribe. */
+const NAV=[['idx','Índice','book'],['grafo','Grafo','web'],['nueva','Nueva','quill']];
 let RENDERED=null;
 function snapFocus(){
   const a=document.activeElement;
@@ -1421,9 +1424,9 @@ function r(){
   const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist}[st.tab]||vIdx;
   app.innerHTML=v()+(st.conf?vConf():'')+(st.pick?vPick():'');
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
-  document.getElementById('nav').innerHTML=[['idx','Índice'],['grafo','Grafo'],['nueva','Nueva']]
-    .map(([k,l])=>`<button class="nb ${on===k?'on':''}" data-act="nav" data-v="${k}">
-      <svg viewBox="0 0 24 24">${IC[k]}</svg>${l}</button>`).join('');
+  document.getElementById('nav').innerHTML=NAV
+    .map(([k,l,i])=>`<button class="nb ${on===k?'on':''}" data-act="nav" data-v="${k}">
+      ${ic(i)}${l}</button>`).join('');
   RENDERED=st.tab;
   if(st.tab==='ed'){wireEd();st.editing._live=true}
   if(st.tab==='grafo')requestAnimationFrame(gMount);
