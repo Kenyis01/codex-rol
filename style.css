@@ -483,6 +483,12 @@ canvas.pointing{cursor:pointer}
 .row.hrow .gbtn{flex:none}
 .hwhen{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
   margin-top:var(--s2);line-height:1}
+.hmarks{display:flex;flex-wrap:wrap;gap:var(--s1);margin-top:var(--s2)}
+.hchip{font-family:var(--mono);font-size:10px;line-height:1;color:var(--muted);
+  background:var(--surf2);border:1px solid var(--line);border-radius:var(--rf);
+  padding:4px 8px}
+.hchip.acc{color:var(--gold);border-color:rgba(224,178,92,.35);
+  background:rgba(224,178,92,.10)}
 
 /* ============ lightbox ============ */
 .lightbox{position:fixed;inset:0;z-index:80;display:flex;align-items:center;

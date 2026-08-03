@@ -813,10 +813,17 @@ async function openHist(slug){
   hist.push({tab:st.tab,ent:st.ent});
   st.ent=slug;st.hist={slug,rows:null};st.tab='hist';r();scrollTo(0,0);
   const {data,error}=await SB.from('entity_revisions')
-    .select('id,name,summary,body,notes,replaced_at')
+    .select('id,name,summary,body,notes,status,tags,replaced_at')
     .eq('entity_id',e.id).order('replaced_at',{ascending:false});
   if(error){toast('No se pudo leer el historial','err');st.hist.rows=[];r();return}
   st.hist.rows=data||[];r();
+}
+/* estado y etiquetas de una versión, como chips chicos */
+function marcas(status,tags){
+  const ch=[];
+  if(status)ch.push(`<span class="hchip acc">${esc(STATUS[status]||status)}</span>`);
+  (tags||[]).forEach(t=>ch.push(`<span class="hchip">${esc(t)}</span>`));
+  return ch.length?`<div class="hmarks">${ch.join('')}</div>`:'';
 }
 function vHist(){
   const e=byS[st.ent], H=st.hist;
@@ -830,11 +837,15 @@ function vHist(){
     : `<div class="card">
         <div class="row hrow"><div class="grow">
           <div class="rn">Versión actual</div>
-          <div class="rs">${esc(plano(e.b))||'Sin descripción'}</div></div>
+          <div class="rs">${esc(plano(e.b))||'Sin descripción'}</div>
+          ${marcas(e.st,e.tg)}</div>
           <span class="rc">ahora</span></div>
         ${H.rows.map(v=>`<div class="row hrow"><div class="grow">
           <div class="rn">${esc(v.name||e.n)}</div>
           <div class="rs">${esc(plano(v.body))||'Sin descripción'}</div>
+          ${v.tags===null
+            ? '<div class="hwhen">estado y etiquetas no registrados</div>'
+            : marcas(v.status,v.tags)}
           <div class="hwhen">${esc(cuando(v.replaced_at))}</div></div>
           <button class="gbtn" data-act="restaurar" data-v="${att(v.id)}">Restaurar</button>
           </div>`).join('')}
@@ -848,17 +859,22 @@ function vHist(){
       <div class="hint">Cada guardado deja la versión anterior acá.
         Restaurar no borra nada: lo de ahora queda como una versión más.</div>
       ${cuerpo}
-      ${H.rows&&H.rows.length?`<div class="hint">El historial guarda nombre,
-        resumen, descripción y notas. El estado, las etiquetas y la foto no
-        quedan registrados.</div>`:''}
+      ${H.rows&&H.rows.length?`<div class="hint">Se guarda nombre, resumen,
+        descripción, notas, estado y etiquetas. La foto no queda registrada.
+        ${H.rows.some(v=>v.tags===null)?'Las versiones marcadas como no '+
+          'registradas son anteriores a que se guardaran estado y etiquetas: '+
+          'al restaurarlas esos dos campos quedan como están.':''}</div>`:''}
     </div>`;
 }
 async function restaurar(id){
   const H=st.hist, v=(H.rows||[]).find(x=>x.id===id), e=byS[H.slug];
   if(!v||!e)return;
   st.busy=true;r();
-  const {error}=await SB.from('entities')
-    .update({name:v.name,summary:v.summary,body:v.body,notes:v.notes}).eq('id',e.id);
+  const upd={name:v.name,summary:v.summary,body:v.body,notes:v.notes};
+  /* tags NULL marca una revisión anterior a que se registraran estos campos:
+     ahí no se sabe qué había, así que se dejan como están en vez de borrarlos */
+  if(v.tags!==null&&v.tags!==undefined){upd.status=v.status||null;upd.tags=v.tags}
+  const {error}=await SB.from('entities').update(upd).eq('id',e.id);
   st.busy=false;
   if(error){toast('No se pudo restaurar: '+error.message,'err');r();return}
   await loadCamp(cur);
