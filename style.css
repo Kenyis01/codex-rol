@@ -148,9 +148,12 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
    así que una mención nunca separa un renglón del siguiente.
    Todo se mide en em para que siga el cuerpo del texto que la contiene. */
 .men,.tok{display:inline;white-space:nowrap;cursor:pointer;
-  /* el sangrado izquierdo tiene que ser mayor que el radio del extremo,
-     si no el avatar redondo se escapa por la curva de la píldora */
-  padding:.14em .55em .14em .32em;border-radius:1em;
+  /* Relleno vertical asimétrico a propósito: la caja de un elemento inline se
+     apoya en las métricas de la fuente, que sobresalen mucho más por arriba de
+     la línea base que por abajo. Con relleno parejo el fondo queda alto.
+     El sangrado izquierdo es mayor que el resto para que el avatar redondo no
+     se escape por la curva del extremo. */
+  padding:.07em .55em .21em .32em;border-radius:1em;
   box-decoration-break:clone;-webkit-box-decoration-break:clone;
   font-size:inherit;font-weight:500;color:var(--c);text-decoration:none;
   background:color-mix(in srgb,var(--c) 13%,transparent);
@@ -162,12 +165,14 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   0 0 0 2px color-mix(in srgb,var(--c) 35%,transparent)}
 .tok.sel::after{content:'✕';font-family:var(--mono);font-size:.72em;
   opacity:.9;margin-left:.3em}
-/* Avatar proporcional al texto. El fondo de un elemento inline se apoya en las
-   métricas de la fuente, que dan mucho más alto por encima de la línea base que
-   por debajo; por eso el avatar necesita subir .18em para quedar centrado en la
-   píldora. Medido: queda a 3.3px de cada borde y no agranda el renglón. */
-.av.em{width:1.05em;height:1.05em;vertical-align:.18em;margin-right:.3em}
-.av.em .avi{font-size:.55em}
+/* Avatar proporcional al texto, centrado sobre la altura de la x (no sobre la
+   línea base ni sobre la caja del fondo, que está descentrada hacia arriba
+   porque sigue las métricas de la fuente).
+   Las dos medidas están atadas entre sí: para quedar centrado, un avatar de
+   alto H tiene que descolgarse H/2 - .27em por debajo de la línea base, y a
+   partir de -.16em el renglón empieza a estirarse. De ahí sale el .85em. */
+.av.em{width:.85em;height:.85em;vertical-align:-.155em;margin-right:.3em}
+.av.em .avi{font-size:.46em}
 
 /* ============ página y tipografía ============ */
 .page{padding:var(--s5) var(--gut) var(--s2)}
