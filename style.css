@@ -657,6 +657,21 @@ canvas.pointing{cursor:pointer}
   font-size:var(--f-cap);font-weight:600;white-space:nowrap;cursor:pointer}
 @media(hover:hover){.gpnodo:hover{text-decoration:underline}}
 .gpar{color:var(--dim);flex:none;font-size:var(--f-cap)}
+
+/* ============ vínculos con nombre ============ */
+.relrow{gap:var(--s3)}
+.rell{font-family:var(--mono);font-size:var(--f-xs);color:var(--gold);
+  letter-spacing:.04em}
+.relf{display:block;font-size:var(--f-md);color:var(--ink);margin-top:2px}
+.gbtn.ico{width:var(--h-sm);padding:0;flex:none;color:var(--dim)}
+.relnew{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s2)}
+.relnew .btnrow{margin:0}
+.relnew select.sfield{flex:1;min-width:0}
+/* el vínculo declarado va arriba de las frases: alguien lo escribió a propósito */
+.gerels{display:flex;flex-direction:column;gap:var(--s1)}
+.gerel{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--ink2)}
+.gerl{font-family:var(--mono);font-size:var(--f-xs);color:var(--gold);
+  padding:0 var(--s1);letter-spacing:.04em}
 @media(hover:hover){.gcx:hover{color:var(--ink);background:var(--surf3)}}
 
 /* ============ diálogo ============ */

@@ -23,6 +23,9 @@ const TY=e=>(e&&TYPES[e.t])||FALLBACK;
 const TYT=t=>TYPES[t]||FALLBACK;
 
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
+/* relaciones con nombre: {de, a, l} en slugs. Van aparte de EDGES porque
+   una relación declarada no es lo mismo que una mención suelta. */
+let REL=[], RELK={};
 let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,dup:null,imp:null,me:null,pick:false,ac:null,acPick:null,
         busy:false,view:'list',err:''};
 let hist=[];
@@ -97,7 +100,19 @@ function rebuild(){
       }
     });
   });
-  EDGES=Object.keys(wmap).map(k=>{const[a,b]=k.split('|');return{a,b,w:wmap[k]}});
+  /* Una relación con nombre también es un vínculo, aunque los textos no se
+     nombren. Y pesa más que una mención suelta: alguien la escribió a
+     propósito. Se guarda aparte para poder dibujarlas distinto. */
+  RELK={};
+  REL.forEach(x=>{
+    if(!byS[x.de]||!byS[x.a]||x.de===x.a)return;
+    ADJ[x.de].add(x.a);ADJ[x.a].add(x.de);
+    const k=x.de<x.a?x.de+'|'+x.a:x.a+'|'+x.de;
+    if(!wmap[k])wmap[k]=1;
+    (RELK[k]=RELK[k]||[]).push(x);
+  });
+  EDGES=Object.keys(wmap).map(k=>{const[a,b]=k.split('|');
+    return{a,b,w:wmap[k],rel:!!RELK[k]}});
 }
 const b3=e=>(BL[e.s]||[]).length;
 const deg=s=>(ADJ[s]||{size:0}).size||0;
@@ -171,12 +186,14 @@ async function loadCamp(c){
   st.busy=true;r();
   /* la portada se pide acá y no en loadCamps: es una imagen embebida y no
      tiene sentido bajar la de todas las campañas para listar nombres */
-  const [ents,als,cov]=await Promise.all([
+  const [ents,als,rel,cov]=await Promise.all([
     SB.from('entities')
       .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,is_gm,tags,updated_at,edited_by')
       .eq('campaign_id',c.id).is('archived_at',null).order('name'),
     SB.from('entity_aliases').select('alias,entities!inner(campaign_id,slug)')
       .eq('entities.campaign_id',c.id),
+    SB.from('relationships').select('id,from_entity_id,to_entity_id,label')
+      .eq('campaign_id',c.id),
     SB.from('campaigns').select('cover_url').eq('id',c.id).single()
   ]);
   st.busy=false;
@@ -186,6 +203,11 @@ async function loadCamp(c){
   (als.data||[]).forEach(x=>{const s=x.entities.slug;(amap[s]=amap[s]||[]).push(x.alias)});
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
     b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
+  /* las relaciones vienen por id de ficha; se pasan a slug, que es con lo que
+     trabaja todo el resto de la app */
+  const porId={};D.forEach(e=>{porId[e.id]=e.s});
+  REL=(rel.data||[]).map(x=>({id:x.id,de:porId[x.from_entity_id],
+    a:porId[x.to_entity_id],l:x.label})).filter(x=>x.de&&x.a);
   cur=c;rebuild();loadMe();
   G.pos={};G.sel=null;G.selEdge=null;limpiarCamino();  // arranca limpio en cada campaña
   if(!st.ent||!byS[st.ent]){
@@ -567,6 +589,7 @@ function edit(slug){
   st.editing={slug:slug||null,isNew:!slug,
     stt:(e&&e.st)||null, tags:((e&&e.tg)||[]).slice(),
     als:((e&&e.a)||[]).slice(),
+    rels:e?REL.filter(x=>x.de===e.s).map(x=>({id:x.id,a:x.a,l:x.l})):[],
     base:(e&&e.up)||null};   // versión sobre la que estoy editando
   st.dup=null;
   st.tab='ed';st.ac=null;st.acPick=null;r();scrollTo(0,0);
@@ -611,6 +634,28 @@ function vEd(){
     </div>
     <div class="hint">Apodos, apellidos sueltos, el nombre en inglés. Sirven para
       encontrarla al buscar y con @, y para que no se cree dos veces.</div>
+
+    <div class="eyebrow mt">Vínculos</div>
+    ${(E.rels||[]).length?`<div class="card">${E.rels.map((x,i)=>{
+      const o=byS[x.a];
+      return `<div class="row relrow">
+        <div class="grow"><span class="rell">${esc(x.l)}</span>
+          <span class="relf">${o?esc(o.n):esc(x.a)}</span></div>
+        <button class="gbtn ico" data-act="rmrel" data-v="${i}"
+          aria-label="Quitar">✕</button></div>`;
+    }).join('')}</div>`:''}
+    <div class="relnew">
+      <input class="sfield" id="relL" placeholder="es amigo de, le debe plata, traicionó a"
+        onkeydown="relKey(event)">
+      <div class="btnrow even">
+        <select class="sfield" id="relT">${
+          D.filter(x=>x.s!==E.slug).sort((a,b)=>a.n.localeCompare(b.n))
+           .map(x=>`<option value="${att(x.s)}">${esc(x.n)}</option>`).join('')}</select>
+        <button class="btn sec2" data-act="reladd">Agregar</button>
+      </div>
+    </div>
+    <div class="hint">Van del lado de esta ficha hacia la otra: "Fenwick →
+      le debe plata a → Yagra". En el grafo la línea muestra el nombre.</div>
 
     <div class="eyebrow mt">Tipo</div>
     <div class="btnrow">${ORDER.map(t=>`<button class="gbtn ${type===t?'on':''}"
@@ -690,6 +735,44 @@ function alsAdd(el){
   if(a.some(x=>nm(x)===nm(v)))return false;   // no repetir
   a.push(v);return true;
 }
+/* ---------- vínculos con nombre ---------- */
+function relAdd(){
+  const E=st.editing;if(!E)return false;
+  const li=document.getElementById('relL'), ti=document.getElementById('relT');
+  if(!li||!ti)return false;
+  const l=(li.value||'').trim(), a=ti.value;
+  if(!l){toast('Escribí qué relación es','err');return false}
+  if(!a||!byS[a])return false;
+  const r=E.rels=E.rels||[];
+  if(r.some(x=>x.a===a&&nm(x.l)===nm(l)))return false;   // ya está
+  r.push({a,l});
+  li.value='';
+  return true;
+}
+function relKey(ev){
+  if(ev.key!=='Enter')return;
+  ev.preventDefault();
+  if(relAdd())r();
+}
+/* Las relaciones viven en su propia tabla, así que se guardan aparte de la
+   ficha. Cambiar el texto de una es sacarla y poner otra: el índice único es
+   por origen, destino y nombre. */
+async function guardarRel(id,quedan,tenia){
+  const igual=(x,y)=>x.a===y.a&&nm(x.l)===nm(y.l);
+  const nuevos=(quedan||[]).filter(x=>x.a&&x.l&&byS[x.a]&&!(tenia||[]).some(y=>igual(x,y)));
+  const fuera=(tenia||[]).filter(y=>!(quedan||[]).some(x=>igual(x,y)));
+  if(nuevos.length){
+    const {error}=await SB.from('relationships').insert(nuevos.map(x=>({
+      campaign_id:cur.id,from_entity_id:id,to_entity_id:byS[x.a].id,label:x.l})));
+    if(error)return error;
+  }
+  if(fuera.length){
+    const {error}=await SB.from('relationships').delete().in('id',fuera.map(x=>x.id));
+    if(error)return error;
+  }
+  return null;
+}
+
 function alsKey(ev){
   if(ev.key!=='Enter'&&ev.key!==',')return;
   ev.preventDefault();
@@ -939,8 +1022,11 @@ async function save(pisar){
   st.busy=false;
   if(res.error){toast('No se guardó: '+res.error.message,'err');r();return}
   const alErr=await guardarAlias(res.data.id,E.als||[],e?e.a:[]);
+  const relErr=await guardarRel(res.data.id,E.rels||[],
+    e?REL.filter(x=>x.de===e.s).map(x=>({id:x.id,a:x.a,l:x.l})):[]);
   await loadCamp(cur);
   if(alErr)toast('La ficha se guardó, los otros nombres no: '+alErr.message,'err');
+  else if(relErr)toast('La ficha se guardó, los vínculos no: '+relErr.message,'err');
   st.ent=res.data.slug;st.editing=null;st.tab='ficha';
   const added=[...(ADJ[st.ent]||[])].filter(x=>!before.has(x)).length;
   r();scrollTo(0,0);
@@ -1609,7 +1695,10 @@ function gDraw(){
     }else if(grad&&hi){
       const g=cx.createLinearGradient(a.x,a.y,b.x,b.y);
       g.addColorStop(0,TY(a.e).c);g.addColorStop(1,TY(b.e).c);cx.strokeStyle=g;
-    }else cx.strokeStyle=hi?'#C9D2E0':'#57647A';
+    }else cx.strokeStyle=hi?'#C9D2E0':(e.rel?'#7C8AA2':'#57647A');
+    /* una relación que alguien escribió a propósito pesa más que una mención
+       suelta, así que se ve un poco más firme */
+    if(e.rel&&!hi)cx.globalAlpha=Math.min(1,cx.globalAlpha*1.5);
     const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y;
     cx.beginPath();cx.moveTo(a.x,a.y);
     cx.quadraticCurveTo(mx-dy*.06,my+dx*.06,b.x,b.y);
@@ -1681,6 +1770,7 @@ function gDraw(){
   /* --- etiquetas, en coordenadas de pantalla para que no se deformen --- */
   cx.setTransform(dpr,0,0,dpr,0,0);
   cx.textAlign='center';cx.textBaseline='middle';
+
   const showAll=G.nodes.length<=28||cam.k>=1.25;
   /* los nodos más importantes eligen lugar primero; el resto cede si se pisa */
   const cands=[];
@@ -1727,6 +1817,62 @@ function gDraw(){
     cx.fillText(t,x,rc.cy+.5);
   });
   cx.globalAlpha=1;
+
+  /* Nombres de los vínculos, al final y por encima de todo. Son pocos y los
+     escribió alguien a propósito, así que ganan el lugar; entran en el mismo
+     anti-choque que los nombres de las fichas para no pisarse entre ellos. */
+  const conNombre=G.edges.filter(e=>e.rel);
+  if(conNombre.length&&(cam.k>=.85||G.selEdge)&&conNombre.length<=45){
+    cx.font="500 10px 'JetBrains Mono',monospace";
+    conNombre.forEach(e=>{
+      const a=G.map[e.a],b=G.map[e.b];if(!a||!b)return;
+      const elegida=G.selEdge&&e.a===G.selEdge.a&&e.b===G.selEdge.b;
+      if(!elegida&&near&&!(near.has(e.a)&&near.has(e.b)))return;
+      const rs=RELK[clavePar(e.a,e.b)]||[];
+      if(!rs.length)return;
+      /* el nombre va donde pasa la curva, no sobre la recta */
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y;
+      const qx=mx-dy*.06,qy=my+dx*.06;
+      const enT=t2=>{const u=1-t2;
+        return[(u*u*a.x+2*u*t2*qx+t2*t2*b.x)*cam.k+cam.x,
+               (u*u*a.y+2*u*t2*qy+t2*t2*b.y)*cam.k+cam.y]};
+      let t=rs[0].l;
+      if(rs.length>1)t+=' +'+(rs.length-1);
+      if(t.length>26)t=t.slice(0,25)+'…';
+      const w=cx.measureText(t).width, h=14;
+      /* el medio de la línea suele caer encima de un nodo o de su nombre;
+         se prueban unos cuantos lugares sobre la curva y a los costados
+         antes de renunciar */
+      const nx=-dy/(Math.hypot(dx,dy)||1), ny=dx/(Math.hypot(dx,dy)||1);
+      let sx=0,sy=0,caja=null;
+      for(const t2 of [.5,.38,.62]){
+        const [cxp,cyp]=enT(t2);
+        for(const d of [0,13,-13]){
+          const X=cxp+nx*d, Y=cyp+ny*d;
+          /* G.W y G.H ya vienen en píxeles CSS, que es en lo que están
+             estas coordenadas: dividirlos por dpr dejaba la ventana a
+             menos de la mitad y ninguna etiqueta entraba nunca */
+          if(X<-60||Y<-20||X>W+60||Y>H+20)continue;
+          const c2={x0:X-w/2-5,x1:X+w/2+5,y0:Y-h/2,y1:Y+h/2};
+          if(elegida||!clashes(c2,null)){sx=X;sy=Y;caja=c2;break}
+        }
+        if(caja)break;
+      }
+      if(!caja)return;                     // no entra en ningún lado: no ensucia
+      placed.push(caja);
+      cx.globalAlpha=elegida?1:.9;
+      cx.fillStyle='rgba(13,16,21,.9)';
+      cx.beginPath();
+      if(cx.roundRect)cx.roundRect(caja.x0,caja.y0,w+10,h,7);
+      else cx.rect(caja.x0,caja.y0,w+10,h);
+      cx.fill();
+      cx.strokeStyle='rgba(224,178,92,.35)';cx.lineWidth=1;cx.stroke();
+      cx.fillStyle=elegida?'#EDE7DA':'#B6A489';
+      cx.fillText(t,sx,sy+.5);
+    });
+    cx.globalAlpha=1;
+  }
+
 }
 function gPaint(){if(!G.raf)gDraw()}
 function gLoop(){
@@ -1995,12 +2141,18 @@ function gCard(){
         <span class="gelin"></span>
         <span class="genom" style="color:${TY(b).c}" data-go="${att(b.s)}">${esc(b.n)}</span>
       </div>
+      ${(RELK[clavePar(E.a,E.b)]||[]).length?`<div class="gerels">${
+        (RELK[clavePar(E.a,E.b)]).map(x=>`<div class="gerel">
+          <b style="color:${TY(byS[x.de]).c}">${esc(byS[x.de].n)}</b>
+          <span class="gerl">${esc(x.l)}</span>
+          <b style="color:${TY(byS[x.a]).c}">${esc(byS[x.a].n)}</b></div>`).join('')}</div>`:''}
       ${razones.length
         ? `<div class="gewhy">${razones.map(x=>`<div class="gefr">
              <span class="gede">${esc(byS[x.de].n)} · ${esc(x.campo)}</span>
              ${pinta(x.f)}</div>`).join('')}</div>`
+        : ((RELK[clavePar(E.a,E.b)]||[]).length?''
         : `<div class="gewhy"><div class="gefr dim">Se nombran, pero no encontré
-             la frase. Puede que el enlace esté en el resumen.</div></div>`}
+             la frase. Puede que el enlace esté en el resumen.</div></div>`)}
     </div>`;
     return;
   }
@@ -2210,6 +2362,8 @@ const ACT={
   stt:v=>{keepDraft();st.editing.stt=v||null;r()},
   rmtag:v=>{keepDraft();(st.editing.tags||[]).splice(+v,1);r()},
   rmals:v=>{keepDraft();(st.editing.als||[]).splice(+v,1);r()},
+  rmrel:v=>{keepDraft();(st.editing.rels||[]).splice(+v,1);r()},
+  reladd:()=>{if(relAdd())r()},
   misma:v=>usarLaQueEsta(v),
   dupcrear:()=>{st.editing.igual=true;st.dup=null;save()},
   dupvolver:()=>{st.dup=null;r()},
