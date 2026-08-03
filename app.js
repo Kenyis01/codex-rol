@@ -23,7 +23,7 @@ const TY=e=>(e&&TYPES[e.t])||FALLBACK;
 const TYT=t=>TYPES[t]||FALLBACK;
 
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
-let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,dup:null,me:null,pick:false,ac:null,acPick:null,
+let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,dup:null,imp:null,me:null,pick:false,ac:null,acPick:null,
         busy:false,view:'list',err:''};
 let hist=[];
 const app=document.getElementById('app');
@@ -260,6 +260,23 @@ function home(){hist=[];st.tab='home';st.q='';r();scrollTo(0,0)}
 
 /* ---------- toasts (sin re-render: antes borraban lo que estabas escribiendo) ---------- */
 /* devuelve una función para cerrarlo antes de tiempo; con sticky no se va solo */
+/* El portapapeles moderno solo anda en contexto seguro y con permiso; si no
+   hay, se cae al truco viejo del textarea, que funciona en todos lados. */
+function copiar(txt,aviso){
+  const viejo=()=>{
+    const t=document.createElement('textarea');
+    t.value=txt;t.setAttribute('readonly','');
+    t.style.cssText='position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(t);t.select();
+    let ok=false;
+    try{ok=document.execCommand('copy')}catch(_){}
+    t.remove();
+    toast(ok?(aviso||'Copiado'):'No pude copiar, seleccionalo a mano',ok?'ok':'err');
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast(aviso||'Copiado','ok'),viejo);
+  }else viejo();
+}
 function toast(m,kind,sticky){
   const host=document.getElementById('toasts');if(!host)return()=>{};
   const d=document.createElement('div');
@@ -397,6 +414,7 @@ function vIdx(){
               yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>'+esc(yo().n)+'</span>'
                  :'<span>¿Quién sos?</span>'}</button>`:''}
             <button class="gbtn glass" data-act="edcamp">Editar campaña</button>
+            <button class="gbtn glass" data-act="importar">Importar notas</button>
             ${cov?'':`<label class="gbtn glass">Agregar portada
               <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>`}
           </div>
@@ -1032,6 +1050,272 @@ function vConf(){
   </div></div>`;
 }
 
+/* ============================================================
+   IMPORTAR NOTAS
+   La bitácora la escribe cada uno a su manera y en primera persona. En vez de
+   interpretar prosa acá, se le da un texto para que se lo pase a su propia AI
+   y devuelva una lista de fichas. Esto recibe esa lista, la compara con lo que
+   ya hay y muestra qué va a pasar antes de tocar nada.
+   ============================================================ */
+const PROMPT=[
+'Tengo notas de una partida de rol escritas a mano, en desorden y en primera',
+'persona. Convertilas en fichas para un codex de campaña.',
+'',
+'Devolveme SOLO un JSON con esta forma, sin texto alrededor:',
+'',
+'{"fichas":[{',
+'  "nombre":"Volothamp Geddarm",',
+'  "tipo":"character",',
+'  "otrosNombres":["Volo","Volos"],',
+'  "resumen":"Escritor. Nos pidió ayuda para encontrar a su amigo Floon.",',
+'  "descripcion":"Quién es y qué se sabe de él.",',
+'  "conNosotros":"Qué pasó entre él y nosotros."',
+'}]}',
+'',
+'Reglas:',
+'- "tipo" es uno de: character, location, item, faction, creature.',
+'- Una ficha por cosa, no una por cada vez que aparece.',
+'- Si un mismo nombre está escrito de varias formas (Femwick, Femwin), elegí',
+'  la más frecuente como "nombre" y poné TODAS las demás en "otrosNombres".',
+'  Esto es lo más importante: sin eso quedan fichas duplicadas.',
+'- En "otrosNombres" van también apodos, apellidos sueltos y el nombre en',
+'  otro idioma si aparece.',
+'- "resumen": una línea. "descripcion": qué es, en tercera persona.',
+'  "conNosotros": lo que pasó con el grupo.',
+'- Si algo no está en las notas, dejá el campo vacío. No inventes nada.',
+'- Lo que en las notas es sospecha o teoría va con esas palabras ("se rumorea',
+'  que", "creemos que"), nunca como un hecho.',
+'- Ignorá lo que no sea del mundo de la partida: reglas y mecánicas, tiradas,',
+'  niveles, links, canciones, listas sueltas de objetos.',
+'- Escribí en castellano rioplatense, sin adornos.',
+'',
+'Las notas son estas:',
+'',
+''].join('\n');
+
+const IMPTIPOS={character:1,location:1,item:1,faction:1,creature:1};
+function importar(){
+  st.imp={paso:'pegar',txt:'',plan:null,err:''};
+  st.tab='imp';r();scrollTo(0,0);
+}
+
+/* ---------- enlazado automático ----------
+   Las notas vienen en texto plano, así que sin esto se crean las fichas pero
+   ningún vínculo, que es la mitad de la gracia. Se buscan los nombres
+   conocidos dentro del texto y se convierten en enlaces.
+   El plegado conserva la longitud (una vocal acentuada sigue midiendo uno),
+   así que las posiciones del texto plegado valen sobre el original. */
+const fold=s=>String(s==null?'':s).toLowerCase().normalize('NFD')
+  .replace(/[̀-ͯ]/g,'');
+const LETRA=/[a-z0-9]/;
+function indiceNombres(extra){
+  const m=[];
+  const meter=(txt,slug)=>{
+    const n=fold(txt).trim();
+    /* menos de cuatro letras engancha cualquier cosa: "Fen" adentro de
+       "Fenwick", "Lif" adentro de media palabra */
+    if(n.length>=4)m.push({n,slug});
+  };
+  D.forEach(e=>{meter(e.n,e.s);(e.a||[]).forEach(a=>meter(a,e.s))});
+  (extra||[]).forEach(x=>{meter(x.n,x.s);(x.a||[]).forEach(a=>meter(a,x.s))});
+  return m.sort((a,b)=>b.n.length-a.n.length);   // gana el más largo
+}
+function enlazar(txt,mapa,propio){
+  if(!txt)return txt||'';
+  const hay=fold(txt), marcas=[];
+  for(const m of mapa){
+    if(m.slug===propio)continue;
+    let i=0;
+    while((i=hay.indexOf(m.n,i))>=0){
+      const a=i, b=i+m.n.length;
+      const antes=a?hay[a-1]:'', desp=b<hay.length?hay[b]:'';
+      if(!LETRA.test(antes)&&!LETRA.test(desp))marcas.push([a,b,m.slug]);
+      i=b;
+    }
+  }
+  if(!marcas.length)return txt;
+  /* Gana el match más largo, aunque empiece después: en "la Piedra de Golorr"
+     el alias "la piedra" arranca antes, y por orden de aparición se quedaba
+     con el lugar y dejaba colgando " de Golorr". */
+  marcas.sort((x,y)=>(y[1]-y[0])-(x[1]-x[0])||x[0]-y[0]);
+  const firmes=[];
+  for(const mk of marcas)
+    if(!firmes.some(f=>mk[0]<f[1]&&f[0]<mk[1]))firmes.push(mk);
+  firmes.sort((x,y)=>x[0]-y[0]);
+  let out='', fin=0;
+  for(const mk of firmes){
+    out+=txt.slice(fin,mk[0])+'[['+mk[2]+']]';
+    fin=mk[1];
+  }
+  return out+txt.slice(fin);
+}
+
+/* ---------- leer lo que devolvió la AI ---------- */
+function leerPlan(txt){
+  let crudo=String(txt||'').trim();
+  if(!crudo)return{err:'Pegá lo que te devolvió la AI.'};
+  /* suele venir envuelto en un bloque de código, y a veces con una frase
+     antes y otra después */
+  const cerca=crudo.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(cerca)crudo=cerca[1].trim();
+  const a=crudo.indexOf('{'), b=crudo.lastIndexOf('}');
+  if(a<0||b<a)return{err:'Esto no parece el JSON que pide el texto de arriba.'};
+  let j;
+  try{j=JSON.parse(crudo.slice(a,b+1))}
+  catch(e){return{err:'El JSON viene cortado o mal formado: '+e.message}}
+  const lista=Array.isArray(j)?j:(j.fichas||j.entities||[]);
+  if(!Array.isArray(lista)||!lista.length)return{err:'No encontré ninguna ficha adentro.'};
+
+  const items=[];
+  for(const f of lista){
+    const nombre=String(f.nombre||f.name||'').trim();
+    if(!nombre)continue;
+    const als=[].concat(f.otrosNombres||f.aliases||[])
+      .map(x=>String(x||'').trim())
+      .filter((x,i,arr)=>x&&nm(x)!==nm(nombre)&&arr.findIndex(y=>nm(y)===nm(x))===i);
+    const tipo=IMPTIPOS[f.tipo]?f.tipo:(IMPTIPOS[f.type]?f.type:'character');
+    /* exacta por el nombre o por alguno de sus otros nombres: es la misma y
+       no hay nada que preguntar */
+    const nombres=[nombre].concat(als).map(nm);
+    const e=D.find(x=>nombres.indexOf(nm(x.n))>=0
+      ||(x.a||[]).some(al=>nombres.indexOf(nm(al))>=0));
+    const dudas=e?[]:parecidas(nombre,null);
+    items.push({
+      nombre,tipo,als,
+      resumen:String(f.resumen||f.summary||'').trim(),
+      cuerpo:String(f.descripcion||f.body||'').trim(),
+      notas:String(f.conNosotros||f.notes||'').trim(),
+      e:e||(dudas.length?dudas[0].e:null),
+      duda:!e&&dudas.length>0,
+      acc:(e||dudas.length)?'sumar':'crear'
+    });
+  }
+  if(!items.length)return{err:'Las fichas que vinieron no tienen nombre.'};
+  return{items};
+}
+
+/* ---------- aplicar ---------- */
+async function aplicarImp(){
+  if(st.busy)return;
+  const P=st.imp.plan.filter(x=>x.acc!=='nada');
+  if(!P.length){toast('No hay nada marcado','err');return}
+  st.busy=true;r();
+
+  /* Los slugs de las que se van a crear se calculan antes de escribir nada,
+     así el enlazado puede apuntar a fichas que todavía no existen. */
+  const usados={};
+  D.forEach(e=>{usados[e.s]=1});
+  const nuevas=P.filter(x=>x.acc==='crear');
+  nuevas.forEach(x=>{
+    let sl=slugify(x.nombre)||('f'+Math.random().toString(36).slice(2,7));
+    while(usados[sl])sl+='-'+Math.random().toString(36).slice(2,5);
+    usados[sl]=1;x.slug=sl;
+  });
+  const mapa=indiceNombres(nuevas.map(x=>({n:x.nombre,s:x.slug,a:x.als})));
+  const liga=(t,propio)=>enlazar(t,mapa,propio);
+
+  let creadas=0,sumadas=0,alias=0;
+  const fallos=[];
+  for(const x of P){
+    try{
+      if(x.acc==='crear'){
+        const cuerpo=liga(x.cuerpo,x.slug), notas=liga(x.notas,x.slug);
+        const res=await SB.from('entities').insert({
+          campaign_id:cur.id,slug:x.slug,name:x.nombre,type:x.tipo,
+          summary:x.resumen||autoSummary(cuerpo),
+          body:cuerpo,notes:notas,edited_by:st.me||null
+        }).select().single();
+        if(res.error)throw res.error;
+        creadas++;
+        if(x.als.length){
+          const er=await guardarAlias(res.data.id,x.als,[]);
+          if(er)throw er;
+          alias+=x.als.length;
+        }
+      }else{
+        const e=x.e;
+        if(!e)continue;
+        const suma=(base,extra)=>{
+          const t=liga(extra,e.s);
+          if(!t)return base||'';
+          return (base||'').trim()?base.trimEnd()+'\n\n'+t:t;
+        };
+        const upd={body:suma(e.b,x.cuerpo),notes:suma(e.c,x.notas),
+                   edited_by:st.me||null};
+        if(!e.sm&&x.resumen)upd.summary=x.resumen;
+        const res=await SB.from('entities').update(upd).eq('id',e.id);
+        if(res.error)throw res.error;
+        sumadas++;
+        const faltan=x.als.filter(a=>nm(a)!==nm(e.n)
+          &&!(e.a||[]).some(y=>nm(y)===nm(a)));
+        if(faltan.length){
+          const er=await guardarAlias(e.id,(e.a||[]).concat(faltan),e.a||[]);
+          if(er)throw er;
+          alias+=faltan.length;
+        }
+      }
+    }catch(err){fallos.push(x.nombre+': '+(err.message||err))}
+  }
+  st.busy=false;
+  await loadCamp(cur);
+  st.imp=null;st.tab='idx';r();scrollTo(0,0);
+  if(fallos.length)toast(fallos.length+' no entraron. '+fallos[0],'err');
+  else toast(creadas+' nuevas · '+sumadas+' ampliadas'+
+    (alias?' · '+alias+' nombres':''),'ok');
+}
+
+/* ---------- pantalla ---------- */
+function vImp(){
+  const I=st.imp;
+  const cab='<div class="top"><div class="topin">'+
+    '<button class="back" data-act="impsalir">'+ic('back')+'Salir</button>'+
+    '<span class="tag push">IMPORTAR</span></div></div>';
+  if(I.paso==='pegar')return cab+`<div class="page">
+    <div class="eyebrow">Paso 1</div>
+    <h1>Traer notas</h1>
+    <div class="hint">Copiá el texto de abajo, pasáselo a tu AI junto con tus
+      notas, y pegá acá lo que te devuelva. No se escribe nada hasta que
+      revises qué va a pasar.</div>
+    <button class="btn sec2" data-act="impprompt">${ic('scroll')}Copiar el texto para la AI</button>
+    <div class="eyebrow mt">Lo que te devolvió</div>
+    <textarea class="ta" id="impta" placeholder="Pegá acá la respuesta">${esc(I.txt||'')}</textarea>
+    ${I.err?`<div class="warn"><div class="warnh">No pude leerlo</div>
+      <div class="rs">${esc(I.err)}</div></div>`:''}
+    <button class="btn pri" data-act="impleer">Revisar</button>
+  </div>`;
+
+  const P=I.plan;
+  const cuenta=k=>P.filter(x=>x.acc===k).length;
+  const fila=(x,i)=>{
+    const et={crear:'Crear',sumar:'Sumar',nada:'Omitir'}[x.acc];
+    /* el destino va en el renglón y no en el chip: "Sumar a Los Zhentarim"
+       no entra a lo ancho y se cortaba al medio */
+    const sub=x.acc==='sumar'
+      ? `<div class="rs dest">Se suma a ${esc(x.e.n)}${x.duda?' <span class="dudach">¿es la misma?</span>':''}</div>`
+      : (x.resumen||x.cuerpo)
+        ? `<div class="rs">${esc((x.resumen||x.cuerpo).slice(0,90))}</div>`:'';
+    return `<div class="row improw${x.acc==='nada'?' off':''}" data-act="impacc" data-v="${i}">
+      <span class="dot" style="color:${TYT(x.tipo).c};background:currentColor"></span>
+      <div class="grow">
+        <div class="rn">${esc(x.nombre)}</div>
+        ${sub}
+        ${x.als.length?`<div class="rs dim">también: ${x.als.map(esc).join(' · ')}</div>`:''}
+      </div>
+      <span class="accch ${x.acc}">${et}</span></div>`;
+  };
+  return cab+`<div class="page">
+    <div class="eyebrow">Paso 2</div>
+    <h1>Qué va a pasar</h1>
+    <div class="hint">${cuenta('crear')} fichas nuevas · ${cuenta('sumar')} se
+      amplían · ${cuenta('nada')} sin tocar. Tocá una fila para cambiarla.
+      Los nombres que el codex ya conoce quedan enlazados solos.</div>
+    <button class="btn sec2" data-act="impvolver">Volver a pegar</button>
+    <div class="card mt">${P.map(fila).join('')}</div>
+    <div class="savebar"><button class="btn pri" data-act="impaplicar"${st.busy?' disabled':''}>
+      ${st.busy?'Guardando…':'Aplicar'}</button></div>
+  </div>`;
+}
+
 /* ================= HISTORIAL ================= */
 async function openHist(slug){
   const e=byS[slug];if(!e)return;
@@ -1558,6 +1842,7 @@ function r(){
   /* si veníamos del editor, primero rescatamos lo tipeado */
   if(RENDERED==='ed'&&st.editing&&st.editing._live)keepDraft();
   if(RENDERED==='edcamp'&&st.ecamp)keepCampDraft();
+  if(RENDERED==='imp'&&st.imp){const t=document.getElementById('impta');if(t)st.imp.txt=t.value}
   if(RENDERED==='grafo')gStop();
   if(G.full){G.full=false;document.body.style.overflow=''}
   const f=snapFocus();
@@ -1574,7 +1859,8 @@ function r(){
   if(st.tab!=='ed')st.dup=null;   // el aviso de parecidas es cosa del editor
   if(st.tab==='edcamp'&&!st.ecamp)st.tab='idx';
   if(st.tab==='hist'&&(!st.hist||!byS[st.ent]))st.tab='idx';
-  const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist}[st.tab]||vIdx;
+  if(st.tab==='imp'&&!st.imp)st.tab='idx';
+  const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist,imp:vImp}[st.tab]||vIdx;
   app.innerHTML=v();
   dlgEl.innerHTML=(st.conf?vConf():'')+(st.dup?vDup():'')+(st.pick?vPick():'');
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
@@ -1626,6 +1912,24 @@ const ACT={
   misma:v=>usarLaQueEsta(v),
   dupcrear:()=>{st.editing.igual=true;st.dup=null;save()},
   dupvolver:()=>{st.dup=null;r()},
+  importar,
+  impsalir:()=>{st.imp=null;tab('idx')},
+  impvolver:()=>{st.imp.paso='pegar';st.imp.err='';r();scrollTo(0,0)},
+  impprompt:()=>copiar(PROMPT,'Texto copiado. Pegáselo a tu AI con tus notas.'),
+  impleer:()=>{
+    const t=document.getElementById('impta');
+    const res=leerPlan(t?t.value:'');
+    if(res.err){st.imp.err=res.err;r();return}
+    st.imp.plan=res.items;st.imp.err='';st.imp.paso='revisar';r();scrollTo(0,0);
+  },
+  /* cada toque cambia qué se va a hacer con esa fila */
+  impacc:v=>{
+    const x=st.imp.plan[+v];if(!x)return;
+    const ciclo=x.e?(x.duda?['sumar','crear','nada']:['sumar','nada'])
+                   :['crear','nada'];
+    x.acc=ciclo[(ciclo.indexOf(x.acc)+1)%ciclo.length];r();
+  },
+  impaplicar:aplicarImp,
   pc:()=>{keepDraft();st.editing.pc=!st.editing.pc;r()},
   gm:()=>{keepDraft();st.editing.gm=!st.editing.gm;r()},
   pickme:()=>{st.pick=true;r()},
