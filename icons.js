@@ -43,5 +43,8 @@ const GI={
 /* ic("book")      -> el icono, del tamaño que le dé su contenedor
    ic("arrow","r") -> el mismo, rotado para apuntar a la derecha     */
 function ic(k,cls){
+  /* Si se renombra un icono acá arriba y queda alguna llamada con el nombre
+     viejo, antes salía un hueco y nadie se enteraba. Ahora avisa. */
+  if(!GI[k]&&typeof console!=='undefined')console.warn('icono inexistente:',k);
   return `<svg class="gi${cls?' '+cls:''}" viewBox="0 0 512 512" aria-hidden="true" focusable="false">${GI[k]||''}</svg>`;
 }

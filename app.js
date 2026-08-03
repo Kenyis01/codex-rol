@@ -465,7 +465,7 @@ function vFicha(){
         <div class="rs">${esc(x.sm)}</div></div>
         <span class="rc">${esc(TY(x).s)}</span></div>`).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2" data-act="graphof" data-v="${att(e.s)}">
-      ${ic('web')}Ver en el grafo</button>
+      ${ic('mesh')}Ver en el grafo</button>
       <button class="btn sec2" data-act="hist" data-v="${att(e.s)}">
       ${ic('time')}Historial de cambios</button></div>
   </div>`;
@@ -1152,7 +1152,7 @@ const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function vGrafo(){
   if(!D.length)return `<div class="top"><div class="topin">
       <button class="back" data-act="back">${ic("back")}Atrás</button></div></div>
-    <div class="empty"><div class="ei">${ic("web")}</div><div class="et">Nada que dibujar</div>
+    <div class="empty"><div class="ei">${ic("mesh")}</div><div class="et">Nada que dibujar</div>
     <div class="es">Creá algunas fichas y enlazalas con @ para ver el grafo.</div></div>`;
   if(!byS[st.ent]){const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s))[0];st.ent=top?top.s:null}
   const opts=D.slice().sort((a,b)=>a.n.localeCompare(b.n))
