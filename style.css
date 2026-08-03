@@ -115,14 +115,14 @@ body{
 .back{height:var(--h-md);flex:none;background:var(--surf);border-color:var(--line);
   color:var(--muted);border-radius:var(--r2);padding:0 var(--s4);
   font-size:var(--f-md);font-weight:500}
-.back:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}
+@media(hover:hover){.back:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
 .sfield{height:var(--h-md);width:100%;background:var(--surf);border-color:var(--line);
   color:var(--ink);border-radius:var(--r2);padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--body);outline:none}
 .topin .sfield{flex:1}
 .tag{flex:none;font-family:var(--mono);font-size:var(--f-xs);letter-spacing:var(--track);
   text-transform:uppercase;color:var(--dim);line-height:1}
-.sfield:hover{border-color:var(--line2)}
+@media(hover:hover){.sfield:hover{border-color:var(--line2)}}
 .sfield:focus{border-color:rgba(224,178,92,.55);box-shadow:0 0 0 3px rgba(224,178,92,.10)}
 .sfield::placeholder{color:var(--dim)}
 select.sfield{appearance:none;padding-right:var(--s8);
@@ -157,7 +157,7 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   text-decoration-color:color-mix(in srgb,var(--c) 45%,transparent);
   text-decoration-thickness:1.5px;text-underline-offset:.18em;
   transition:text-decoration-color .15s,background .15s}
-.men:hover{text-decoration-color:var(--c)}
+@media(hover:hover){.men:hover{text-decoration-color:var(--c)}}
 .tok{white-space:nowrap}
 /* En el editor el enlace solo toma cuerpo cuando queda marcado, que es el paso
    previo a borrarlo: ahí conviene que se note bien qué está seleccionado. */
@@ -211,7 +211,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .tagch button{width:20px;height:20px;padding:0;border:none;background:none;
   color:var(--dim);font-size:var(--f-xs);cursor:pointer;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;line-height:1}
-.tagch button:hover{color:var(--ink);background:rgba(237,231,218,.12)}
+@media(hover:hover){.tagch button:hover{color:var(--ink);background:rgba(237,231,218,.12)}}
 .taginput{flex:1;min-width:120px;height:var(--h-chip);border:none;background:none;
   color:var(--ink);font-family:var(--body);font-size:var(--f-md);outline:none;padding:0 var(--s2)}
 .taginput::placeholder{color:var(--dim)}
@@ -274,7 +274,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .bnact{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)}
 .gbtn.glass{background:rgba(13,16,21,.62);backdrop-filter:blur(10px);
   border-color:rgba(237,231,218,.22);color:var(--ink)}
-.gbtn.glass:hover{background:rgba(13,16,21,.82);border-color:rgba(237,231,218,.4)}
+@media(hover:hover){.gbtn.glass:hover{background:rgba(13,16,21,.82);border-color:rgba(237,231,218,.4)}}
 @media(min-width:680px){.banner .book{--bw:132px}}
 
 /* ============ ficha ============ */
@@ -316,7 +316,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .row{display:flex;gap:var(--s3);align-items:center;cursor:pointer;
   padding:var(--s3) var(--s4);border-bottom:1px solid var(--line);transition:background .14s}
 .row:last-child{border-bottom:none}
-.row:hover{background:var(--surf2)}
+@media(hover:hover){.row:hover{background:var(--surf2)}}
 .row:active{background:var(--surf3)}
 .rn{font-size:var(--f-md);font-weight:500;line-height:var(--lh-snug)}
 .rs{font-size:var(--f-cap);color:var(--muted);line-height:var(--lh-snug);margin-top:2px;
@@ -333,9 +333,9 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   background:linear-gradient(160deg,var(--surf2),var(--surf));
   border:1px solid var(--line);border-radius:var(--r3);
   transition:transform .16s,border-color .16s,box-shadow .16s}
-.ccard:hover{transform:translateY(-2px);
+@media(hover:hover){.ccard:hover{transform:translateY(-2px);
   border-color:color-mix(in srgb,var(--c) 40%,transparent);
-  box-shadow:0 12px 28px rgba(0,0,0,.35)}
+  box-shadow:0 12px 28px rgba(0,0,0,.35)}}
 .ccard:active{transform:translateY(0)}
 .ccn{font-size:var(--f-cap);font-weight:500;line-height:var(--lh-snug)}
 .ccc{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);line-height:1}
@@ -347,16 +347,16 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .seg button{height:var(--h-sm);padding:0 var(--s4);border-radius:var(--rf);
   background:none;color:var(--dim);
   font-family:var(--mono);font-size:var(--f-xs);text-transform:uppercase;letter-spacing:.06em}
-.seg button:hover{color:var(--ink)}
+@media(hover:hover){.seg button:hover{color:var(--ink)}}
 .seg button.on{background:var(--surf3);color:var(--ink)}
 
 .btn{width:100%;height:var(--h-lg);padding:0 var(--s5);border-radius:var(--r2);
   font-size:var(--f-md);font-weight:600;white-space:nowrap}
 .btn.pri{background:linear-gradient(160deg,#F0D9A8,var(--gold));color:#20180A;
   box-shadow:0 8px 22px rgba(224,178,92,.20)}
-.btn.pri:hover{filter:brightness(1.07)}
+@media(hover:hover){.btn.pri:hover{filter:brightness(1.07)}}
 .btn.sec2{background:var(--surf);border-color:var(--line);color:var(--muted)}
-.btn.sec2:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}
+@media(hover:hover){.btn.sec2:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
 .btn.sec2.on{border-color:var(--gold);color:var(--gold)}
 .btn + .btn{margin-top:var(--s2)}
 .btnrow + .btn,.hint + .btn,.sfield + .btn{margin-top:var(--s4)}
@@ -378,11 +378,11 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   font-family:var(--mono);font-size:var(--f-xs);text-transform:uppercase;letter-spacing:.06em;
   white-space:nowrap}
 .gbtn{padding:0 var(--s4);background:var(--surf);border-color:var(--line);color:var(--muted)}
-.gbtn:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}
+@media(hover:hover){.gbtn:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
 .gbtn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .tpb{padding:0 var(--s3);border-color:color-mix(in srgb,var(--c) 45%,transparent);
   color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}
-.tpb:hover{background:color-mix(in srgb,var(--c) 22%,transparent)}
+@media(hover:hover){.tpb:hover{background:color-mix(in srgb,var(--c) 22%,transparent)}}
 
 /* ============ editor ============ */
 .imgrow{display:flex;gap:var(--s4);align-items:center;margin-bottom:var(--s6)}
@@ -393,7 +393,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   color:var(--ink2);outline:none;white-space:pre-wrap;word-break:break-word;
   transition:border-color .16s,box-shadow .16s}
 .ed.short{min-height:132px}
-.ed:hover{border-color:var(--line2)}
+@media(hover:hover){.ed:hover{border-color:var(--line2)}}
 .ed:focus{border-color:rgba(224,178,92,.5);box-shadow:0 0 0 3px rgba(224,178,92,.09)}
 .ed:empty::before{content:attr(data-ph);color:var(--dim)}
 .acwrap{position:relative}
@@ -403,7 +403,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .acr{display:flex;gap:var(--s3);align-items:center;cursor:pointer;
   padding:var(--s3) var(--s4);border-bottom:1px solid var(--line)}
 .acr:last-child{border-bottom:none}
-.acr:hover{background:var(--surf3)}
+@media(hover:hover){.acr:hover{background:var(--surf3)}}
 .acn{font-size:var(--f-md);font-weight:500;line-height:var(--lh-snug)}
 .acs{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
   letter-spacing:.05em;margin-top:2px;line-height:1}
@@ -428,7 +428,7 @@ canvas.pointing{cursor:pointer}
 .gzoom button{width:var(--h-ic);height:var(--h-ic);padding:0;border-radius:var(--r2);
   background:rgba(30,36,47,.85);backdrop-filter:blur(8px);
   border-color:var(--line2);color:var(--muted)}
-.gzoom button:hover{color:var(--ink);background:var(--surf3)}
+@media(hover:hover){.gzoom button:hover{color:var(--ink);background:var(--surf3)}}
 .gzoom svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
 /* los dos rieles de control comparten margen y separación */
@@ -439,7 +439,7 @@ canvas.pointing{cursor:pointer}
 .gctl .spacer{flex:1}
 .lgb{gap:var(--s2);padding:0 var(--s3) 0 var(--s2);
   background:var(--surf);border-color:var(--line);color:var(--muted)}
-.lgb:hover{border-color:var(--line2);color:var(--ink)}
+@media(hover:hover){.lgb:hover{border-color:var(--line2);color:var(--ink)}}
 .lgb .sw{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none;
   box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}
 .lgb.off{opacity:.38}
@@ -457,7 +457,7 @@ canvas.pointing{cursor:pointer}
 .gco{flex:none;padding:0 var(--s4);background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .gcx{flex:none;width:var(--h-sm);height:var(--h-sm);padding:0;border:none;background:none;
   color:var(--dim);font-size:var(--f-md);cursor:pointer;border-radius:var(--rf);line-height:1}
-.gcx:hover{color:var(--ink);background:var(--surf3)}
+@media(hover:hover){.gcx:hover{color:var(--ink);background:var(--surf3)}}
 
 /* ============ diálogo ============ */
 .dlgwrap{position:fixed;inset:0;z-index:85;display:flex;align-items:center;
@@ -479,7 +479,7 @@ canvas.pointing{cursor:pointer}
 
 /* ============ historial ============ */
 .row.hrow{cursor:default}
-.row.hrow:hover{background:none}
+@media(hover:hover){.row.hrow:hover{background:none}}
 .row.hrow .gbtn{flex:none}
 .hwhen{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
   margin-top:var(--s2);line-height:1}
@@ -528,7 +528,7 @@ canvas.pointing{cursor:pointer}
   text-transform:uppercase;line-height:1;transition:color .15s}
 .nb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
-.nb:hover{color:var(--muted)}
+@media(hover:hover){.nb:hover{color:var(--muted)}}
 .nb.on{color:var(--gold)}
 .nb.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
   width:26px;height:2px;border-radius:0 0 3px 3px;background:var(--gold);
