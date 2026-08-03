@@ -14,6 +14,10 @@
 <body>
 <div class="glow" aria-hidden="true"></div>
 <div id="app"></div>
+<!-- Los diálogos van acá y no dentro de #app: #app tiene z-index propio, así
+     que cualquier capa suya queda por debajo de la navegación, por alta que
+     sea. Como hermano sí la tapa. -->
+<div id="dialogs"></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <nav class="nav" style="display:none"><div class="navin" id="nav"></div></nav>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>

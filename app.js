@@ -23,7 +23,7 @@ const TY=e=>(e&&TYPES[e.t])||FALLBACK;
 const TYT=t=>TYPES[t]||FALLBACK;
 
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
-let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,me:null,pick:false,ac:null,acPick:null,
+let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,dup:null,me:null,pick:false,ac:null,acPick:null,
         busy:false,view:'list',err:''};
 let hist=[];
 const app=document.getElementById('app');
@@ -135,6 +135,30 @@ function find(q,limit=7){
     return{e,s,via}})
    .filter(x=>x.s>=.5).sort((a,b)=>b.s-a.s||a.e.n.length-b.e.n.length).slice(0,limit);
 }
+
+/* ---------- ¿esta ficha ya existe? ----------
+   Cada uno escribe los nombres como le suena y terminamos con Femwick y
+   Fenwick como dos personajes distintos. Antes de crear una ficha nueva se
+   avisa si hay alguna parecida, mirando también sus otros nombres.
+
+   El umbral está medido contra las variantes que aparecen en nuestra bitácora:
+   con .65 caza 18 de 21 y ninguna apunta a una ficha equivocada. Lo que queda
+   afuera no lo puede resolver comparar letras: "Kike" no se parece a "Quique",
+   ni "Raudoescolta" a "Nimblewright". Para eso están los otros nombres, que se
+   cargan una vez y a partir de ahí sí los encuentra. */
+const PARECIDO=.65;
+function parecidas(nombre,excepto){
+  if(nm(nombre).length<3)return[];
+  return D.map(e=>{
+    if(e.s===excepto)return null;
+    let s=score(nombre,e.n),via=null;
+    (e.a||[]).forEach(al=>{const v=score(nombre,al);if(v>s){s=v;via=al}});
+    return s>=PARECIDO?{e,s,via}:null;
+  }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,4);
+}
+const porqueSeParece=x=>x.via
+  ? 'También se la llama "'+esc(x.via)+'"'
+  : esc(x.e.sm||TY(x.e).s);
 
 /* ---------- carga desde Supabase ---------- */
 async function loadCamps(){
@@ -524,7 +548,9 @@ function edit(slug){
      copian de entrada porque se editan tocando botones, no escribiendo. */
   st.editing={slug:slug||null,isNew:!slug,
     stt:(e&&e.st)||null, tags:((e&&e.tg)||[]).slice(),
+    als:((e&&e.a)||[]).slice(),
     base:(e&&e.up)||null};   // versión sobre la que estoy editando
+  st.dup=null;
   st.tab='ed';st.ac=null;st.acPick=null;r();scrollTo(0,0);
 }
 function vEd(){
@@ -554,7 +580,19 @@ function vEd(){
       </div></div>
 
     <div class="eyebrow">Nombre</div>
-    <input class="sfield" id="fn" value="${att(name)}" placeholder="Nombre de la ficha">
+    <input class="sfield" id="fn" value="${att(name)}" placeholder="Nombre de la ficha"
+      oninput="onNombre(this)">
+    <div id="dupw">${avisoParecidas(name)}</div>
+
+    <div class="eyebrow mt">Otros nombres</div>
+    <div class="tagbox">
+      ${(E.als||[]).map((a,i)=>`<span class="tagch">${esc(a)}<button data-act="rmals"
+        data-v="${i}" aria-label="Quitar ${att(a)}">✕</button></span>`).join('')}
+      <input class="taginput" id="alsin" placeholder="Como también le decimos"
+        onkeydown="alsKey(event)" onblur="alsAdd(this)">
+    </div>
+    <div class="hint">Apodos, apellidos sueltos, el nombre en inglés. Sirven para
+      encontrarla al buscar y con @, y para que no se cree dos veces.</div>
 
     <div class="eyebrow mt">Tipo</div>
     <div class="btnrow">${ORDER.map(t=>`<button class="gbtn ${type===t?'on':''}"
@@ -602,6 +640,44 @@ function vEd(){
       ${st.busy?'Guardando…':'Guardar'}</button></div>
   </div>`;
 }
+/* El aviso se redibuja solo, sin volver a dibujar el editor entero: en cada
+   tecla se perdería la posición del cursor dentro del campo. */
+function onNombre(el){
+  if(st.editing)st.editing.dn=el.value;
+  const box=document.getElementById('dupw');
+  if(box)box.innerHTML=avisoParecidas(el.value);
+}
+function avisoParecidas(nombre){
+  const E=st.editing;if(!E)return '';
+  const c=parecidas(nombre,E.slug);
+  if(!c.length)return '';
+  return `<div class="warn">
+    <div class="warnh">${c.length===1?'Ya hay una ficha parecida':'Ya hay fichas parecidas'}</div>
+    ${c.map(x=>`<div class="warnrow">${av(x.e,AV.sm)}
+      <div class="grow"><div class="rn">${esc(x.e.n)}</div>
+        <div class="rs">${porqueSeParece(x)}</div></div>
+      <button class="gbtn" data-act="misma" data-v="${att(x.e.s)}">Es esta</button>
+    </div>`).join('')}</div>`;
+}
+
+/* ---------- otros nombres ---------- */
+function alsAdd(el){
+  const v=(el.value||'').trim();
+  el.value='';
+  if(!v||!st.editing)return false;
+  const E=st.editing, e=E.slug?byS[E.slug]:null;
+  const propio=E.dn!==undefined?E.dn:(e?e.n:'');
+  if(nm(v)===nm(propio))return false;         // el nombre principal no es "otro nombre"
+  const a=E.als=E.als||[];
+  if(a.some(x=>nm(x)===nm(v)))return false;   // no repetir
+  a.push(v);return true;
+}
+function alsKey(ev){
+  if(ev.key!=='Enter'&&ev.key!==',')return;
+  ev.preventDefault();
+  if(alsAdd(ev.target))r();
+}
+
 function toHTML(txt){
   return esc(txt||'').replace(LK,(m,k)=>{const e=byS[k];
     return e?`<span class="tok" contenteditable="false" data-s="${att(k)}"`+
@@ -811,7 +887,15 @@ async function save(pisar){
   const summary=autoSummary(body);
   // una etiqueta a medio escribir en el campo también cuenta
   tagAdd(document.getElementById('tagin')||{value:''});
+  alsAdd(document.getElementById('alsin')||{value:''});
   const status=E.stt||null, tags=(E.tags||[]).slice();
+  /* Antes de crear una ficha nueva: si hay alguna parecida, se pregunta. Solo
+     al crear — renombrar una que ya existe es otra cosa y ahí el aviso de
+     arriba alcanza. E.igual queda marcado si ya dijo que es otra. */
+  if(!e&&!E.igual){
+    const c=parecidas(name,null);
+    if(c.length){st.dup={name,cands:c};r();return}
+  }
   const before=e?new Set([...(ADJ[e.s]||[])]):new Set();
   const campo={name,body,notes,type,summary,status,tags,image_url:img,
     is_party:pc,is_gm:gm,edited_by:st.me||null};
@@ -836,11 +920,78 @@ async function save(pisar){
   }
   st.busy=false;
   if(res.error){toast('No se guardó: '+res.error.message,'err');r();return}
+  const alErr=await guardarAlias(res.data.id,E.als||[],e?e.a:[]);
   await loadCamp(cur);
+  if(alErr)toast('La ficha se guardó, los otros nombres no: '+alErr.message,'err');
   st.ent=res.data.slug;st.editing=null;st.tab='ficha';
   const added=[...(ADJ[st.ent]||[])].filter(x=>!before.has(x)).length;
   r();scrollTo(0,0);
   toast(added?`Guardado · ${added} vínculo${added>1?'s':''} nuevo${added>1?'s':''}`:'Guardado','ok');
+}
+
+/* Los otros nombres viven en su propia tabla, así que van aparte de la ficha.
+   Se comparan por su forma normalizada, que es la misma con la que buscan el
+   buscador y el @, y también la que guarda la columna normalized. */
+async function guardarAlias(id,quedan,tenia){
+  const q=(quedan||[]).map(x=>x.trim()).filter(Boolean), t=tenia||[];
+  const nuevos=q.filter(x=>!t.some(y=>nm(y)===nm(x)));
+  const fuera=t.filter(y=>!q.some(x=>nm(x)===nm(y)));
+  if(nuevos.length){
+    const {error}=await SB.from('entity_aliases')
+      .insert(nuevos.map(a=>({entity_id:id,alias:a,normalized:nm(a)})));
+    if(error)return error;
+  }
+  if(fuera.length){
+    const {error}=await SB.from('entity_aliases').delete()
+      .eq('entity_id',id).in('normalized',fuera.map(nm));
+    if(error)return error;
+  }
+  return null;
+}
+
+/* ---------- "es esta": seguir sobre la ficha que ya está ----------
+   No crea nada ni pisa nada: pasa el borrador a la ficha que ya existe, con
+   lo escrito agregado al final y el nombre que se venía tipeando como otro
+   nombre suyo. Queda todo a la vista en el editor; recién se escribe cuando
+   la persona aprieta Guardar. */
+function usarLaQueEsta(slug){
+  const d=byS[slug];
+  if(!d||!st.editing)return;
+  keepDraft();
+  const V=st.editing;
+  if(V.slug===slug){st.dup=null;r();return}   // ya estoy en esa
+  const suma=(base,extra)=>!extra?(base||''):((base||'').trim()?base.trimEnd()+'\n\n'+extra:extra);
+  const N={slug,isNew:false,base:d.up,
+    dn:d.n, db:suma(d.b,(V.db||'').trim()), dc:suma(d.c,(V.dc||'').trim()),
+    stt:V.slug?d.st||null:(V.stt||d.st||null),
+    tags:(d.tg||[]).slice(), als:(d.a||[]).slice()};
+  (V.tags||[]).forEach(t=>{if(!N.tags.some(x=>nm(x)===nm(t)))N.tags.push(t)});
+  (V.als||[]).forEach(a=>{if(!N.als.some(x=>nm(x)===nm(a)))N.als.push(a)});
+  const viejo=(V.dn||'').trim();
+  if(viejo&&nm(viejo)!==nm(d.n)&&!N.als.some(x=>nm(x)===nm(viejo)))N.als.push(viejo);
+  st.dup=null;st.editing=N;st.ac=null;st.acPick=null;
+  /* sin esto el próximo render rescataría el borrador del DOM viejo y pisaría
+     lo que acabamos de armar */
+  RENDERED=null;
+  st.tab='ed';r();scrollTo(0,0);
+  toast('Seguís sobre '+d.n+'. Revisá y guardá.','ok');
+}
+function vDup(){
+  const c=st.dup.cands;
+  return `<div class="dlgwrap"><div class="dlg">
+    <div class="eyebrow">Antes de crearla</div>
+    <h2 class="dlgh">${c.length===1?'Ya hay una ficha parecida':'Ya hay fichas parecidas'}</h2>
+    <div class="dlgtx">Estás por crear «${esc(st.dup.name)}». Si es la misma que
+      alguna de estas, tocala: lo que escribiste se suma ahí y «${esc(st.dup.name)}»
+      le queda como otro nombre. Todavía no se guarda nada.</div>
+    <div class="card">${c.map(x=>`<div class="row" data-act="misma" data-v="${att(x.e.s)}">
+      ${av(x.e,AV.md)}
+      <div class="grow"><div class="rn">${esc(x.e.n)}</div>
+        <div class="rs">${porqueSeParece(x)}</div></div>
+      <span class="rc">${ic('arrow','r')}</span></div>`).join('')}</div>
+    <button class="btn sec2" data-act="dupcrear">No, es otra: crearla igual</button>
+    <button class="btn sec2" data-act="dupvolver">Seguir editando</button>
+  </div></div>`;
 }
 
 /* ---------- conflicto: alguien guardó mientras yo editaba ---------- */
@@ -913,8 +1064,7 @@ function vHist(){
           <div class="rn">Versión actual</div>
           <div class="rs">${esc(plano(e.b))||'Sin descripción'}</div>
           ${marcas(e.st,e.tg)}
-          ${e.eb?`<div class="hwhen">por ${esc(nombreDe(e.eb))}</div>`:''}</div>
-          <span class="rc">ahora</span></div>
+          ${e.eb?`<div class="hwhen">por ${esc(nombreDe(e.eb))}</div>`:''}</div></div>
         ${H.rows.map(v=>`<div class="row hrow"><div class="grow">
           <div class="rn">${esc(v.name||e.n)}</div>
           <div class="rs">${esc(plano(v.body))||'Sin descripción'}</div>
@@ -1412,17 +1562,21 @@ function r(){
   if(G.full){G.full=false;document.body.style.overflow=''}
   const f=snapFocus();
   const navEl=document.querySelector('.nav');
+  const dlgEl=document.getElementById('dialogs');
   if(st.tab==='home'||!cur){
-    app.innerHTML=vHome();navEl.style.display='none';RENDERED='home';restFocus(f);return;
+    app.innerHTML=vHome();dlgEl.innerHTML='';
+    navEl.style.display='none';RENDERED='home';restFocus(f);return;
   }
   navEl.style.display='';
   if((st.tab==='ficha'||st.tab==='grafo')&&!byS[st.ent]&&st.tab!=='grafo')st.tab='idx';
   if(st.tab==='ficha'&&!byS[st.ent])st.tab='idx';
   if(st.tab==='ed'&&!st.editing)st.tab='idx';
+  if(st.tab!=='ed')st.dup=null;   // el aviso de parecidas es cosa del editor
   if(st.tab==='edcamp'&&!st.ecamp)st.tab='idx';
   if(st.tab==='hist'&&(!st.hist||!byS[st.ent]))st.tab='idx';
   const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist}[st.tab]||vIdx;
-  app.innerHTML=v()+(st.conf?vConf():'')+(st.pick?vPick():'');
+  app.innerHTML=v();
+  dlgEl.innerHTML=(st.conf?vConf():'')+(st.dup?vDup():'')+(st.pick?vPick():'');
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
   document.getElementById('nav').innerHTML=NAV
     .map(([k,l,i])=>`<button class="nb ${on===k?'on':''}" data-act="nav" data-v="${k}">
@@ -1468,6 +1622,10 @@ const ACT={
   type:v=>{keepDraft();st.editing.type=v;r()},
   stt:v=>{keepDraft();st.editing.stt=v||null;r()},
   rmtag:v=>{keepDraft();(st.editing.tags||[]).splice(+v,1);r()},
+  rmals:v=>{keepDraft();(st.editing.als||[]).splice(+v,1);r()},
+  misma:v=>usarLaQueEsta(v),
+  dupcrear:()=>{st.editing.igual=true;st.dup=null;save()},
+  dupvolver:()=>{st.dup=null;r()},
   pc:()=>{keepDraft();st.editing.pc=!st.editing.pc;r()},
   gm:()=>{keepDraft();st.editing.gm=!st.editing.gm;r()},
   pickme:()=>{st.pick=true;r()},

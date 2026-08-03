@@ -68,11 +68,19 @@
 *,*::before,*::after{box-sizing:border-box}
 *{-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
+/* El rebote al llegar al borde arrastra con él a los elementos fijos: en el
+   iPad la navegación de abajo se despegaba al scrollear más allá del tope. */
+html{overscroll-behavior-y:none}
 body{
   background:var(--bg); color:var(--ink);
   font-family:var(--body); font-size:var(--f-base); line-height:var(--lh-snug);
   -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  /* hidden en un eje obliga al otro a auto, y con eso el body pasa a ser
+     contenedor de scroll y la navegación fija deja de tomar el viewport
+     como referencia. clip recorta igual sin crear el contenedor.
+     El hidden queda de respaldo para quien no entienda clip. */
   overflow-x:hidden;
+  overflow-x:clip;
 }
 .glow{
   position:fixed; inset:0; z-index:0; pointer-events:none;
@@ -318,6 +326,18 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .taginput{flex:1;min-width:120px;height:var(--h-chip);border:none;background:none;
   color:var(--ink);font-family:var(--body);font-size:var(--f-md);outline:none;padding:0 var(--s2)}
 .taginput::placeholder{color:var(--dim)}
+
+/* aviso de fichas parecidas, debajo del nombre en el editor.
+   Es una advertencia, no un error: avisa y ofrece la salida, sin bloquear. */
+.warn{margin-top:var(--s2);padding:var(--s3);border-radius:var(--r2);
+  background:rgba(224,178,92,.06);border:1px solid rgba(224,178,92,.28)}
+.warnh{font-family:var(--mono);font-size:var(--f-xs);letter-spacing:var(--track);
+  text-transform:uppercase;color:var(--gold);line-height:1;margin-bottom:var(--s3)}
+.warnrow{display:flex;align-items:center;gap:var(--s3)}
+.warnrow + .warnrow{margin-top:var(--s3);padding-top:var(--s3);
+  border-top:1px solid rgba(224,178,92,.16)}
+.warnrow .rs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warnrow .gbtn{flex:none}
 .prose{font-size:var(--f-base);line-height:var(--lh-body);color:var(--ink2)}
 .prose p{margin:0 0 var(--s4)}
 .prose p:last-child{margin:0}
