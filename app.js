@@ -187,7 +187,7 @@ async function loadCamp(c){
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
     b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
   cur=c;rebuild();loadMe();
-  G.pos={};G.sel=null;G.selEdge=null;  // el grafo arranca limpio en cada campaña
+  G.pos={};G.sel=null;G.selEdge=null;limpiarCamino();  // arranca limpio en cada campaña
   if(!st.ent||!byS[st.ent]){
     const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s)||b3(b)-b3(a))[0];
     st.ent=top?top.s:null;
@@ -1415,6 +1415,7 @@ const G={
   cam:{x:0,y:0,k:1},
   alpha:0,raf:null,autofit:true,
   sel:null,selUser:false,hot:null,selEdge:null,
+  picking:false,path:null,pathA:null,pathB:null,
   drag:null,panning:null,moved:false,downNode:null,
   depth:2,mode:'ego',off:new Set(),full:false,
   ro:null,pts:new Map(),pinch:null
@@ -1508,6 +1509,7 @@ function gBuild(reheat){
   if(G.sel&&!G.map[G.sel])G.sel=null;
   /* la línea elegida puede haber quedado fuera del recorte o del filtro */
   if(G.selEdge&&!G.edges.some(e=>e.a===G.selEdge.a&&e.b===G.selEdge.b))G.selEdge=null;
+  if(G.path&&G.path.some(id=>!byS[id]))limpiarCamino();
   const stat=document.getElementById('gstat');
   if(stat)stat.innerHTML=G.mode==='all'
     ? `Toda la campaña: ${n} fichas, ${edges.length} vínculos. Centro: <b style="color:var(--gold)">${esc(byS[center]?byS[center].n:'—')}</b>.`
@@ -1576,9 +1578,13 @@ function gDraw(){
   /* solo atenuamos el resto cuando el usuario está mirando un nodo a propósito:
      al entrar al grafo se ve todo con la misma fuerza */
   const focus=G.hot||(G.selUser?G.sel:null);
-  /* con una línea elegida el foco son sus dos puntas, no un nodo */
-  const near=G.selEdge?new Set([G.selEdge.a,G.selEdge.b])
-    :(focus?new Set([focus,...(ADJ[focus]||[])]):null);
+  /* con una línea elegida el foco son sus dos puntas; con un camino, toda la
+     cadena. Si no, el nodo mirado y sus vecinos. */
+  const cam2=G.path&&G.path.length?new Set(G.path):null;
+  const arCam=cam2?aristasDelCamino():null;
+  const near=cam2?cam2
+    :(G.selEdge?new Set([G.selEdge.a,G.selEdge.b])
+    :(focus?new Set([focus,...(ADJ[focus]||[])]):null));
 
   /* --- aristas, en coordenadas del mundo --- */
   cx.save();cx.translate(cam.x,cam.y);cx.scale(cam.k,cam.k);
@@ -1587,11 +1593,16 @@ function gDraw(){
   G.edges.forEach(e=>{
     const a=G.map[e.a],b=G.map[e.b];if(!a||!b)return;
     const on=!near||(near.has(e.a)&&near.has(e.b));
-    const hi=G.selEdge?(e.a===G.selEdge.a&&e.b===G.selEdge.b)
-      :(near&&(e.a===focus||e.b===focus));
+    const hi=arCam?arCam.has(clavePar(e.a,e.b))
+      :(G.selEdge?(e.a===G.selEdge.a&&e.b===G.selEdge.b)
+      :(near&&(e.a===focus||e.b===focus)));
     cx.globalAlpha=hi?.95:(on?.45:.13);
     cx.lineWidth=(hi?1.9:1.15)/cam.k*Math.min(2.2,1+((e.w||1)-1)*.35);
-    if(grad&&hi){
+    if(arCam&&hi){
+      /* el camino va todo del mismo color: degradado por tipo se leía como
+         tramos sueltos y no como una cadena */
+      cx.strokeStyle='#E0B25C';cx.lineWidth=2.4/cam.k;
+    }else if(grad&&hi){
       const g=cx.createLinearGradient(a.x,a.y,b.x,b.y);
       g.addColorStop(0,TY(a.e).c);g.addColorStop(1,TY(b.e).c);cx.strokeStyle=g;
     }else cx.strokeStyle=hi?'#C9D2E0':'#57647A';
@@ -1800,6 +1811,61 @@ function partirFrases(t){
   if(resto)out.push(resto);
   return out;
 }
+/* ---------- camino entre dos fichas ----------
+   "¿Cómo llegamos de este a este otro?" es la pregunta que uno hace en la
+   mesa. Anchura sobre todos los vínculos, no solo los que están dibujados:
+   el camino corto puede pasar por fichas que el recorte de saltos dejó
+   afuera, y decir que no hay camino cuando sí lo hay sería mentir. */
+function caminoEntre(a,b){
+  if(!byS[a]||!byS[b])return null;
+  if(a===b)return[a];
+  const prev={},vis={};vis[a]=1;
+  const q=[a];
+  for(let i=0;i<q.length;i++){
+    const cur=q[i];
+    for(const nx of (ADJ[cur]||[])){
+      if(vis[nx])continue;
+      vis[nx]=1;prev[nx]=cur;
+      if(nx===b){
+        const out=[b];let c=b;
+        while(c!==a){c=prev[c];out.unshift(c)}
+        return out;
+      }
+      q.push(nx);
+    }
+  }
+  return null;
+}
+const clavePar=(a,b)=>a<b?a+'|'+b:b+'|'+a;
+function aristasDelCamino(){
+  const s=new Set();
+  const p=G.path;
+  if(!p)return s;
+  for(let i=0;i<p.length-1;i++)s.add(clavePar(p[i],p[i+1]));
+  return s;
+}
+function limpiarCamino(){
+  G.picking=false;G.path=null;G.pathA=null;G.pathB=null;
+}
+function pedirCamino(){
+  if(!G.sel)return;
+  G.pathA=G.sel;G.pathB=null;G.path=null;G.picking=true;
+  G.selEdge=null;
+  gCard();gPaint();
+}
+function cerrarCamino(destino){
+  G.pathB=destino;G.picking=false;
+  G.path=caminoEntre(G.pathA,destino);
+  /* si el camino pasa por fichas que el recorte no dibuja, se abre a toda la
+     campaña: de nada sirve resaltar una cadena con eslabones invisibles */
+  if(G.path&&G.path.some(id=>!G.map[id])){
+    G.mode='all';G.pos={};gBuild();
+    const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
+  }
+  G.sel=null;G.selUser=false;
+  gCard();gPaint();
+}
+
 function porQue(aId,bId){
   const out=[];
   const mirar=(de,hacia)=>{
@@ -1818,6 +1884,48 @@ function porQue(aId,bId){
 function gCard(){
   const host=document.getElementById('gcard');if(!host)return;
   const hint=document.getElementById('ghint');
+  /* G.path en null quiere decir dos cosas distintas: que todavía no se buscó,
+     o que se buscó y no hay. Lo que dice que hubo búsqueda es el destino. */
+  if(G.picking||G.pathB){
+    if(hint)hint.hidden=true;
+    const a=byS[G.pathA];
+    if(!a){limpiarCamino();return gCard()}
+    if(G.picking){
+      host.innerHTML=`<div class="gcard gpcard">
+        <button class="gcx" data-act="gclose" aria-label="Cancelar">✕</button>
+        <div class="gehead"><span class="gpq">Desde</span>
+          <span class="genom" style="color:${TY(a).c}">${esc(a.n)}</span></div>
+        <div class="gpmsg">Tocá la otra ficha para ver cómo se conectan.</div>
+      </div>`;
+      return;
+    }
+    const b=byS[G.pathB];
+    if(!b){limpiarCamino();return gCard()}
+    if(!G.path){
+      host.innerHTML=`<div class="gcard gpcard">
+        <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button>
+        <div class="gehead">
+          <span class="genom" style="color:${TY(a).c}">${esc(a.n)}</span>
+          <span class="gelin"></span>
+          <span class="genom" style="color:${TY(b).c}">${esc(b.n)}</span></div>
+        <div class="gpmsg">No hay ningún camino entre las dos. Todavía nada las
+          conecta, ni de a saltos.</div>
+      </div>`;
+      return;
+    }
+    const pasos=G.path.length-1;
+    host.innerHTML=`<div class="gcard gpcard">
+      <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button>
+      <div class="gpmsg">${pasos} paso${pasos===1?'':'s'} de distancia</div>
+      <div class="gpcad">${G.path.map((id,i)=>{
+        const e=byS[id];
+        return (i?'<span class="gpar">→</span>':'')+
+          `<span class="gpnodo" data-go="${att(id)}">${av(e,AV.xs)}
+             <span style="color:${TY(e).c}">${esc(e.n)}</span></span>`;
+      }).join('')}</div>
+    </div>`;
+    return;
+  }
   if(G.selEdge){
     const E=G.selEdge, a=byS[E.a], b=byS[E.b];
     if(!a||!b){G.selEdge=null;return gCard()}
@@ -1852,6 +1960,7 @@ function gCard(){
     <div class="grow">
       <div class="gcn">${esc(e.n)}</div>
       <div class="gcs">${esc(TY(e).s)} · ${n.d} vínculo${n.d===1?'':'s'}</div></div>
+    <button class="gco sec" data-act="gpath" title="Camino hasta otra ficha">Camino</button>
     <button class="gco" data-go="${att(e.s)}">Abrir</button>
     <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button></div>`;
 }
@@ -1911,14 +2020,21 @@ function gWire(){
     cv.classList.remove('grabbing');
     const wasNode=G.downNode,moved=G.moved;
     G.drag=null;G.panning=null;G.downNode=null;
+    if(wasNode&&!moved&&G.picking){
+      /* estamos eligiendo el destino del camino */
+      if(wasNode.id!==G.pathA)cerrarCamino(wasNode.id);
+      return;
+    }
     if(wasNode&&!moved){
+      if(G.path)limpiarCamino();
       if(G.sel===wasNode.id&&!G.selEdge)go(wasNode.id);  // segundo toque abre la ficha
       else{G.sel=wasNode.id;G.selUser=true;G.selEdge=null;gCard();gPaint()}
     }else if(!wasNode&&!moved){
       /* en el vacío no hay nodo, pero puede haber una línea debajo */
       const p=at(ev), ar=gHitEdge(p.x,p.y);
       if(ar){G.selEdge={a:ar.a,b:ar.b};G.sel=null;G.selUser=false;gCard();gPaint()}
-      else if(G.sel||G.selEdge){G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()}
+      else if(G.sel||G.selEdge||G.path||G.picking){
+        G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();gCard();gPaint()}
     }
   };
   cv.onpointerup=end;cv.onpointercancel=end;
@@ -2087,7 +2203,8 @@ const ACT={
   zoom:v=>gZoom(v==='in'?1.3:1/1.3),
   fit:()=>{G.autofit=false;gFit();gDraw()},
   full:gFull,
-  gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()},
+  gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();gCard();gPaint()},
+  gpath:pedirCamino,
   center:()=>{},
   search:()=>{}
 };
