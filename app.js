@@ -1539,7 +1539,7 @@ function gFull(){
    ============================================================ */
 /* pestaña -> icono. El índice es un libro abierto, el grafo la telaraña de
    vínculos y la ficha nueva la pluma con la que se escribe. */
-const NAV=[['idx','Índice','book'],['grafo','Grafo','web'],['nueva','Nueva','quill']];
+const NAV=[['idx','Índice','book'],['grafo','Grafo','mesh'],['nueva','Nueva','quill']];
 let RENDERED=null;
 function snapFocus(){
   const a=document.activeElement;
