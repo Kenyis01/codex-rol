@@ -269,7 +269,7 @@ function rowHTML(e,via){
     <span class="rc">${b3(e)}</span></div>`;
 }
 function cardHTML(e){
-  return `<div class="ccard" data-go="${att(e.s)}" style="--c:${TY(e).c}">${av(e,AV.xl,{ring:1})}
+  return `<div class="ccard" data-go="${att(e.s)}" style="--c:${TY(e).c}">${av(e,AV.xl)}
     <div class="ccn">${esc(e.n)}</div>
     <div class="ccc">${b3(e)} menc.</div></div>`;
 }
