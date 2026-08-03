@@ -598,6 +598,15 @@ canvas.pointing{cursor:pointer}
 .lgb .sw{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none;
   box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}
 .lgb.off{opacity:.38}
+/* qué quieren decir las marcas del grafo; no es un botón, no se toca */
+.lgn{display:inline-flex;align-items:center;gap:var(--s2);height:var(--h-sm);
+  padding:0 var(--s2);font-family:var(--mono);font-size:var(--f-xs);
+  color:var(--dim);line-height:1}
+.lgn .mk{width:13px;height:13px;border-radius:50%;flex:none;position:relative}
+.lgn .mk.dead{background:var(--surf3)}
+.lgn .mk.dead::after{content:'';position:absolute;left:1px;right:1px;top:6px;
+  height:1.5px;border-radius:1px;background:#C3CBD8;transform:rotate(-45deg)}
+.lgn .mk.missing{border:1.5px dashed var(--muted)}
 .lgb.off .sw{background:var(--dim);box-shadow:none}
 .gcard{position:absolute;left:var(--s3);right:var(--s3);bottom:var(--s3);
   display:flex;gap:var(--s3);align-items:center;max-width:520px;margin:0 auto;
@@ -612,6 +621,25 @@ canvas.pointing{cursor:pointer}
 .gco{flex:none;padding:0 var(--s4);background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .gcx{flex:none;width:var(--h-sm);height:var(--h-sm);padding:0;border:none;background:none;
   color:var(--dim);font-size:var(--f-md);cursor:pointer;border-radius:var(--rf);line-height:1}
+
+/* tarjeta de una línea: por qué esas dos fichas están conectadas */
+/* el ✕ va absoluto, así que el contenido tiene que terminar donde él empieza:
+   8px de margen + 32px de botón */
+.gecard{flex-direction:column;align-items:stretch;gap:var(--s3);
+  padding-right:var(--s8)}
+.gecard .gcx{position:absolute;top:var(--s2);right:var(--s2)}
+.gehead{display:flex;align-items:center;gap:var(--s3);min-width:0}
+.genom{font-size:var(--f-md);font-weight:600;line-height:var(--lh-snug);cursor:pointer;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}
+@media(hover:hover){.genom:hover{text-decoration:underline}}
+.gelin{flex:1 0 18px;height:1px;background:var(--line2);min-width:18px}
+.gewhy{display:flex;flex-direction:column;gap:var(--s2);
+  max-height:34vh;overflow-y:auto}
+.gefr{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--ink2);
+  padding-left:var(--s3);border-left:2px solid var(--line2)}
+.gefr.dim{color:var(--dim)}
+.gede{display:block;font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
+  letter-spacing:.04em;margin-bottom:2px}
 @media(hover:hover){.gcx:hover{color:var(--ink);background:var(--surf3)}}
 
 /* ============ diálogo ============ */

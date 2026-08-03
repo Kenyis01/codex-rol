@@ -187,7 +187,7 @@ async function loadCamp(c){
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
     b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
   cur=c;rebuild();loadMe();
-  G.pos={};G.sel=null;                 // el grafo arranca limpio en cada campaña
+  G.pos={};G.sel=null;G.selEdge=null;  // el grafo arranca limpio en cada campaña
   if(!st.ent||!byS[st.ent]){
     const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s)||b3(b)-b3(a))[0];
     st.ent=top?top.s:null;
@@ -1414,7 +1414,7 @@ const G={
   nodes:[],edges:[],map:{},pos:{},
   cam:{x:0,y:0,k:1},
   alpha:0,raf:null,autofit:true,
-  sel:null,selUser:false,hot:null,
+  sel:null,selUser:false,hot:null,selEdge:null,
   drag:null,panning:null,moved:false,downNode:null,
   depth:2,mode:'ego',off:new Set(),full:false,
   ro:null,pts:new Map(),pinch:null
@@ -1455,7 +1455,7 @@ function vGrafo(){
       <button data-act="full" aria-label="${G.full?'Salir de pantalla completa':'Pantalla completa'}"
         title="${G.full?'Salir de pantalla completa':'Pantalla completa'}">${ic(G.full?'contract':'expand')}</button>
     </div>
-    <div class="ghint" id="ghint">tocá un nodo para verlo · arrastrá para mover · rueda o pellizco para zoom</div>
+    <div class="ghint" id="ghint">tocá un nodo o una línea · arrastrá para mover · rueda o pellizco para zoom</div>
     <div id="gcard"></div>
   </div>
   <div class="gctl" id="gctl">${gControls()}</div>
@@ -1470,8 +1470,12 @@ function gControls(){
          b('all','Todo',G.mode==='all');
 }
 function gLegend(){
-  return ORDER.map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
+  const tipos=ORDER.map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
     data-act="gtype" data-v="${t}"><span class="sw"></span>${esc(TYT(t).l)}</button>`).join('');
+  /* las marcas de estado se explican solo si hay alguna en pantalla */
+  const marca=(k,l)=>D.some(e=>e.st===k)
+    ? `<span class="lgn"><i class="mk ${k}"></i>${l}</span>`:'';
+  return tipos+marca('dead','muerto')+marca('missing','desaparecido');
 }
 
 function gBuild(reheat){
@@ -1502,6 +1506,8 @@ function gBuild(reheat){
   G.map={};G.nodes.forEach(n2=>G.map[n2.id]=n2);
   G.edges=edges;
   if(G.sel&&!G.map[G.sel])G.sel=null;
+  /* la línea elegida puede haber quedado fuera del recorte o del filtro */
+  if(G.selEdge&&!G.edges.some(e=>e.a===G.selEdge.a&&e.b===G.selEdge.b))G.selEdge=null;
   const stat=document.getElementById('gstat');
   if(stat)stat.innerHTML=G.mode==='all'
     ? `Toda la campaña: ${n} fichas, ${edges.length} vínculos. Centro: <b style="color:var(--gold)">${esc(byS[center]?byS[center].n:'—')}</b>.`
@@ -1570,7 +1576,9 @@ function gDraw(){
   /* solo atenuamos el resto cuando el usuario está mirando un nodo a propósito:
      al entrar al grafo se ve todo con la misma fuerza */
   const focus=G.hot||(G.selUser?G.sel:null);
-  const near=focus?new Set([focus,...(ADJ[focus]||[])]):null;
+  /* con una línea elegida el foco son sus dos puntas, no un nodo */
+  const near=G.selEdge?new Set([G.selEdge.a,G.selEdge.b])
+    :(focus?new Set([focus,...(ADJ[focus]||[])]):null);
 
   /* --- aristas, en coordenadas del mundo --- */
   cx.save();cx.translate(cam.x,cam.y);cx.scale(cam.k,cam.k);
@@ -1579,7 +1587,8 @@ function gDraw(){
   G.edges.forEach(e=>{
     const a=G.map[e.a],b=G.map[e.b];if(!a||!b)return;
     const on=!near||(near.has(e.a)&&near.has(e.b));
-    const hi=near&&(e.a===focus||e.b===focus);
+    const hi=G.selEdge?(e.a===G.selEdge.a&&e.b===G.selEdge.b)
+      :(near&&(e.a===focus||e.b===focus));
     cx.globalAlpha=hi?.95:(on?.45:.13);
     cx.lineWidth=(hi?1.9:1.15)/cam.k*Math.min(2.2,1+((e.w||1)-1)*.35);
     if(grad&&hi){
@@ -1621,6 +1630,35 @@ function gDraw(){
         cx.textAlign='center';cx.textBaseline='middle';
         cx.fillText(initials(n.e.n,true),n.x,n.y+r*.04);
       }
+    }
+    /* El Máster: un aro propio, sin animar. Acá se dibujan decenas de nodos
+       por cuadro, no es lugar para las chispas que lleva en el índice. */
+    if(n.e.gm){
+      cx.beginPath();cx.arc(n.x,n.y,r+2.5/cam.k+2,0,6.2832);
+      cx.strokeStyle='#E8C572';cx.globalAlpha=on?.9:.28;
+      cx.lineWidth=1.6/cam.k+.7;cx.stroke();
+      cx.globalAlpha=on?1:.3;
+    }
+    /* Lo que le pasó al personaje se tiene que ver acá y no solo adentro de la
+       ficha: al alejarse se lee de una cuántos quedaron en el camino.
+       "Se desconoce" no se marca a propósito: es lo mismo que no saber nada,
+       que es como está la mayoría. */
+    if(n.e.st==='dead'){
+      cx.beginPath();cx.arc(n.x,n.y,r,0,6.2832);
+      cx.fillStyle='rgba(13,16,21,.6)';cx.fill();
+      const d=r*.7;
+      cx.strokeStyle='#C3CBD8';cx.globalAlpha=on?.95:.3;
+      cx.lineWidth=1.5/cam.k+.5;cx.lineCap='round';
+      cx.beginPath();cx.moveTo(n.x-d,n.y+d);cx.lineTo(n.x+d,n.y-d);cx.stroke();
+      cx.globalAlpha=on?1:.3;
+    }else if(n.e.st==='missing'){
+      cx.save();
+      cx.setLineDash([3.2/cam.k,3.2/cam.k]);
+      cx.beginPath();cx.arc(n.x,n.y,r+3/cam.k+1.5,0,6.2832);
+      cx.strokeStyle=c;cx.globalAlpha=on?.85:.26;
+      cx.lineWidth=1.4/cam.k+.5;cx.stroke();
+      cx.restore();
+      cx.globalAlpha=on?1:.3;
     }
   });
   cx.restore();
@@ -1713,10 +1751,100 @@ function gHit(sx,sy){
   }
   return best;
 }
+/* La línea no es recta: se dibuja con una curva que se aparta un 6% del
+   medio. Con la distancia al segmento recto el toque erraba justo en el
+   medio de las líneas largas, así que se muestrea la misma curva. */
+function gHitEdge(sx,sy){
+  const x=wx(sx),y=wy(sy), tope=11/G.cam.k;
+  let best=null,bd=tope;
+  for(const e of G.edges){
+    const a=G.map[e.a],b=G.map[e.b];if(!a||!b)continue;
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y;
+    const qx=mx-dy*.06,qy=my+dx*.06;                 // control de la curva
+    let px=a.x,py=a.y;
+    for(let i=1;i<=12;i++){
+      const t=i/12,u=1-t;
+      const cxp=u*u*a.x+2*u*t*qx+t*t*b.x, cyp=u*u*a.y+2*u*t*qy+t*t*b.y;
+      const d=distSeg(x,y,px,py,cxp,cyp);
+      if(d<bd){bd=d;best=e}
+      px=cxp;py=cyp;
+    }
+  }
+  return best;
+}
+function distSeg(px,py,x1,y1,x2,y2){
+  const dx=x2-x1,dy=y2-y1, l2=dx*dx+dy*dy;
+  if(!l2)return Math.hypot(px-x1,py-y1);
+  let t=((px-x1)*dx+(py-y1)*dy)/l2;
+  t=t<0?0:t>1?1:t;
+  return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
+}
+
+/* ---------- por qué existe una línea ----------
+   La frase del texto donde uno nombra al otro. Sale del cuerpo y las notas
+   que ya están cargados y no de la tabla mentions, así nunca queda desfasada
+   de lo que la ficha dice ahora. */
+function partirFrases(t){
+  const s=String(t||''), out=[];
+  let ini=0;
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    const corta=c==='\n'||
+      ((c==='.'||c==='!'||c==='?'||c==='…')&&(i+1>=s.length||/\s/.test(s[i+1])));
+    if(!corta)continue;
+    const f=s.slice(ini,i+1).trim();
+    if(f)out.push(f);
+    ini=i+1;
+  }
+  const resto=s.slice(ini).trim();
+  if(resto)out.push(resto);
+  return out;
+}
+function porQue(aId,bId){
+  const out=[];
+  const mirar=(de,hacia)=>{
+    const e=byS[de];if(!e)return;
+    [['Descripción',e.b],['Con nosotros',e.c]].forEach(par=>{
+      const marca='[['+hacia+']]';
+      if(!par[1]||par[1].indexOf(marca)<0)return;
+      partirFrases(par[1]).forEach(f=>{
+        if(f.indexOf(marca)>=0&&out.length<4)out.push({de,campo:par[0],f});
+      });
+    });
+  };
+  mirar(aId,bId);mirar(bId,aId);
+  return out;
+}
 function gCard(){
   const host=document.getElementById('gcard');if(!host)return;
-  const n=G.sel&&G.map[G.sel];
   const hint=document.getElementById('ghint');
+  if(G.selEdge){
+    const E=G.selEdge, a=byS[E.a], b=byS[E.b];
+    if(!a||!b){G.selEdge=null;return gCard()}
+    if(hint)hint.hidden=true;
+    const razones=porQue(E.a,E.b);
+    const pinta=f=>esc(f).replace(LK,(m,k)=>{
+      const e=byS[k];if(!e)return '';
+      return (k===E.a||k===E.b)
+        ? `<b style="color:${TY(e).c}">${esc(e.n)}</b>`:esc(e.n);
+    });
+    host.innerHTML=`<div class="gcard gecard">
+      <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button>
+      <div class="gehead">
+        <span class="genom" style="color:${TY(a).c}" data-go="${att(a.s)}">${esc(a.n)}</span>
+        <span class="gelin"></span>
+        <span class="genom" style="color:${TY(b).c}" data-go="${att(b.s)}">${esc(b.n)}</span>
+      </div>
+      ${razones.length
+        ? `<div class="gewhy">${razones.map(x=>`<div class="gefr">
+             <span class="gede">${esc(byS[x.de].n)} · ${esc(x.campo)}</span>
+             ${pinta(x.f)}</div>`).join('')}</div>`
+        : `<div class="gewhy"><div class="gefr dim">Se nombran, pero no encontré
+             la frase. Puede que el enlace esté en el resumen.</div></div>`}
+    </div>`;
+    return;
+  }
+  const n=G.sel&&G.map[G.sel];
   if(!n){host.innerHTML='';if(hint)hint.hidden=false;return}
   if(hint)hint.hidden=true;              // si no, la tarjeta lo tapa
   const e=n.e;
@@ -1784,9 +1912,14 @@ function gWire(){
     const wasNode=G.downNode,moved=G.moved;
     G.drag=null;G.panning=null;G.downNode=null;
     if(wasNode&&!moved){
-      if(G.sel===wasNode.id)go(wasNode.id);       // segundo toque abre la ficha
-      else{G.sel=wasNode.id;G.selUser=true;gCard();gPaint()}
-    }else if(!wasNode&&!moved&&G.sel){G.sel=null;G.selUser=false;gCard();gPaint()}
+      if(G.sel===wasNode.id&&!G.selEdge)go(wasNode.id);  // segundo toque abre la ficha
+      else{G.sel=wasNode.id;G.selUser=true;G.selEdge=null;gCard();gPaint()}
+    }else if(!wasNode&&!moved){
+      /* en el vacío no hay nodo, pero puede haber una línea debajo */
+      const p=at(ev), ar=gHitEdge(p.x,p.y);
+      if(ar){G.selEdge={a:ar.a,b:ar.b};G.sel=null;G.selUser=false;gCard();gPaint()}
+      else if(G.sel||G.selEdge){G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()}
+    }
   };
   cv.onpointerup=end;cv.onpointercancel=end;
   cv.onpointerleave=()=>{if(!G.drag&&!G.panning&&G.hot){G.hot=null;gPaint()}};
@@ -1954,7 +2087,7 @@ const ACT={
   zoom:v=>gZoom(v==='in'?1.3:1/1.3),
   fit:()=>{G.autofit=false;gFit();gDraw()},
   full:gFull,
-  gclose:()=>{G.sel=null;G.selUser=false;gCard();gPaint()},
+  gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()},
   center:()=>{},
   search:()=>{}
 };
