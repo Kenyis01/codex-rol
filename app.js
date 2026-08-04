@@ -1505,6 +1505,7 @@ const G={
   picking:false,path:null,pathA:null,pathB:null,
   drag:null,panning:null,moved:false,downNode:null,
   depth:2,mode:'ego',off:new Set(),full:false,panel:false,tiempo:false,hist:null,
+  verGrupos:false,grupos:null,
   ro:null,pts:new Map(),pinch:null
 };
 const IMGC={};                                  // cache de imágenes para el canvas
@@ -1562,7 +1563,9 @@ function gControls(){
   return b('1','1 salto',G.mode==='ego'&&G.depth===1)+
          b('2','2 saltos',G.mode==='ego'&&G.depth===2)+
          b('3','3 saltos',G.mode==='ego'&&G.depth===3)+
-         b('all','Todo',G.mode==='all');
+         b('all','Todo',G.mode==='all')+
+         `<span class="spacer"></span><button class="gbtn ${G.verGrupos?'on':''}"
+           data-act="ggrupos">Grupos</button>`;
 }
 function gLegend(){
   const tipos=ORDER.map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
@@ -1609,6 +1612,7 @@ function gBuild(reheat){
       r:id===center?16:Math.min(15,6.5+Math.sqrt(dg[id]||0)*2.3)};
   });
   G.map={};G.nodes.forEach(n2=>G.map[n2.id]=n2);
+  G.grupos=G.verGrupos?detectarGrupos(G.nodes,edges):null;
   G.edges=edges;
   if(G.sel&&!G.map[G.sel])G.sel=null;
   /* la línea elegida puede haber quedado fuera del recorte o del filtro */
@@ -1692,6 +1696,7 @@ function gDraw(){
 
   /* --- aristas, en coordenadas del mundo --- */
   cx.save();cx.translate(cam.x,cam.y);cx.scale(cam.k,cam.k);
+  if(G.verGrupos)dibujarGrupos(cx,cam);
   cx.lineCap='round';
   const grad=G.edges.length<=260;
   G.edges.forEach(e=>{
@@ -1976,6 +1981,95 @@ function partirFrases(t){
   if(resto)out.push(resto);
   return out;
 }
+/* ---------- grupos que se formaron solos ----------
+   Propagación de etiquetas: cada ficha se queda con el grupo más votado por
+   sus vecinas, pesando cada voto por la fuerza del vínculo, hasta que nadie
+   cambia. Es de lo más simple que funciona y no necesita saber de antemano
+   cuántos grupos hay.
+   El orden y los desempates van por nombre y no al azar, así el mismo grafo
+   da siempre los mismos grupos: si cambiaran de color en cada dibujo no se
+   podría leer nada. */
+function detectarGrupos(nodos,aristas){
+  const ids=nodos.map(n=>n.id).sort();
+  if(ids.length<3)return null;
+  const vec={};ids.forEach(i=>vec[i]=[]);
+  aristas.forEach(e=>{
+    if(!vec[e.a]||!vec[e.b])return;
+    vec[e.a].push([e.b,e.w||1]);vec[e.b].push([e.a,e.w||1]);
+  });
+  const g={};ids.forEach(i=>g[i]=i);
+  for(let paso=0;paso<24;paso++){
+    let cambio=false;
+    for(const id of ids){
+      const votos={};
+      for(const [n,w] of vec[id])votos[g[n]]=(votos[g[n]]||0)+w;
+      let mejor=g[id],max=votos[g[id]]||0;
+      /* recorrido ordenado: el desempate cae siempre del mismo lado */
+      Object.keys(votos).sort().forEach(k=>{
+        if(votos[k]>max){max=votos[k];mejor=k}
+      });
+      if(mejor!==g[id]){g[id]=mejor;cambio=true}
+    }
+    if(!cambio)break;
+  }
+  const porGrupo={};
+  ids.forEach(i=>{(porGrupo[g[i]]=porGrupo[g[i]]||[]).push(i)});
+  /* los grupos de menos de tres no son un grupo, son una pareja suelta */
+  return Object.keys(porGrupo).filter(k=>porGrupo[k].length>=3)
+    .sort((a,b)=>porGrupo[b].length-porGrupo[a].length)
+    .map(k=>porGrupo[k]);
+}
+const TINTES=['#E0B25C','#4FB795','#B48BD8','#E0696E','#6F9AD6','#D8B36F','#7FD1B9'];
+/* envolvente convexa (cadena monótona de Andrew) */
+function envolvente(pts){
+  if(pts.length<3)return pts.slice();
+  const p=pts.slice().sort((a,b)=>a.x-b.x||a.y-b.y);
+  const cruz=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const abajo=[],arriba=[];
+  for(const q of p){
+    while(abajo.length>=2&&cruz(abajo[abajo.length-2],abajo[abajo.length-1],q)<=0)abajo.pop();
+    abajo.push(q);
+  }
+  for(let i=p.length-1;i>=0;i--){
+    const q=p[i];
+    while(arriba.length>=2&&cruz(arriba[arriba.length-2],arriba[arriba.length-1],q)<=0)arriba.pop();
+    arriba.push(q);
+  }
+  abajo.pop();arriba.pop();
+  return abajo.concat(arriba);
+}
+function dibujarGrupos(cx,cam){
+  const gr=G.grupos;
+  if(!gr||!gr.length)return;
+  gr.forEach((ids,i)=>{
+    const pts=ids.map(id=>G.map[id]).filter(Boolean).map(n=>({x:n.x,y:n.y}));
+    if(pts.length<3)return;
+    const h=envolvente(pts);
+    if(h.length<3)return;
+    /* se infla desde el centro para que la mancha no corte los nodos */
+    const cxm=h.reduce((s,q)=>s+q.x,0)/h.length;
+    const cym=h.reduce((s,q)=>s+q.y,0)/h.length;
+    const margen=34/cam.k+18;
+    const inf=h.map(q=>{
+      const d=Math.hypot(q.x-cxm,q.y-cym)||1;
+      return{x:q.x+(q.x-cxm)/d*margen, y:q.y+(q.y-cym)/d*margen};
+    });
+    const c=TINTES[i%TINTES.length];
+    cx.beginPath();
+    cx.moveTo(inf[0].x,inf[0].y);
+    /* esquinas redondeadas con el punto medio del lado siguiente */
+    for(let k=0;k<inf.length;k++){
+      const a=inf[k], b=inf[(k+1)%inf.length];
+      cx.quadraticCurveTo(a.x,a.y,(a.x+b.x)/2,(a.y+b.y)/2);
+    }
+    cx.closePath();
+    cx.globalAlpha=.075;cx.fillStyle=c;cx.fill();
+    cx.globalAlpha=.28;cx.strokeStyle=c;cx.lineWidth=1.2/cam.k;
+    cx.setLineDash([6/cam.k,5/cam.k]);cx.stroke();cx.setLineDash([]);
+    cx.globalAlpha=1;
+  });
+}
+
 /* ---------- retroceder en el tiempo ----------
    Cada guardado deja la versión anterior con su fecha. Con eso se puede
    rearmar el grafo como estaba: qué fichas ya existían y a quién nombraban
@@ -2535,6 +2629,11 @@ const ACT={
   gpath:pedirCamino,
   gsalud:()=>{G.panel=!G.panel;r()},
   gtiempo:abrirTiempo,
+  ggrupos:()=>{G.verGrupos=!G.verGrupos;
+    G.grupos=G.verGrupos?detectarGrupos(G.nodes,G.edges):null;
+    const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
+    gPaint();
+    if(G.verGrupos)toast((G.grupos&&G.grupos.length||0)+' grupos',null);},
   tahora:()=>{G.hist=null;gBuild();r()},
   gcentrar:v=>{gCenter(v);G.panel=false;r();scrollTo(0,0)},
   center:()=>{},
