@@ -814,8 +814,12 @@ canvas.pointing{cursor:pointer}
 .rell{font-family:var(--mono);font-size:var(--f-xs);color:var(--gold);
   letter-spacing:.04em}
 .relf{display:block;font-size:var(--f-md);color:var(--ink);margin-top:2px}
-.gbtn.ico{width:var(--h-sm);padding:0;flex:none;color:var(--dim)}
+/* botón que es solo el dibujo: cuadrado, sin el margen que separa icono de
+   texto, y el icono centrado en las dos direcciones */
+.gbtn.ico{width:var(--h-sm);padding:0;flex:none;color:var(--dim);
+  justify-content:center}
 .gbtn.ico .gi{margin-right:0;width:13px;height:13px}
+.btnrow .gbtn.ico .gi{width:14px;height:14px}
 .relnew{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s2)}
 .relnew .btnrow{margin:0}
 .relnew select.sfield{flex:1;min-width:0}

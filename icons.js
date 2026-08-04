@@ -107,9 +107,46 @@ const GI={
 /* El semielfo comparte la oreja con el elfo: es la marca que tienen en común y
    el chip dice el nombre al lado. Va como alias para no repetir el dibujo. */
 GI['raza-semielfo']=GI['raza-elfo'];
+
+/* Varios dibujos vienen corridos adentro de su propia caja de 512 —el de
+   Índice casi un píxel a la derecha al tamaño de la navegación, el de Nueva
+   más de uno hacia arriba—, así que el icono se veía descentrado aunque su
+   caja estuviera perfectamente centrada. Acá va cuánto hay que mover la caja
+   para que el centro del dibujo caiga en el del icono. Está calculado con
+   getBBox() sobre cada path, no puesto a ojo; los que no figuran ya venían
+   centrados. */
+const GIC={
+  'align':'1 7',
+  'back':'8 15',
+  'camp':'0 -1',
+  'check':'-1 0',
+  'clase-barbaro':'1 1',
+  'clase-bardo':'-2 8',
+  'clase-clerigo':'1 2',
+  'clase-druida':'1 2',
+  'clase-explorador':'21 -3',
+  'clase-guerrero':'0 -7',
+  'clase-hechicero':'-1 -3',
+  'clase-mago':'3 2',
+  'clase-monje':'7 -2',
+  'clase-paladin':'-6 17',
+  'clase-picaro':'1 -24',
+  'grafo':'10 0',
+  'hazard':'-1 -6',
+  'hourglass':'2 0',
+  'idx':'20 0',
+  'nueva':'0 -26',
+  'quill':'5 -4',
+  'raza-draconido':'1 -1',
+  'raza-gnomo':'1 10',
+  'raza-mediano':'12 2',
+  'raza-tiefling':'1 2',
+  'scroll':'4 -1',
+  'search':'1 -3'
+};
 function ic(k,cls){
   /* Si se renombra un icono acá arriba y queda alguna llamada con el nombre
      viejo, antes salía un hueco y nadie se enteraba. Ahora avisa. */
   if(!GI[k]&&typeof console!=='undefined')console.warn('icono inexistente:',k);
-  return `<svg class="gi${cls?' '+cls:''}" viewBox="0 0 512 512" aria-hidden="true" focusable="false">${GI[k]||''}</svg>`;
+  return `<svg class="gi${cls?' '+cls:''}" viewBox="${GIC[k]||'0 0'} 512 512" aria-hidden="true" focusable="false">${GI[k]||''}</svg>`;
 }

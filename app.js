@@ -903,7 +903,8 @@ function vEd(){
       .map(t=>`<button class="gbtn ${type===t?'on':''}"
         style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
         data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}
-      <button class="gbtn" data-act="tiponuevo">+ Otro</button></div>
+      <button class="gbtn ico" data-act="tiponuevo"
+        aria-label="Crear otro tipo" title="Crear otro tipo">${ic('mas')}</button></div>
     ${E.tipoNuevo?`<div class="relnew">
       <input class="sfield" id="tipoN" placeholder="Casa noble, deidad, taberna…"
         onkeydown="tipoKey(event)" autofocus>
@@ -931,7 +932,9 @@ function vEd(){
           ${AT[a.k]&&!tb[AT[a.k]]
             ? `<button class="gbtn on" data-act="atr" data-v="${a.k}:${att(AT[a.k])}"
                 >${esc(AT[a.k])}</button>`:''}
-          <button class="gbtn" data-act="atrotro" data-v="${a.k}">+ Otro</button>
+          <button class="gbtn ico" data-act="atrotro" data-v="${a.k}"
+            aria-label="Otra ${att(a.l.toLowerCase())}"
+            title="Otra ${att(a.l.toLowerCase())}">${ic('mas')}</button>
         </div>
         ${E.atNuevo===a.k?`<div class="relnew">
           <input class="sfield" id="atN" placeholder="Lo que uses en tu mesa"
