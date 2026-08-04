@@ -589,12 +589,21 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   .gmaura{opacity:.7}}
 
 /* ============ botones ============ */
-.segrow{display:flex;justify-content:flex-end;margin-bottom:var(--s5)}
-.seg{display:inline-flex;gap:var(--s1);padding:var(--s1);
+/* En el teléfono ocupa todo el ancho y las dos mitades son iguales: apretado
+   contra el borde derecho, cambiar de vista quedaba lejos del pulgar y los
+   dos botones eran chicos. Desde tablet vuelve a ser compacto a la derecha,
+   que ahí sobra lugar y estirarlo se vería raro. */
+.segrow{display:flex;margin-bottom:var(--s5)}
+.seg{display:flex;flex:1;gap:var(--s1);padding:var(--s1);
   background:var(--surf);border:1px solid var(--line);border-radius:var(--rf)}
-.seg button{height:var(--h-sm);padding:0 var(--s4);border-radius:var(--rf);
+.seg button{flex:1;height:var(--h-sm);padding:0 var(--s4);border-radius:var(--rf);
   background:none;color:var(--dim);
   font-family:var(--mono);font-size:var(--f-xs);text-transform:uppercase;letter-spacing:.06em}
+@media(min-width:680px){
+  .segrow{justify-content:flex-end}
+  .seg{flex:0 0 auto}
+  .seg button{flex:0 0 auto}
+}
 @media(hover:hover){.seg button:hover{color:var(--ink)}}
 .seg button.on{background:var(--surf3);color:var(--ink)}
 
