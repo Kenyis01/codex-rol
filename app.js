@@ -848,12 +848,15 @@ function alsAdd(el){
   a.push(v);return true;
 }
 /* ---------- tipos propios ---------- */
+/* La base guarda el tipo como slug y no acepta más de 60. Un nombre largo
+   entraría igual pero volvería con un error de la base en vez de un aviso. */
+const slugTipo=v=>slugify(String(v||'')).slice(0,60).replace(/-$/,'');
 function tipoAdd(){
   const el=document.getElementById('tipoN');
   if(!el||!st.editing)return false;
   const bruto=(el.value||'').trim();
   if(!bruto){toast('Escribí cómo se llama el tipo','err');return false}
-  const t=slugify(bruto);
+  const t=slugTipo(bruto);
   if(!t){toast('Ese nombre no sirve como tipo','err');return false}
   keepDraft();
   st.editing.type=t;st.editing.tipoNuevo=false;
@@ -2639,7 +2642,7 @@ const ACT={
   tprenombrar:v=>{
     keepCampDraft();
     const el=document.getElementById('tpren');
-    const nuevo=slugify((el&&el.value)||'');
+    const nuevo=slugTipo((el&&el.value)||'');
     if(!nuevo){toast('Escribí el nombre nuevo','err');return}
     if(nuevo===v){st.ecamp.tipo=null;r();return}
     moverTipo(v,nuevo);
