@@ -1582,13 +1582,35 @@ function vImp(){
 
   const P=I.plan;
   const cuenta=k=>P.filter(x=>x.acc===k).length;
+
+  /* Los nombres que la app va a reconocer dentro del texto se marcan acá
+     mismo, con el mismo buscador que corre al aplicar: así lo que se ve en el
+     repaso es exactamente lo que va a quedar enlazado. Entran también las
+     fichas que se crean en esta misma importación, que todavía no existen. */
+  const previa=(()=>{
+    const porNacer=P.filter(x=>x.acc==='crear');
+    const pend={};
+    porNacer.forEach((x,i)=>{pend['nueva-'+i]=x.nombre});
+    const mapa=indiceNombres(porNacer.map((x,i)=>({n:x.nombre,s:'nueva-'+i,a:x.als})));
+    return (txt,propio)=>enlazar(txt||'',mapa,propio)
+      .split(/(\[\[[a-z0-9\-]+\]\])/)
+      .map(t=>{
+        const m=t.match(/^\[\[([a-z0-9\-]+)\]\]$/);
+        if(!m)return esc(t);
+        const e=byS[m[1]];
+        if(e)return `<span class="impmen" style="--c:${TY(e).c}">${esc(e.n)}</span>`;
+        if(pend[m[1]])return `<span class="impmen nueva">${esc(pend[m[1]])}</span>`;
+        return esc(t);
+      }).join('');
+  })();
+
   /* Un trozo de texto que se va a agregar, tal como va a quedar. Se muestra
      entero y no recortado: el que revisa tiene que poder leer lo que firma. */
-  const trozo=(rot,txt,haciaDonde)=>{
+  const trozo=(rot,txt,propio)=>{
     if(!txt)return '';
     return `<div class="impcampo">
-      <div class="impcr">${esc(rot)}${haciaDonde?` <span class="impal">${esc(haciaDonde)}</span>`:''}</div>
-      <div class="impct">${esc(txt)}</div></div>`;
+      <div class="impcr">${esc(rot)}</div>
+      <div class="impct">${previa(txt,propio)}</div></div>`;
   };
   const detalle=x=>{
     if(x.acc==='nada')return `<div class="impdet"><div class="impnada">
@@ -1599,11 +1621,11 @@ function vImp(){
       return `<div class="impdet">
         <div class="impcampo"><div class="impcr">Se crea como</div>
           <div class="impct"><span class="tipoch" style="--c:${t.c}">${esc(t.s)}</span></div></div>
-        ${x.als.length?`<div class="impcampo"><div class="impcr">Otros nombres</div>
+        ${x.als.length?`<div class="impcampo"><div class="impcr">También se la va a llamar</div>
           <div class="impct">${x.als.map(esc).join(' · ')}</div></div>`:''}
-        ${trozo('Resumen',x.resumen)}
-        ${trozo('Descripción',x.cuerpo)}
-        ${trozo('Comentarios',x.notas)}
+        ${trozo('Su resumen va a decir',x.resumen)}
+        ${trozo('Su descripción va a decir',x.cuerpo)}
+        ${trozo('Sus comentarios van a decir',x.notas)}
         ${!x.resumen&&!x.cuerpo&&!x.notas
           ? `<div class="impnada">Viene sin texto: se crearía la ficha vacía,
                solo con el nombre.</div>`:''}
@@ -1629,18 +1651,19 @@ function vImp(){
       ${nada
         ? `<div class="impnada">No trae nada que ${esc(e.n)} no tenga ya.
              Tocar el botón la saltea.</div>`
-        : `<div class="impcampo"><div class="impcr">Se le agrega a</div>
-            <div class="impct"><b>${esc(e.n)}</b> · lo que ya tiene queda intacto, esto va al final.</div></div>
-          ${alsNuevos.length?`<div class="impcampo"><div class="impcr">Otros nombres nuevos</div>
+        : `<div class="impaviso">Lo que ${esc(e.n)} ya tiene no se toca:
+            todo esto se agrega al final.</div>
+          ${alsNuevos.length?`<div class="impcampo">
+            <div class="impcr">Se le van a agregar estos nombres</div>
             <div class="impct">${alsNuevos.map(esc).join(' · ')}${
               alsYa.length?`<span class="impya"> (${alsYa.map(esc).join(' · ')} ya los tenía)</span>`:''}</div></div>`
-            :(alsYa.length?`<div class="impcampo"><div class="impcr">Otros nombres</div>
-              <div class="impct"><span class="impya">${alsYa.map(esc).join(' · ')} ya los tenía</span></div></div>`:'')}
-          ${x.resumen&&!e.sm?trozo('Resumen','',''):''}
-          ${x.resumen&&!e.sm?`<div class="impcampo"><div class="impcr">Resumen</div>
-            <div class="impct">${esc(x.resumen)}<span class="impya"> (no tenía)</span></div></div>`:''}
-          ${trozo('Descripción',x.cuerpo,'al final')}
-          ${trozo('Comentarios',x.notas,'al final')}`}
+            :(alsYa.length?`<div class="impcampo"><div class="impcr">Nombres que ya tenía</div>
+              <div class="impct impya">${alsYa.map(esc).join(' · ')}</div></div>`:'')}
+          ${x.resumen&&!e.sm?`<div class="impcampo">
+            <div class="impcr">Se le va a poner resumen, porque no tenía</div>
+            <div class="impct">${previa(x.resumen,e.s)}</div></div>`:''}
+          ${trozo('Se agrega al final de la descripción',x.cuerpo,e.s)}
+          ${trozo('Se agrega al final de los comentarios',x.notas,e.s)}`}
     </div>`;
   };
 
@@ -1653,7 +1676,9 @@ function vImp(){
       ? `<span class="impest nuevo">Ficha nueva</span> · ${esc(TYT(x.tipo).s)}`
       : x.duda
       ? `<span class="impest duda">¿Es la misma que ${esc(x.e.n)}?</span>`
-      : `<span class="impest ya">Ya existe</span> · se le agrega a ${esc(x.e.n)}`;
+      : nm(x.e.n)===nm(x.nombre)
+      ? '<span class="impest ya">Ya existe</span> · se le agrega lo que trae'
+      : `<span class="impest ya">Ya existe como ${esc(x.e.n)}</span> · se le agrega lo que trae`;
     return `<div class="improw${x.acc==='nada'?' off':''}${x.abierto?' open':''}">
       <div class="impcab">
         <span class="dot" style="color:${TYT(x.tipo).c};background:currentColor"></span>
@@ -1661,9 +1686,11 @@ function vImp(){
           <div class="rn">${esc(x.nombre)}</div>
           <div class="rs">${linea}</div>
         </div>
-        <span class="impchev" data-act="impver" data-v="${i}">${ic('arrow','r')}</span>
         <button class="accch ${x.acc}" data-act="impacc" data-v="${i}">${et}</button>
       </div>
+      <button class="impver" data-act="impver" data-v="${i}"
+        aria-expanded="${x.abierto?'true':'false'}">${
+        x.abierto?'Ocultar el detalle':'Ver qué se escribe'}${ic('arrow')}</button>
       ${x.abierto?detalle(x):''}
     </div>`;
   };
@@ -1673,11 +1700,20 @@ function vImp(){
     <div class="eyebrow">Paso 2</div>
     <h1>Revisá antes de escribir</h1>
     <div class="hint">
-      <b>${nuevas}</b> ficha${nuevas===1?'':'s'} que no existía${nuevas===1?'':'n'} ·
-      <b>${suman}</b> que ya existe${suman===1?'':'n'} y se amplía${suman===1?'':'n'} ·
-      <b>${fuera}</b> sin tocar.<br>
-      Tocá el nombre para ver exactamente qué se escribe. El botón de la derecha
-      cambia qué se hace con esa ficha.
+      ${(()=>{
+        /* Se dice lo que va a pasar, no una tabla de números: los que están en
+           cero no se nombran, que decir \"0 sin tocar\" hacía dudar de si algo
+           se estaba tocando o no. */
+        const p=[];
+        if(nuevas)p.push(`crear <b>${nuevas}</b> ficha${nuevas===1?'':'s'} nueva${nuevas===1?'':'s'}`);
+        if(suman)p.push(`ampliar <b>${suman}</b> que ya existe${suman===1?'':'n'}`);
+        if(!p.length)return 'No quedó nada marcado para escribir.';
+        const frase=p.length===2?p[0]+' y '+p[1]:p[0];
+        return `Al aplicar se van a ${frase}.`
+          +(fuera?` Las otras <b>${fuera}</b> quedan como están.`:'');
+      })()}<br>
+      Los nombres <span class="impmen">subrayados</span> ya tienen ficha y van a
+      quedar enlazados solos.
       ${dudas?`<br><b class="impwarn">${dudas} sin confirmar:</b> me pareció que ya
         existían pero no estoy seguro. Abrilas y decidí.`:''}
     </div>

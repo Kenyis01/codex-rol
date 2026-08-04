@@ -365,10 +365,19 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .improw.off{opacity:.5}
 .impcab{display:flex;gap:var(--s3);align-items:center;padding:var(--s3) var(--s4)}
 .impcab > .grow{cursor:pointer;min-width:0}
-.impchev{flex:none;display:flex;color:var(--dim);cursor:pointer;padding:var(--s1)}
-.impchev .gi{width:11px;height:11px;transition:transform .18s}
-.improw.open .impchev .gi{transform:rotate(0deg)}
-.improw:not(.open) .impchev .gi{transform:rotate(-90deg)}
+/* Abrir el detalle se dice con palabras. Antes era una flecha maciza suelta,
+   que al lado del botón de acción se leía como otro botón más que como
+   "acá hay algo plegado". */
+.impver{display:flex;align-items:center;gap:var(--s2);width:100%;
+  padding:0 var(--s4) var(--s3) calc(var(--s4) + 8px + var(--s3));
+  background:none;border:none;cursor:pointer;text-align:left;
+  font-family:var(--mono);font-size:var(--f-xs);letter-spacing:.04em;
+  color:var(--dim);line-height:1}
+.impver .gi{width:8px;height:8px;transition:transform .18s}
+.improw:not(.open) .impver .gi{transform:rotate(-90deg)}
+@media(hover:hover){.impver:hover{color:var(--muted)}}
+/* lo que no se toca, dicho antes de lo que sí */
+.impaviso{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--muted)}
 /* qué se va a hacer con esa fila: verde crea, dorado suma, apagado saltea */
 .accch{flex:none;font-family:var(--mono);font-size:var(--f-xs);line-height:1;
   padding:0 var(--s3);height:var(--h-chip);border-radius:var(--rf);
@@ -398,6 +407,12 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   overflow-wrap:anywhere}
 .impct.crudo{white-space:pre-wrap}
 .impya{color:var(--dim)}
+/* Un nombre que la app reconoció y va a enlazar sola. Se pinta igual que una
+   mención de la prosa, que es en lo que se va a convertir. */
+.impmen{color:var(--c,var(--gold));font-weight:500;
+  text-decoration:underline;text-underline-offset:.18em;text-decoration-thickness:1.5px;
+  text-decoration-color:color-mix(in srgb,var(--c,var(--gold)) 45%,transparent)}
+.impmen.nueva{--c:var(--location)}
 .impnada{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--dim);
   border-left:2px solid var(--line);padding-left:var(--s3)}
 .tipoch{display:inline-flex;align-items:center;height:var(--h-chip);
