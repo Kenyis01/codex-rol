@@ -406,6 +406,14 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .impop.on{border-color:var(--gold);background:rgba(224,178,92,.1)}
 .impop.nueva{color:var(--muted);font-size:var(--f-cap)}
 @media(hover:hover){.impop:hover{border-color:var(--line2)}}
+/* Administrar tipos propios: mismo patrón que el repaso de la importación,
+   la cabecera arriba y el detalle abajo, no al costado.
+   Va con las dos clases porque .row viene más abajo en el archivo y con la
+   misma especificidad le ganaría su display:flex. */
+.row.tprow{display:block;padding:var(--s3) var(--s4);cursor:default}
+.tprow .impdet{padding:var(--s3) 0 0}
+.tprow .impcampo .btnrow{gap:var(--s2)}
+.tprow .sfield{flex:1;min-width:0}
 .prose{font-size:var(--f-base);line-height:var(--lh-body);color:var(--ink2)}
 .prose p{margin:0 0 var(--s4)}
 .prose p:last-child{margin:0}

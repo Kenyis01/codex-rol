@@ -604,9 +604,65 @@ function vEdCamp(){
     <div class="hint">Las fichas marcadas como del grupo se juntan bajo este título,
       en el índice y en cada ficha.</div>
 
+    ${vTiposPropios()}
+
     <div class="savebar"><button class="btn pri" data-act="savecamp" ${st.busy?'disabled':''}>
       ${st.busy?'Guardando…':'Guardar'}</button></div>
   </div>`;
+}
+/* ---------- administrar los tipos propios ----------
+   Un tipo propio existe mientras alguna ficha lo use, así que para sacar uno
+   mal escrito habría que ir ficha por ficha, sin siquiera saber cuáles son.
+   Acá se ven todos con su cuenta, y se pueden renombrar o borrar pasando sus
+   fichas a otro tipo. Los cinco que vienen puestos no se tocan. */
+function vTiposPropios(){
+  const propios=tiposPropios();
+  if(!propios.length)return '';
+  const E=st.ecamp;
+  const cuantas=t=>D.filter(e=>e.t===t).length;
+  return `<div class="eyebrow mt">Tipos propios</div>
+    <div class="card">${propios.map(t=>{
+      const n=cuantas(t), abierto=E.tipo===t;
+      return `<div class="row tprow${abierto?' open':''}">
+        <div class="impcab" style="padding:0;width:100%">
+          <span class="dot" style="color:${TYT(t).c};background:currentColor"></span>
+          <div class="grow"><div class="rn">${esc(TYT(t).l)}</div>
+            <div class="rs">${n} ficha${n===1?'':'s'}</div></div>
+          <button class="gbtn" data-act="tpabrir" data-v="${att(t)}">
+            ${abierto?'Cerrar':'Cambiar'}</button>
+        </div>
+        ${abierto?`<div class="impdet" style="padding-left:calc(8px + var(--s3))">
+          <div class="impcampo"><div class="impcr">Renombrarlo</div>
+            <div class="btnrow even" style="margin-top:var(--s2)">
+              <input class="sfield" id="tpren" value="${att(TYT(t).l)}">
+              <button class="btn sec2" data-act="tprenombrar" data-v="${att(t)}">Cambiar</button>
+            </div></div>
+          <div class="impcampo"><div class="impcr">O pasar sus ${n} ficha${n===1?'':'s'} a</div>
+            <div class="btnrow" style="margin-top:var(--s2)">${
+              tiposTodos().filter(o=>o!==t).map(o=>`<button class="gbtn"
+                style="color:${TYT(o).c};border-color:${TYT(o).c}55"
+                data-act="tpmover" data-v="${att(t)}" data-a="${att(o)}">${esc(TYT(o).s)}</button>`).join('')}
+            </div>
+            <div class="hint">El tipo desaparece solo cuando ninguna ficha lo usa.</div>
+          </div>
+        </div>`:''}
+      </div>`;
+    }).join('')}</div>`;
+}
+/* Las dos operaciones son la misma: reescribir el tipo de todas las fichas
+   que lo tenían. Renombrar es moverlas al nombre nuevo. */
+async function moverTipo(de,a){
+  const fichas=D.filter(e=>e.t===de);
+  if(!fichas.length)return;
+  if(!a||a===de)return;
+  st.busy=true;r();
+  const {error}=await SB.from('entities').update({type:a,edited_by:st.me||null})
+    .in('id',fichas.map(e=>e.id));
+  st.busy=false;
+  if(error){toast('No se pudo cambiar: '+error.message,'err');r();return}
+  await loadCamp(cur);
+  st.ecamp.tipo=null;r();
+  toast(fichas.length+' ficha'+(fichas.length===1?'':'s')+' a «'+TYT(a).l+'»','ok');
 }
 async function saveCamp(){
   if(st.busy)return;
@@ -2578,6 +2634,16 @@ const ACT={
   nocover:()=>saveCover(null),
   edcamp:editCamp,
   savecamp:saveCamp,
+  tpabrir:v=>{keepCampDraft();st.ecamp.tipo=st.ecamp.tipo===v?null:v;r()},
+  tpmover:(v,el)=>{keepCampDraft();moverTipo(v,el.getAttribute('data-a'))},
+  tprenombrar:v=>{
+    keepCampDraft();
+    const el=document.getElementById('tpren');
+    const nuevo=slugify((el&&el.value)||'');
+    if(!nuevo){toast('Escribí el nombre nuevo','err');return}
+    if(nuevo===v){st.ecamp.tipo=null;r();return}
+    moverTipo(v,nuevo);
+  },
   hist:v=>openHist(v),
   restaurar:v=>restaurar(v),
   confpisar:()=>{st.conf=null;save(true)},
