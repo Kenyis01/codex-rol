@@ -29,7 +29,7 @@ const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3'};
    una hoja de personaje, y son datos que envejecen en una sesión. */
 const RAZAS={humano:'Humano',elfo:'Elfo',semielfo:'Semielfo',enano:'Enano',
   mediano:'Mediano',gnomo:'Gnomo',semiorco:'Semiorco',tiefling:'Tiefling',
-  draconido:'Dracónido'};
+  draconido:'Dracónido',warforged:'Warforged'};
 const CLASES={barbaro:'Bárbaro',bardo:'Bardo',brujo:'Brujo',clerigo:'Clérigo',
   druida:'Druida',explorador:'Explorador',guerrero:'Guerrero',hechicero:'Hechicero',
   mago:'Mago',monje:'Monje',paladin:'Paladín',picaro:'Pícaro'};
@@ -40,13 +40,19 @@ const TRASF={acolito:'Acólito',artesano:'Artesano',artista:'Artista',
   criminal:'Criminal',ermitano:'Ermitaño',forastero:'Forastero',
   heroe:'Héroe del pueblo',huerfano:'Huérfano',marinero:'Marinero',
   noble:'Noble',sabio:'Sabio',soldado:'Soldado'};
-/* El orden es el que se ve, en la ficha y en el editor. */
+/* El orden es el que se ve, en la ficha y en el editor. "en" dice en qué tipos
+   de ficha tiene sentido pedirlo: una facción no tiene raza y un lugar no tiene
+   trasfondo, así que ahí ni se ofrecen. Agregar un atributo a otro tipo es
+   sumarlo a esta lista y nada más. */
 const ATRIB=[
-  {k:'raza',        l:'Raza',        tb:RAZAS,  ic:v=>'raza-'+v},
-  {k:'clase',       l:'Clase',       tb:CLASES, ic:v=>'clase-'+v},
-  {k:'alineamiento',l:'Alineamiento',tb:ALINE,  ic:()=>'align'},
-  {k:'trasfondo',   l:'Trasfondo',   tb:TRASF}
+  {k:'raza',        l:'Raza',        tb:RAZAS,  ic:v=>'raza-'+v,  ui:'chips', en:['character']},
+  {k:'clase',       l:'Clase',       tb:CLASES, ic:v=>'clase-'+v, ui:'chips', en:['character']},
+  /* el alineamiento va en desplegable y no en botones: son nueve y todos
+     llevarían la misma balanza, que repetida nueve veces es ruido */
+  {k:'alineamiento',l:'Alineamiento',tb:ALINE,  ic:()=>'align',   ui:'lista', en:['character']},
+  {k:'trasfondo',   l:'Trasfondo',   tb:TRASF,                    ui:'texto', en:['character']}
 ];
+const atrDeTipo=t=>ATRIB.filter(a=>a.en.indexOf(t)>=0);
 /* Lo que se escribe se guarda con la clave de la lista cuando coincide con
    alguna, y tal cual cuando no. Así "elfo", "Elfo" y "ELFO" son la misma cosa
    y se pueden contar juntas, pero nada impide poner algo de tu mesa. */
@@ -919,7 +925,12 @@ function vEd(){
          atributos cargados y se le cambió el tipo: si no, no habría manera de
          sacárselos. */
       const AT=E.at||{};
-      if(type!=='character'&&!ATRIB.some(a=>AT[a.k]))return '';
+      /* Los que corresponden a este tipo, más cualquiera que la ficha ya tenga
+         cargado: si a una que era personaje le cambiaste el tipo, el campo
+         tiene que seguir estando para poder vaciarlo. */
+      const hay=atrDeTipo(type);
+      const V=ATRIB.filter(a=>hay.indexOf(a)>=0||AT[a.k]);
+      if(!V.length)return '';
       const chips=(a,tb)=>`<div class="eyebrow mt">${esc(a.l)}</div>
         <div class="btnrow">
           <button class="gbtn ${AT[a.k]?'':'on'}" data-act="atr"
@@ -945,16 +956,18 @@ function vEd(){
           oninput="atrEscrito(this)">
         <datalist id="dl-${a.k}">${Object.values(a.tb)
           .map(v=>`<option value="${att(v)}">`).join('')}</datalist>`;
+      /* Cada atributo se dibuja según cómo se elige: los que tienen icono van
+         como botones, el alineamiento como desplegable —son nueve y con nueve
+         dibujos distintos sería ruido— y el resto como texto con sugerencias. */
+      const desple=a=>`<div class="eyebrow mt">${esc(a.l)}</div>
+        <select class="sfield" data-at="${a.k}" onchange="atrEscrito(this)">
+          <option value="">Sin ${esc(a.l.toLowerCase())}</option>
+          ${Object.keys(a.tb).map(k=>`<option value="${k}"${
+            AT[a.k]===k?' selected':''}>${esc(a.tb[k])}</option>`).join('')}
+        </select>`;
+      const pinta=a=>({chips:chips,lista:desple,texto:libre}[a.ui]||libre)(a,a.tb);
       return `<div id="atrib">
-        ${chips(ATRIB[0],RAZAS)}
-        ${chips(ATRIB[1],CLASES)}
-        <div class="eyebrow mt">Alineamiento</div>
-        <select class="sfield" data-at="alineamiento" onchange="atrEscrito(this)">
-          <option value="">Sin alineamiento</option>
-          ${Object.keys(ALINE).map(k=>`<option value="${k}"${
-            AT.alineamiento===k?' selected':''}>${esc(ALINE[k])}</option>`).join('')}
-        </select>
-        ${libre(ATRIB[3])}
+        ${V.map(pinta).join('')}
         <div class="hint">Todos son opcionales. Los que dejes vacíos no se
           muestran en la ficha.</div>
       </div>`;
@@ -1621,9 +1634,10 @@ function leerPlan(txt){
     const e=D.find(x=>nombres.indexOf(nm(x.n))>=0
       ||(x.a||[]).some(al=>nombres.indexOf(nm(al))>=0));
     const dudas=e?[]:parecidas(nombre,null);
-    /* solo para personajes: en un lugar o un objeto no significan nada */
+    /* solo los que corresponden a ese tipo: en un lugar o un objeto no
+       significan nada, aunque la AI los mande igual */
     const at={};
-    if(tipo==='character')ATRIB.forEach(a=>{
+    atrDeTipo(tipo).forEach(a=>{
       const v=claveAtr(a.tb,f[a.k]);
       if(v)at[a.k]=v;
     });
