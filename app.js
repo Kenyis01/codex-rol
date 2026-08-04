@@ -59,8 +59,13 @@ const app=document.getElementById('app');
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const att=esc;                       // mismo escape, sirve para atributos
+/* Tiene que dar exactamente lo mismo que norm() en la base, que es lo que
+   calcula la columna normalized de los otros nombres:
+   minúsculas, sin acentos, espacios seguidos colapsados en uno, sin bordes.
+   Si difieren, el índice único de la base considera iguales dos cosas que la
+   app cree distintas y el guardado falla. */
 const nm=s=>String(s==null?'':s).toLowerCase().normalize('NFD')
-  .replace(/[\u0300-\u036f]/g,'').trim();
+  .replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 const LK=/\[\[([a-z0-9\-]+)\]\]/g;
 const slugify=s=>nm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 
@@ -1168,14 +1173,16 @@ async function save(pisar){
 
 /* Los otros nombres viven en su propia tabla, así que van aparte de la ficha.
    Se comparan por su forma normalizada, que es la misma con la que buscan el
-   buscador y el @, y también la que guarda la columna normalized. */
+   buscador y el @, y la misma que calcula la base.
+   normalized no se manda: es una columna generada, la escribe la base sola a
+   partir del alias, y mandarla es un error. */
 async function guardarAlias(id,quedan,tenia){
   const q=(quedan||[]).map(x=>x.trim()).filter(Boolean), t=tenia||[];
   const nuevos=q.filter(x=>!t.some(y=>nm(y)===nm(x)));
   const fuera=t.filter(y=>!q.some(x=>nm(x)===nm(y)));
   if(nuevos.length){
     const {error}=await SB.from('entity_aliases')
-      .insert(nuevos.map(a=>({entity_id:id,alias:a,normalized:nm(a)})));
+      .insert(nuevos.map(a=>({entity_id:id,alias:a})));
     if(error)return error;
   }
   if(fuera.length){
