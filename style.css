@@ -308,6 +308,19 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   -webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;
   -webkit-mask-position:center;mask-position:center}
 .aka{font-family:var(--mono);font-size:var(--f-sm);color:var(--dim);margin-top:var(--s3)}
+/* ---- atributos de personaje ----
+   Fila propia, separada de las menciones y las conexiones: estos los cargó
+   alguien, los otros los cuenta la app. El icono va a 16px porque a 13 varios
+   de los dibujos de raza se vuelven un borrón. */
+.atrs{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
+.atr{display:inline-flex;align-items:center;gap:var(--s2);
+  height:var(--h-chip);padding:0 var(--s3);border-radius:var(--rf);
+  background:var(--surf2);border:1px solid var(--line2);color:var(--ink2);
+  font-size:var(--f-cap);line-height:1;white-space:nowrap}
+.atr .gi{width:16px;height:16px;color:var(--gold);flex:none}
+.atrs + .meta{margin-top:var(--s3)}
+/* dentro del repaso de importar va en línea con el texto */
+.impct .atrs{display:inline-flex;margin-top:0}
 .meta{display:flex;gap:var(--s2);flex-wrap:wrap;margin:var(--s4) 0 var(--s5)}
 .aka + .meta{margin-top:var(--s3)}
 .chip{display:inline-flex;align-items:center;height:var(--h-chip);padding:0 var(--s3);
@@ -741,6 +754,9 @@ canvas.pointing{cursor:pointer}
   .gfila.acciones{flex-direction:row;align-items:center}}
 /* el icono no tenía medida propia y el botón salía vacío */
 .gbtn .gi{width:15px;height:15px;margin-right:var(--s2);flex:none}
+/* raza y clase se eligen con el dibujo delante del nombre */
+.btnrow .gbtn .gi{width:16px;height:16px}
+.btnrow .gbtn.on .gi{opacity:.9}
 
 /* Apagado: hueco y punteado. Prendido: relleno del color del tipo.
    Se nota de un vistazo cuál está activo sin tener que comparar opacidades. */
