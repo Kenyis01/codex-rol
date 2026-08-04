@@ -1349,6 +1349,9 @@ function leerPlan(txt){
       notas:String(f.comentarios||f.conNosotros||f.notes||'').trim(),
       e:e||(dudas.length?dudas[0].e:null),
       duda:!e&&dudas.length>0,
+      /* las otras candidatas quedan a mano por si la primera no era */
+      cands:dudas.map(d=>d.e),
+      abierto:false,
       acc:(e||dudas.length)?'sumar':'crear'
     });
   }
@@ -1448,29 +1451,105 @@ function vImp(){
 
   const P=I.plan;
   const cuenta=k=>P.filter(x=>x.acc===k).length;
-  const fila=(x,i)=>{
-    const et={crear:'Crear',sumar:'Sumar',nada:'Omitir'}[x.acc];
-    /* el destino va en el renglón y no en el chip: "Sumar a Los Zhentarim"
-       no entra a lo ancho y se cortaba al medio */
-    const sub=x.acc==='sumar'
-      ? `<div class="rs dest">Se suma a ${esc(x.e.n)}${x.duda?' <span class="dudach">¿es la misma?</span>':''}</div>`
-      : (x.resumen||x.cuerpo)
-        ? `<div class="rs">${esc((x.resumen||x.cuerpo).slice(0,90))}</div>`:'';
-    return `<div class="row improw${x.acc==='nada'?' off':''}" data-act="impacc" data-v="${i}">
-      <span class="dot" style="color:${TYT(x.tipo).c};background:currentColor"></span>
-      <div class="grow">
-        <div class="rn">${esc(x.nombre)}</div>
-        ${sub}
-        ${x.als.length?`<div class="rs dim">también: ${x.als.map(esc).join(' · ')}</div>`:''}
-      </div>
-      <span class="accch ${x.acc}">${et}</span></div>`;
+  /* Un trozo de texto que se va a agregar, tal como va a quedar. Se muestra
+     entero y no recortado: el que revisa tiene que poder leer lo que firma. */
+  const trozo=(rot,txt,haciaDonde)=>{
+    if(!txt)return '';
+    return `<div class="impcampo">
+      <div class="impcr">${esc(rot)}${haciaDonde?` <span class="impal">${esc(haciaDonde)}</span>`:''}</div>
+      <div class="impct">${esc(txt)}</div></div>`;
   };
+  const detalle=x=>{
+    if(x.acc==='nada')return `<div class="impdet"><div class="impnada">
+      Esta ficha se saltea. Nada de lo que trae se va a escribir.</div></div>`;
+
+    if(x.acc==='crear'){
+      const t=TYT(x.tipo);
+      return `<div class="impdet">
+        <div class="impcampo"><div class="impcr">Se crea como</div>
+          <div class="impct"><span class="tipoch" style="--c:${t.c}">${esc(t.s)}</span></div></div>
+        ${x.als.length?`<div class="impcampo"><div class="impcr">Otros nombres</div>
+          <div class="impct">${x.als.map(esc).join(' · ')}</div></div>`:''}
+        ${trozo('Resumen',x.resumen)}
+        ${trozo('Descripción',x.cuerpo)}
+        ${trozo('Comentarios',x.notas)}
+        ${!x.resumen&&!x.cuerpo&&!x.notas
+          ? `<div class="impnada">Viene sin texto: se crearía la ficha vacía,
+               solo con el nombre.</div>`:''}
+      </div>`;
+    }
+
+    /* sumar: lo importante es qué se agrega y qué queda intacto */
+    const e=x.e;
+    const alsNuevos=x.als.filter(a=>nm(a)!==nm(e.n)&&!(e.a||[]).some(y=>nm(y)===nm(a)));
+    const alsYa=x.als.filter(a=>!alsNuevos.includes(a));
+    const nada=!x.cuerpo&&!x.notas&&!alsNuevos.length&&!(x.resumen&&!e.sm);
+    return `<div class="impdet">
+      ${x.duda?`<div class="impcampo"><div class="impcr">¿Cuál es?</div>
+        <div class="impelegir">${x.cands.map(c=>`
+          <div class="impop ${c.s===e.s?'on':''}" data-act="impelegir"
+               data-v="${att(c.s)}" data-i="${P.indexOf(x)}">
+            ${av(c,AV.sm)}<div class="grow"><div class="rn">${esc(c.n)}</div>
+              <div class="rs">${esc(c.sm||TY(c).s)}</div></div></div>`).join('')}
+          <div class="impop nueva" data-act="impacc" data-v="${P.indexOf(x)}">
+            <div class="grow"><div class="rn">Ninguna: crear «${esc(x.nombre)}» aparte</div></div>
+          </div>
+        </div></div>`:''}
+      ${nada
+        ? `<div class="impnada">No trae nada que ${esc(e.n)} no tenga ya.
+             Tocar el botón la saltea.</div>`
+        : `<div class="impcampo"><div class="impcr">Se le agrega a</div>
+            <div class="impct"><b>${esc(e.n)}</b> · lo que ya tiene queda intacto, esto va al final.</div></div>
+          ${alsNuevos.length?`<div class="impcampo"><div class="impcr">Otros nombres nuevos</div>
+            <div class="impct">${alsNuevos.map(esc).join(' · ')}${
+              alsYa.length?`<span class="impya"> (${alsYa.map(esc).join(' · ')} ya los tenía)</span>`:''}</div></div>`
+            :(alsYa.length?`<div class="impcampo"><div class="impcr">Otros nombres</div>
+              <div class="impct"><span class="impya">${alsYa.map(esc).join(' · ')} ya los tenía</span></div></div>`:'')}
+          ${x.resumen&&!e.sm?trozo('Resumen','',''):''}
+          ${x.resumen&&!e.sm?`<div class="impcampo"><div class="impcr">Resumen</div>
+            <div class="impct">${esc(x.resumen)}<span class="impya"> (no tenía)</span></div></div>`:''}
+          ${trozo('Descripción',x.cuerpo,'al final')}
+          ${trozo('Comentarios',x.notas,'al final')}`}
+    </div>`;
+  };
+
+  const fila=(x,i)=>{
+    const et={crear:'Crear',sumar:'Sumar',nada:'Saltear'}[x.acc];
+    /* el renglón dice en castellano qué va a pasar, sin que haya que abrirlo */
+    const linea=x.acc==='nada'
+      ? '<span class="impest">No se toca</span>'
+      : x.acc==='crear'
+      ? `<span class="impest nuevo">Ficha nueva</span> · ${esc(TYT(x.tipo).s)}`
+      : x.duda
+      ? `<span class="impest duda">¿Es la misma que ${esc(x.e.n)}?</span>`
+      : `<span class="impest ya">Ya existe</span> · se le agrega a ${esc(x.e.n)}`;
+    return `<div class="improw${x.acc==='nada'?' off':''}${x.abierto?' open':''}">
+      <div class="impcab">
+        <span class="dot" style="color:${TYT(x.tipo).c};background:currentColor"></span>
+        <div class="grow" data-act="impver" data-v="${i}">
+          <div class="rn">${esc(x.nombre)}</div>
+          <div class="rs">${linea}</div>
+        </div>
+        <span class="impchev" data-act="impver" data-v="${i}">${ic('arrow','r')}</span>
+        <button class="accch ${x.acc}" data-act="impacc" data-v="${i}">${et}</button>
+      </div>
+      ${x.abierto?detalle(x):''}
+    </div>`;
+  };
+  const nuevas=cuenta('crear'), suman=cuenta('sumar'), fuera=cuenta('nada');
+  const dudas=P.filter(x=>x.duda&&x.acc==='sumar').length;
   return cab+`<div class="page">
     <div class="eyebrow">Paso 2</div>
-    <h1>Qué va a pasar</h1>
-    <div class="hint">${cuenta('crear')} fichas nuevas · ${cuenta('sumar')} se
-      amplían · ${cuenta('nada')} sin tocar. Tocá una fila para cambiarla.
-      Los nombres que el codex ya conoce quedan enlazados solos.</div>
+    <h1>Revisá antes de escribir</h1>
+    <div class="hint">
+      <b>${nuevas}</b> ficha${nuevas===1?'':'s'} que no existía${nuevas===1?'':'n'} ·
+      <b>${suman}</b> que ya existe${suman===1?'':'n'} y se amplía${suman===1?'':'n'} ·
+      <b>${fuera}</b> sin tocar.<br>
+      Tocá el nombre para ver exactamente qué se escribe. El botón de la derecha
+      cambia qué se hace con esa ficha.
+      ${dudas?`<br><b class="impwarn">${dudas} sin confirmar:</b> me pareció que ya
+        existían pero no estoy seguro. Abrilas y decidí.`:''}
+    </div>
     <button class="btn sec2" data-act="impvolver">Volver a pegar</button>
     <div class="card mt">${P.map(fila).join('')}</div>
     <div class="savebar"><button class="btn pri" data-act="impaplicar"${st.busy?' disabled':''}>
@@ -2532,12 +2611,20 @@ const ACT={
     if(res.err){st.imp.err=res.err;r();return}
     st.imp.plan=res.items;st.imp.err='';st.imp.paso='revisar';r();alTope();
   },
-  /* cada toque cambia qué se va a hacer con esa fila */
+  /* cada toque del botón cambia qué se va a hacer con esa fila */
   impacc:v=>{
     const x=st.imp.plan[+v];if(!x)return;
     const ciclo=x.e?(x.duda?['sumar','crear','nada']:['sumar','nada'])
                    :['crear','nada'];
     x.acc=ciclo[(ciclo.indexOf(x.acc)+1)%ciclo.length];r();
+  },
+  /* abrir una fila para ver qué se escribe */
+  impver:v=>{const x=st.imp.plan[+v];if(x){x.abierto=!x.abierto;r()}},
+  /* de las parecidas, elegir cuál es */
+  impelegir:(v,el)=>{
+    const i=+el.getAttribute('data-i'), x=st.imp.plan[i];
+    if(!x||!byS[v])return;
+    x.e=byS[v];x.acc='sumar';r();
   },
   impaplicar:aplicarImp,
   pc:()=>{keepDraft();st.editing.pc=!st.editing.pc;r()},

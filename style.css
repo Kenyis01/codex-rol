@@ -351,22 +351,61 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   padding:var(--s3);outline:none}
 .ta::placeholder{color:var(--dim)}
 .ta:focus{border-color:rgba(224,178,92,.55);box-shadow:0 0 0 3px rgba(224,178,92,.10)}
-.improw{cursor:pointer;gap:var(--s3)}
-.improw.off{opacity:.42}
-.improw .rs.dim{color:var(--dim);font-size:var(--f-sm)}
-/* qué se va a hacer con esa fila: verde crea, dorado suma, apagado omite */
+/* Una fila del repaso. El renglón abre el detalle y el botón de la derecha
+   cambia la acción: antes tocar cualquier parte hacía lo segundo, y se
+   cambiaba sin querer lo que uno solo quería mirar. */
+.improw{display:block;padding:0;border-bottom:1px solid var(--line)}
+.improw:last-child{border-bottom:none}
+.improw.off{opacity:.5}
+.impcab{display:flex;gap:var(--s3);align-items:center;padding:var(--s3) var(--s4)}
+.impcab > .grow{cursor:pointer;min-width:0}
+.impchev{flex:none;display:flex;color:var(--dim);cursor:pointer;padding:var(--s1)}
+.impchev .gi{width:11px;height:11px;transition:transform .18s}
+.improw.open .impchev .gi{transform:rotate(0deg)}
+.improw:not(.open) .impchev .gi{transform:rotate(-90deg)}
+/* qué se va a hacer con esa fila: verde crea, dorado suma, apagado saltea */
 .accch{flex:none;font-family:var(--mono);font-size:var(--f-xs);line-height:1;
   padding:0 var(--s3);height:var(--h-chip);border-radius:var(--rf);
-  display:inline-flex;align-items:center;max-width:42%;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  border:1px solid currentColor}
+  display:inline-flex;align-items:center;white-space:nowrap;cursor:pointer;
+  background:none;border:1px solid currentColor}
 .accch.crear{color:var(--location)}
 .accch.sumar{color:var(--gold)}
 .accch.nada{color:var(--dim)}
+@media(hover:hover){.accch:hover{background:rgba(237,231,218,.08)}}
 .card.mt{margin-top:var(--s4)}
-.improw .rs.dest{color:var(--gold)}
-.dudach{font-family:var(--mono);font-size:var(--f-xs);color:var(--gold);
-  letter-spacing:0;text-transform:none}
+/* el estado, dicho en palabras y no solo en color */
+.impest{font-weight:600}
+.impest.nuevo{color:var(--location)}
+.impest.ya{color:var(--gold)}
+.impest.duda{color:var(--faction)}
+.impwarn{color:var(--faction)}
+/* el detalle: exactamente lo que se va a escribir */
+.impdet{padding:0 var(--s4) var(--s4) calc(var(--s4) + 8px + var(--s3));
+  display:flex;flex-direction:column;gap:var(--s3)}
+.impcampo{border-left:2px solid var(--line2);padding-left:var(--s3)}
+.impcr{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
+  letter-spacing:.04em;margin-bottom:2px}
+.impal{color:var(--gold)}
+/* pre-wrap solo para el texto que viene de afuera: en lo que escribo yo,
+   el sangrado del propio código terminaba saliendo en pantalla */
+.impct{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--ink2);
+  overflow-wrap:anywhere}
+.impct.crudo{white-space:pre-wrap}
+.impya{color:var(--dim)}
+.impnada{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--dim);
+  border-left:2px solid var(--line);padding-left:var(--s3)}
+.tipoch{display:inline-flex;align-items:center;height:var(--h-chip);
+  padding:0 var(--s3);border-radius:var(--rf);border:1px solid var(--c);
+  color:var(--c);font-family:var(--mono);font-size:var(--f-xs);
+  text-transform:uppercase;letter-spacing:.06em}
+/* elegir cuál de las parecidas es */
+.impelegir{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s2)}
+.impop{display:flex;align-items:center;gap:var(--s3);cursor:pointer;
+  padding:var(--s2) var(--s3);border-radius:var(--r2);
+  border:1px solid var(--line);background:var(--surf2)}
+.impop.on{border-color:var(--gold);background:rgba(224,178,92,.1)}
+.impop.nueva{color:var(--muted);font-size:var(--f-cap)}
+@media(hover:hover){.impop:hover{border-color:var(--line2)}}
 .prose{font-size:var(--f-base);line-height:var(--lh-body);color:var(--ink2)}
 .prose p{margin:0 0 var(--s4)}
 .prose p:last-child{margin:0}
