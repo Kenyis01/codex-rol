@@ -431,25 +431,44 @@ function sellarNav(){try{history.replaceState({v:verActual()},'',rutaDe())}catch
    el que manda es el historial del navegador */
 function apilar(){hist.push(verActual());if(hist.length>60)hist.shift()}
 
+/* Ir a donde ya estás no es navegar: si dejara entrada, el historial juntaría
+   dos iguales pegadas y el siguiente Atrás no cambiaría nada. */
 function go(id){
   if(!byS[id])return;
+  if(st.tab==='ficha'&&st.ent===id&&!st.editing){r();alTope();return}
   apilar();
   st.ent=id;st.tab='ficha';st.editing=null;st.ecamp=null;r();alTope();marcarNav();
 }
 function tab(t){
+  if(st.tab===t&&!st.editing&&!st.ecamp){st.q='';r();alTope();return}
   apilar();
   st.tab=t;st.editing=null;st.ecamp=null;st.q='';r();alTope();marcarNav();
 }
 /* El botón de atrás y el gesto tienen que hacer lo mismo, así que el botón
    delega en el historial y todo termina en popstate, en un solo lugar. */
-let ULTNAV=0;
 function back(){
-  /* en iOS el gesto del sistema y el nuestro pueden llegar los dos: sin esto
-     un solo deslizar retrocedería dos pantallas */
-  if(Date.now()-ULTNAV<400)return;
-  ULTNAV=Date.now();
   if(hist.length){history.back();return}
   st.tab=cur?'idx':'home';st.editing=null;st.ecamp=null;r();alTope();sellarNav();
+}
+
+/* Cerrar una pantalla que se abrió sobre otra —el editor, el historial, el
+   importador— es volver, no avanzar: tiene que consumir la entrada que dejó
+   al abrirse. Antes se reemplazaba esa entrada por la vista de destino y el
+   historial quedaba con dos iguales pegadas, así que el primer toque de Atrás
+   no cambiaba nada y había que tocar dos veces.
+   Con "vista" se impone a dónde llegar (la ficha recién guardada, el índice);
+   sin ella se vuelve a donde se estaba antes de abrir. */
+let ALVOLVER=null;
+function cerrar(vista){
+  st.editing=null;st.ecamp=null;st.imp=null;st.hist=null;st.dup=null;st.conf=null;
+  const v=vista?Object.assign({camp:cur?cur.id:null,ent:st.ent},vista):null;
+  if(!hist.length){
+    if(v)aplicarVista(v).then(sellarNav);else{r();alTope();sellarNav()}
+    return;
+  }
+  ALVOLVER=v;
+  try{history.back()}
+  catch(_){ALVOLVER=null;if(v)aplicarVista(v).then(sellarNav)}
 }
 async function aplicarVista(v){
   st.editing=null;st.ecamp=null;st.conf=null;st.dup=null;
@@ -465,8 +484,10 @@ async function aplicarVista(v){
   st.tab=v.tab;r();alTope();
 }
 addEventListener('popstate',ev=>{
-  ULTNAV=Date.now();
   if(hist.length)hist.pop();
+  /* si veníamos de cerrar una pantalla, manda el destino que pidió */
+  const forzada=ALVOLVER;ALVOLVER=null;
+  if(forzada){aplicarVista(forzada).then(sellarNav);return}
   const v=(ev.state&&ev.state.v)||null;
   if(v){aplicarVista(v);return}
   /* entrada sin estado nuestro (llegaste por un link pegado, o el navegador
@@ -854,7 +875,7 @@ async function saveCamp(){
   Object.assign(cur,{name,blurb,party_name:party||null});
   const i=CAMPS.findIndex(c=>c.id===cur.id);
   if(i>=0)CAMPS[i]=Object.assign({},CAMPS[i],{name,blurb,party_name:party||null});
-  st.ecamp=null;st.tab='idx';r();alTope();sellarNav();
+  cerrar({tab:'idx'});
   toast('Campaña actualizada','ok');
 }
 
@@ -1425,9 +1446,9 @@ async function save(pisar){
   await loadCamp(cur);
   if(alErr)toast('La ficha se guardó, los otros nombres no: '+alErr.message,'err');
   else if(relErr)toast('La ficha se guardó, los vínculos no: '+relErr.message,'err');
-  st.ent=res.data.slug;st.editing=null;st.tab='ficha';
+  st.ent=res.data.slug;
   const added=[...(ADJ[st.ent]||[])].filter(x=>!before.has(x)).length;
-  r();alTope();sellarNav();
+  cerrar({tab:'ficha',ent:res.data.slug});
   toast(added?`Guardado · ${added} vínculo${added>1?'s':''} nuevo${added>1?'s':''}`:'Guardado','ok');
 }
 
@@ -1781,7 +1802,7 @@ async function aplicarImp(){
   }
   st.busy=false;
   await loadCamp(cur);
-  st.imp=null;st.tab='idx';r();alTope();sellarNav();
+  cerrar({tab:'idx'});
   if(fallos.length)toast(fallos.length+' no entraron. '+fallos[0],'err');
   else toast(creadas+' nuevas · '+sumadas+' ampliadas'+
     (alias?' · '+alias+' nombres':''),'ok');
@@ -2050,7 +2071,7 @@ async function restaurar(id){
   st.busy=false;
   if(error){toast('No se pudo restaurar: '+error.message,'err');r();return}
   await loadCamp(cur);
-  st.ent=H.slug;st.hist=null;st.tab='ficha';r();alTope();sellarNav();
+  cerrar({tab:'ficha',ent:H.slug});
   toast('Versión restaurada','ok');
 }
 
@@ -3044,13 +3065,13 @@ const ACT={
   restaurar:v=>restaurar(v),
   confpisar:()=>{st.conf=null;save(true)},
   confver:()=>{const s2=st.conf.slug;st.conf=null;st.editing=null;
-    loadCamp(cur).then(()=>{st.ent=s2;st.tab='ficha';r();alTope();sellarNav()})},
+    loadCamp(cur).then(()=>cerrar({tab:'ficha',ent:s2}))},
   confvolver:()=>{st.conf=null;r()},
-  cancelcamp:()=>{st.ecamp=null;st.tab='idx';r();alTope();sellarNav()},
+  cancelcamp:()=>cerrar({tab:'idx'}),
   edit:v=>edit(v),
   new:()=>edit(null),
-  cancel:()=>{const E=st.editing;st.editing=null;
-    if(E&&E.slug&&byS[E.slug]){st.tab='ficha';st.ent=E.slug;r();alTope();sellarNav()}else tab('idx')},
+  /* sin destino: vuelve a donde se estaba antes de abrir el editor */
+  cancel:()=>cerrar(),
   save,
   type:v=>{keepDraft();st.editing.type=v;r()},
   /* data-v viene como "clase:mago"; sin valor, lo borra */
@@ -3078,7 +3099,8 @@ const ACT={
   dupcrear:()=>{st.editing.igual=true;st.dup=null;save()},
   dupvolver:()=>{st.dup=null;r()},
   importar,
-  impsalir:()=>{st.imp=null;tab('idx')},
+  /* salir del importador también es cerrar: no deja una entrada más */
+  impsalir:()=>cerrar({tab:'idx'}),
   impvolver:()=>{st.imp.paso='pegar';st.imp.err='';r();alTope()},
   impprompt:()=>copiar(PROMPT,'Texto copiado. Pegáselo a tu AI con tus notas.'),
   impleer:()=>{
