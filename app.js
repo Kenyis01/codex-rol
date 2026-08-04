@@ -305,29 +305,91 @@ function alTope(){
   if(a)a.scrollTop=0;
   try{scrollTo(0,0)}catch(_){}     // por si algún navegador scrollea el documento igual
 }
+/* La app nunca cambia de página, así que el navegador no tenía nada que
+   desandar: el gesto de volver del teléfono (deslizar desde el borde en iOS,
+   el atrás del sistema en Android) sacaba del códice de una. Ahora cada
+   pantalla que se abre deja su entrada en el historial, con la vista adentro.
+   De paso la dirección queda escrita, así que recargar te devuelve donde
+   estabas en vez de a la lista de campañas, y un link a una ficha se comparte. */
+const verActual=()=>({tab:st.tab,ent:st.ent,camp:cur?cur.id:null});
+const campSlug=c=>String((c&&(c.slug||c.id))||'');
+function rutaDe(){
+  if(!cur||st.tab==='home')return '#/';
+  const c=encodeURIComponent(campSlug(cur));
+  if(st.tab==='ficha'&&st.ent)return '#/'+c+'/f/'+encodeURIComponent(st.ent);
+  if(st.tab==='grafo')return '#/'+c+'/grafo'+(st.ent?'/'+encodeURIComponent(st.ent):'');
+  /* editor, historial e importador son de paso: no tienen dirección propia,
+     se muestran sobre la del índice */
+  return '#/'+c;
+}
+function leerRuta(){
+  let p;
+  try{p=(location.hash||'').replace(/^#\/?/,'').split('/').filter(Boolean).map(decodeURIComponent)}
+  catch(_){return null}
+  if(!p.length)return null;
+  if(p[1]==='f')return {camp:p[0],tab:'ficha',ent:p[2]||null};
+  if(p[1]==='grafo')return {camp:p[0],tab:'grafo',ent:p[2]||null};
+  return {camp:p[0],tab:'idx',ent:null};
+}
+function marcarNav(){try{history.pushState({v:verActual()},'',rutaDe())}catch(_){}}
+function sellarNav(){try{history.replaceState({v:verActual()},'',rutaDe())}catch(_){}}
+/* la pila interna sólo sirve para saber si el botón de atrás tiene a dónde ir;
+   el que manda es el historial del navegador */
+function apilar(){hist.push(verActual());if(hist.length>60)hist.shift()}
+
 function go(id){
   if(!byS[id])return;
-  hist.push({tab:st.tab,ent:st.ent});
-  if(hist.length>60)hist.shift();
-  st.ent=id;st.tab='ficha';st.editing=null;st.ecamp=null;r();alTope();
+  apilar();
+  st.ent=id;st.tab='ficha';st.editing=null;st.ecamp=null;r();alTope();marcarNav();
 }
 function tab(t){
-  hist.push({tab:st.tab,ent:st.ent});
-  if(hist.length>60)hist.shift();
-  st.tab=t;st.editing=null;st.ecamp=null;st.q='';r();alTope();
+  apilar();
+  st.tab=t;st.editing=null;st.ecamp=null;st.q='';r();alTope();marcarNav();
 }
+/* El botón de atrás y el gesto tienen que hacer lo mismo, así que el botón
+   delega en el historial y todo termina en popstate, en un solo lugar. */
+let ULTNAV=0;
 function back(){
-  const prev=hist.pop();
-  if(prev){st.tab=prev.tab;st.ent=prev.ent}else st.tab='idx';
-  st.editing=null;st.ecamp=null;r();alTope();
+  /* en iOS el gesto del sistema y el nuestro pueden llegar los dos: sin esto
+     un solo deslizar retrocedería dos pantallas */
+  if(Date.now()-ULTNAV<400)return;
+  ULTNAV=Date.now();
+  if(hist.length){history.back();return}
+  st.tab=cur?'idx':'home';st.editing=null;st.ecamp=null;r();alTope();sellarNav();
 }
+async function aplicarVista(v){
+  st.editing=null;st.ecamp=null;st.conf=null;st.dup=null;
+  st.imp=null;st.hist=null;st.ac=null;st.q='';
+  if(!v||!v.camp||v.tab==='home'){st.tab='home';r();alTope();return}
+  if(!cur||cur.id!==v.camp){
+    const c=CAMPS.filter(x=>x.id===v.camp)[0];
+    if(!c){st.tab='home';r();alTope();return}
+    st.ent=v.ent;await loadCamp(c);
+    st.pick=!st.me&&quienes().length>0;
+  }
+  if(v.ent&&byS[v.ent])st.ent=v.ent;
+  st.tab=v.tab;r();alTope();
+}
+addEventListener('popstate',ev=>{
+  ULTNAV=Date.now();
+  if(hist.length)hist.pop();
+  const v=(ev.state&&ev.state.v)||null;
+  if(v){aplicarVista(v);return}
+  /* entrada sin estado nuestro (llegaste por un link pegado, o el navegador
+     restauró la sesión): se reconstruye desde la dirección */
+  const rt=leerRuta();
+  if(!rt){aplicarVista(null);return}
+  const c=CAMPS.filter(x=>campSlug(x)===rt.camp)[0];
+  aplicarVista(c?{tab:rt.tab,ent:rt.ent,camp:c.id}:null);
+});
+
 async function setCamp(i){
-  hist=[];st.ent=null;await loadCamp(CAMPS[i]);
+  apilar();st.ent=null;await loadCamp(CAMPS[i]);
   st.tab='idx';st.q='';st.editing=null;
   st.pick=!st.me&&quienes().length>0;
-  r();alTope();
+  r();alTope();marcarNav();
 }
-function home(){hist=[];st.tab='home';st.q='';r();alTope()}
+function home(){apilar();st.tab='home';st.q='';r();alTope();marcarNav()}
 
 /* ---------- toasts (sin re-render: antes borraban lo que estabas escribiendo) ---------- */
 /* devuelve una función para cerrarlo antes de tiempo; con sticky no se va solo */
@@ -563,7 +625,7 @@ function vFicha(){
 }
 
 /* ================= EDITAR CAMPAÑA ================= */
-function editCamp(){st.ecamp={};st.tab='edcamp';r();alTope()}
+function editCamp(){apilar();st.ecamp={};st.tab='edcamp';r();alTope();marcarNav()}
 /* mismo criterio que el editor de fichas: rescatar lo tipeado antes de
    cualquier re-render, si no un toast o una subida de portada lo borran */
 function keepCampDraft(){
@@ -684,7 +746,7 @@ async function saveCamp(){
   Object.assign(cur,{name,blurb,party_name:party||null});
   const i=CAMPS.findIndex(c=>c.id===cur.id);
   if(i>=0)CAMPS[i]=Object.assign({},CAMPS[i],{name,blurb,party_name:party||null});
-  st.ecamp=null;st.tab='idx';r();alTope();
+  st.ecamp=null;st.tab='idx';r();alTope();sellarNav();
   toast('Campaña actualizada','ok');
 }
 
@@ -699,7 +761,7 @@ function edit(slug){
     rels:e?REL.filter(x=>x.de===e.s).map(x=>({id:x.id,a:x.a,l:x.l})):[],
     base:(e&&e.up)||null};   // versión sobre la que estoy editando
   st.dup=null;
-  st.tab='ed';st.ac=null;st.acPick=null;r();alTope();
+  apilar();st.tab='ed';st.ac=null;st.acPick=null;r();alTope();marcarNav();
 }
 function vEd(){
   const E=st.editing, e=E.slug?byS[E.slug]:null;
@@ -1167,7 +1229,7 @@ async function save(pisar){
   else if(relErr)toast('La ficha se guardó, los vínculos no: '+relErr.message,'err');
   st.ent=res.data.slug;st.editing=null;st.tab='ficha';
   const added=[...(ADJ[st.ent]||[])].filter(x=>!before.has(x)).length;
-  r();alTope();
+  r();alTope();sellarNav();
   toast(added?`Guardado · ${added} vínculo${added>1?'s':''} nuevo${added>1?'s':''}`:'Guardado','ok');
 }
 
@@ -1321,8 +1383,8 @@ const PROMPT=[
 
 const IMPTIPOS={character:1,location:1,item:1,faction:1,creature:1};
 function importar(){
-  st.imp={paso:'pegar',txt:'',plan:null,err:''};
-  st.tab='imp';r();alTope();
+  apilar();st.imp={paso:'pegar',txt:'',plan:null,err:''};
+  st.tab='imp';r();alTope();marcarNav();
 }
 
 /* ---------- enlazado automático ----------
@@ -1489,7 +1551,7 @@ async function aplicarImp(){
   }
   st.busy=false;
   await loadCamp(cur);
-  st.imp=null;st.tab='idx';r();alTope();
+  st.imp=null;st.tab='idx';r();alTope();sellarNav();
   if(fallos.length)toast(fallos.length+' no entraron. '+fallos[0],'err');
   else toast(creadas+' nuevas · '+sumadas+' ampliadas'+
     (alias?' · '+alias+' nombres':''),'ok');
@@ -1627,7 +1689,7 @@ function vImp(){
 async function openHist(slug){
   const e=byS[slug];if(!e)return;
   hist.push({tab:st.tab,ent:st.ent});
-  st.ent=slug;st.hist={slug,rows:null};st.tab='hist';r();alTope();
+  apilar();st.ent=slug;st.hist={slug,rows:null};st.tab='hist';r();alTope();marcarNav();
   const {data,error}=await SB.from('entity_revisions')
     .select('id,name,summary,body,notes,status,tags,edited_by,replaced_at')
     .eq('entity_id',e.id).order('replaced_at',{ascending:false});
@@ -1694,7 +1756,7 @@ async function restaurar(id){
   st.busy=false;
   if(error){toast('No se pudo restaurar: '+error.message,'err');r();return}
   await loadCamp(cur);
-  st.ent=H.slug;st.hist=null;st.tab='ficha';r();alTope();
+  st.ent=H.slug;st.hist=null;st.tab='ficha';r();alTope();sellarNav();
   toast('Versión restaurada','ok');
 }
 
@@ -2688,13 +2750,13 @@ const ACT={
   restaurar:v=>restaurar(v),
   confpisar:()=>{st.conf=null;save(true)},
   confver:()=>{const s2=st.conf.slug;st.conf=null;st.editing=null;
-    loadCamp(cur).then(()=>{st.ent=s2;st.tab='ficha';r();alTope()})},
+    loadCamp(cur).then(()=>{st.ent=s2;st.tab='ficha';r();alTope();sellarNav()})},
   confvolver:()=>{st.conf=null;r()},
-  cancelcamp:()=>{st.ecamp=null;st.tab='idx';r();alTope()},
+  cancelcamp:()=>{st.ecamp=null;st.tab='idx';r();alTope();sellarNav()},
   edit:v=>edit(v),
   new:()=>edit(null),
   cancel:()=>{const E=st.editing;st.editing=null;
-    if(E&&E.slug&&byS[E.slug]){st.tab='ficha';st.ent=E.slug;r();alTope()}else tab('idx')},
+    if(E&&E.slug&&byS[E.slug]){st.tab='ficha';st.ent=E.slug;r();alTope();sellarNav()}else tab('idx')},
   save,
   type:v=>{keepDraft();st.editing.type=v;r()},
   stt:v=>{keepDraft();st.editing.stt=v||null;r()},
@@ -2744,7 +2806,7 @@ const ACT={
   acnew:()=>{if(st.ac){st.acPick=st.ac.q;paintAC()}},
   mknew:v=>mkNew(v),
   graphof:v=>{hist.push({tab:'ficha',ent:st.ent});st.ent=v;G.sel=v;G.selUser=false;
-    st.tab='grafo';r();alTope()},
+    st.tab='grafo';r();alTope();marcarNav()},
   gmode:v=>{
     if(v==='all')G.mode='all';else{G.mode='ego';G.depth=+v}
     G.pos={};gRefrescar();gBuild();gCard();
@@ -2792,4 +2854,106 @@ addEventListener('keydown',ev=>{
   else if(ev.key==='0'){G.autofit=false;gFit();gDraw()}
 });
 
-(async()=>{r();await loadCamps();r()})();
+/* ---------- gestos del teléfono ----------
+   Dos cosas que en el celular se dan por sentadas y acá no pasaban: deslizar
+   de izquierda a derecha para volver, y tirar hacia abajo para actualizar.
+   Lo segundo el navegador no lo puede hacer solo porque el que scrollea es
+   #app y no el documento; y aunque pudiera, recargaría la página entera y eso
+   te devolvía a la lista de campañas. Esto vuelve a pedir las fichas sin
+   recargar nada. */
+async function refrescar(){
+  if(!cur||st.busy)return;
+  const id=cur.id;
+  /* si estabas mirando el grafo, se conserva cómo lo tenías acomodado: si no,
+     actualizar se sentiría como que se movió todo de lugar */
+  const g={pos:G.pos,sel:G.sel,tag:G.tag,cam:Object.assign({},G.cam)};
+  const enGrafo=st.tab==='grafo';
+  await loadCamps();
+  const c=CAMPS.filter(x=>x.id===id)[0];
+  if(!c){st.tab='home';r();alTope();sellarNav();return}
+  await loadCamp(c);
+  if(enGrafo){G.pos=g.pos;G.sel=g.sel;G.tag=g.tag;G.cam=g.cam;G.autofit=false}
+  r();
+  toast('Al día','ok');
+}
+function montarGestos(){
+  const a=document.getElementById('app'), ind=document.getElementById('ptr');
+  if(!a||!ind)return;
+  const UMBRAL=68;    // cuánto hay que tirar para que dispare
+  const TOPE=104;     // hasta dónde estira por más que sigas tirando
+  let x0=0,y0=0,dx=0,dy=0,modo=null,vivo=false;
+  const estirado=()=>Math.min(TOPE,dy*.55);
+  const cerrar=()=>{ind.className='';ind.style.transform='';ind.style.opacity=''};
+  const volverAlLugar=()=>{
+    a.style.transition='transform .18s ease-out';a.style.transform='';
+    setTimeout(()=>{a.style.transition=''},220);
+  };
+  /* En el grafo el dedo mueve el mapa, en el editor está escribiendo, y sobre
+     un diálogo no hay a dónde volver: ahí los gestos no van. */
+  const libre=t=>!st.busy&&cur&&st.tab!=='ed'&&st.tab!=='edcamp'&&st.tab!=='imp'
+    &&!(t&&t.closest&&t.closest('.gwrap,input,textarea,[contenteditable],.dlgwrap'));
+
+  a.addEventListener('touchstart',ev=>{
+    vivo=false;modo=null;
+    if(ev.touches.length!==1||!libre(ev.target))return;
+    x0=ev.touches[0].clientX;y0=ev.touches[0].clientY;dx=dy=0;vivo=true;
+  },{passive:true});
+
+  a.addEventListener('touchmove',ev=>{
+    if(!vivo)return;
+    if(ev.touches.length!==1){vivo=false;cerrar();return}
+    dx=ev.touches[0].clientX-x0;dy=ev.touches[0].clientY-y0;
+    if(!modo){
+      if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
+      /* el eje se decide una sola vez, con el primer tramo: si se recalcula a
+         mitad de camino el gesto se siente pegajoso */
+      if(dx>0&&Math.abs(dx)>Math.abs(dy)*1.7&&hist.length)modo='atras';
+      else if(dy>0&&a.scrollTop<=0)modo='tirar';
+      else{vivo=false;return}
+    }
+    /* si se arrepintió a mitad de camino, se corta antes de bloquear el
+       evento: si no, el scroll queda muerto hasta que levante el dedo */
+    if(modo==='tirar'&&(dy<=0||a.scrollTop>0)){cerrar();vivo=false;modo=null;return}
+    if(ev.cancelable)ev.preventDefault();
+    if(modo==='tirar'){
+      const d=estirado();
+      ind.className='ver'+(d>=UMBRAL?' listo':'');
+      ind.style.transform='translateY('+d+'px)';
+      ind.style.opacity=String(Math.min(1,d/32));
+    }else{
+      a.style.transform='translateX('+Math.min(96,dx*.32)+'px)';
+    }
+  },{passive:false});
+
+  a.addEventListener('touchend',()=>{
+    if(modo==='tirar'){
+      if(estirado()>=UMBRAL){
+        ind.className='ver listo girando';
+        ind.style.transform='translateY(58px)';
+        refrescar().then(cerrar,cerrar);
+      }else cerrar();
+    }else if(modo==='atras'){
+      volverAlLugar();
+      if(dx>72)back();
+    }
+    vivo=false;modo=null;
+  },{passive:true});
+
+  a.addEventListener('touchcancel',()=>{
+    cerrar();volverAlLugar();vivo=false;modo=null;
+  },{passive:true});
+}
+
+(async()=>{
+  r();await loadCamps();
+  /* si la dirección apunta a algún lado, se abre eso y no la lista */
+  const rt=leerRuta();
+  const c=rt&&CAMPS.filter(x=>campSlug(x)===rt.camp)[0];
+  if(c){
+    st.ent=rt.ent;await loadCamp(c);
+    if(rt.ent&&!byS[rt.ent])toast('Esa ficha ya no está','err');
+    st.tab=rt.tab;st.q='';
+    st.pick=!st.me&&quienes().length>0;
+  }
+  r();sellarNav();montarGestos();
+})();
