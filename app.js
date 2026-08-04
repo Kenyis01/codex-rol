@@ -2854,96 +2854,6 @@ addEventListener('keydown',ev=>{
   else if(ev.key==='0'){G.autofit=false;gFit();gDraw()}
 });
 
-/* ---------- gestos del teléfono ----------
-   Dos cosas que en el celular se dan por sentadas y acá no pasaban: deslizar
-   de izquierda a derecha para volver, y tirar hacia abajo para actualizar.
-   Lo segundo el navegador no lo puede hacer solo porque el que scrollea es
-   #app y no el documento; y aunque pudiera, recargaría la página entera y eso
-   te devolvía a la lista de campañas. Esto vuelve a pedir las fichas sin
-   recargar nada. */
-async function refrescar(){
-  if(!cur||st.busy)return;
-  const id=cur.id;
-  /* si estabas mirando el grafo, se conserva cómo lo tenías acomodado: si no,
-     actualizar se sentiría como que se movió todo de lugar */
-  const g={pos:G.pos,sel:G.sel,tag:G.tag,cam:Object.assign({},G.cam)};
-  const enGrafo=st.tab==='grafo';
-  await loadCamps();
-  const c=CAMPS.filter(x=>x.id===id)[0];
-  if(!c){st.tab='home';r();alTope();sellarNav();return}
-  await loadCamp(c);
-  if(enGrafo){G.pos=g.pos;G.sel=g.sel;G.tag=g.tag;G.cam=g.cam;G.autofit=false}
-  r();
-  toast('Al día','ok');
-}
-function montarGestos(){
-  const a=document.getElementById('app'), ind=document.getElementById('ptr');
-  if(!a||!ind)return;
-  const UMBRAL=68;    // cuánto hay que tirar para que dispare
-  const TOPE=104;     // hasta dónde estira por más que sigas tirando
-  let x0=0,y0=0,dx=0,dy=0,modo=null,vivo=false;
-  const estirado=()=>Math.min(TOPE,dy*.55);
-  const cerrar=()=>{ind.className='';ind.style.transform='';ind.style.opacity=''};
-  const volverAlLugar=()=>{
-    a.style.transition='transform .18s ease-out';a.style.transform='';
-    setTimeout(()=>{a.style.transition=''},220);
-  };
-  /* En el grafo el dedo mueve el mapa, en el editor está escribiendo, y sobre
-     un diálogo no hay a dónde volver: ahí los gestos no van. */
-  const libre=t=>!st.busy&&cur&&st.tab!=='ed'&&st.tab!=='edcamp'&&st.tab!=='imp'
-    &&!(t&&t.closest&&t.closest('.gwrap,input,textarea,[contenteditable],.dlgwrap'));
-
-  a.addEventListener('touchstart',ev=>{
-    vivo=false;modo=null;
-    if(ev.touches.length!==1||!libre(ev.target))return;
-    x0=ev.touches[0].clientX;y0=ev.touches[0].clientY;dx=dy=0;vivo=true;
-  },{passive:true});
-
-  a.addEventListener('touchmove',ev=>{
-    if(!vivo)return;
-    if(ev.touches.length!==1){vivo=false;cerrar();return}
-    dx=ev.touches[0].clientX-x0;dy=ev.touches[0].clientY-y0;
-    if(!modo){
-      if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
-      /* el eje se decide una sola vez, con el primer tramo: si se recalcula a
-         mitad de camino el gesto se siente pegajoso */
-      if(dx>0&&Math.abs(dx)>Math.abs(dy)*1.7&&hist.length)modo='atras';
-      else if(dy>0&&a.scrollTop<=0)modo='tirar';
-      else{vivo=false;return}
-    }
-    /* si se arrepintió a mitad de camino, se corta antes de bloquear el
-       evento: si no, el scroll queda muerto hasta que levante el dedo */
-    if(modo==='tirar'&&(dy<=0||a.scrollTop>0)){cerrar();vivo=false;modo=null;return}
-    if(ev.cancelable)ev.preventDefault();
-    if(modo==='tirar'){
-      const d=estirado();
-      ind.className='ver'+(d>=UMBRAL?' listo':'');
-      ind.style.transform='translateY('+d+'px)';
-      ind.style.opacity=String(Math.min(1,d/32));
-    }else{
-      a.style.transform='translateX('+Math.min(96,dx*.32)+'px)';
-    }
-  },{passive:false});
-
-  a.addEventListener('touchend',()=>{
-    if(modo==='tirar'){
-      if(estirado()>=UMBRAL){
-        ind.className='ver listo girando';
-        ind.style.transform='translateY(58px)';
-        refrescar().then(cerrar,cerrar);
-      }else cerrar();
-    }else if(modo==='atras'){
-      volverAlLugar();
-      if(dx>72)back();
-    }
-    vivo=false;modo=null;
-  },{passive:true});
-
-  a.addEventListener('touchcancel',()=>{
-    cerrar();volverAlLugar();vivo=false;modo=null;
-  },{passive:true});
-}
-
 (async()=>{
   r();await loadCamps();
   /* si la dirección apunta a algún lado, se abre eso y no la lista */
@@ -2955,5 +2865,5 @@ function montarGestos(){
     st.tab=rt.tab;st.q='';
     st.pick=!st.me&&quienes().length>0;
   }
-  r();sellarNav();montarGestos();
+  r();sellarNav();
 })();

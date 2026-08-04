@@ -73,7 +73,12 @@ html,body{margin:0;padding:0}
    fijos, y la navegación de abajo se despegaba y quedaba a mitad de pantalla.
    Con el scroll adentro de un contenedor, la nav se apoya en un viewport que
    nunca se mueve y el problema no puede existir. */
-html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+/* overflow:hidden es lo que mantiene la navegación de abajo pegada: el
+   documento no tiene nada que scrollear, así que no rebota ni se lleva puestos
+   a los elementos fijos. Acá había además un overscroll-behavior:none que era
+   redundante para eso y de paso le apagaba al navegador su propio "tirá para
+   actualizar". Se fue: los gestos los pone el sistema, no nosotros. */
+html,body{height:100%;overflow:hidden}
 body{
   background:var(--bg); color:var(--ink);
   font-family:var(--body); font-size:var(--f-base); line-height:var(--lh-snug);
@@ -86,8 +91,10 @@ body{
     radial-gradient(700px 500px at 110% 100%, rgba(79,183,149,.055), transparent 70%),
     radial-gradient(600px 460px at -10% 60%, rgba(180,139,216,.05), transparent 70%);
 }
+/* sin overscroll-behavior: al llegar arriba del todo el tirón sigue de largo
+   hasta el navegador, que es el que sabe hacer el gesto de actualizar */
 #app{position:relative;z-index:1;height:100%;overflow-y:auto;overflow-x:clip;
-  overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  -webkit-overflow-scrolling:touch}
 /* El aire para que el contenido pase por encima de la navegación va como
    espaciador y no como padding de #app: el rectángulo contra el que se apoya
    un sticky se mide desde el borde interno del contenedor, así que con
@@ -96,22 +103,6 @@ body{
 /* el ancho máximo pasa al contenido: si lo llevara #app, la barra de scroll
    quedaría en el medio de la pantalla en vez de en el borde */
 #app > *{max-width:var(--appmax);margin-inline:auto}
-/* tirá para actualizar: el disco baja con el dedo y gira mientras trae datos */
-#ptr{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;justify-content:center;
-  pointer-events:none;opacity:0;visibility:hidden;
-  padding-top:calc(env(safe-area-inset-top) + var(--s2))}
-#ptr.ver{visibility:visible}
-#ptr .ptrc{width:30px;height:30px;border-radius:50%;
-  background:var(--surf2);border:1px solid var(--line2);box-shadow:var(--shadow);
-  display:block;position:relative}
-#ptr .ptrc::before{content:'';position:absolute;inset:8px;border-radius:50%;
-  border:2px solid var(--dim);border-top-color:transparent;transition:border-color .16s}
-#ptr.listo .ptrc{border-color:rgba(224,178,92,.55)}
-#ptr.listo .ptrc::before{border-color:var(--gold);border-top-color:transparent}
-#ptr.girando{transition:transform .18s ease-out}
-#ptr.girando .ptrc::before{animation:gira .7s linear infinite}
-@keyframes gira{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){#ptr.girando .ptrc::before{animation-duration:2s}}
 ::selection{background:rgba(224,178,92,.28)}
 *::-webkit-scrollbar{width:10px;height:10px}
 *::-webkit-scrollbar-thumb{background:var(--surf3);border-radius:var(--rf);
