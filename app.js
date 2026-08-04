@@ -267,30 +267,38 @@ function vPick(){
   </div></div>`;
 }
 
-/* ---------- navegación ---------- */
+/* ---------- navegación ----------
+   El que scrollea es #app, no el documento. En iOS el rebote del scroll del
+   documento arrastra con él a los elementos fijos y la navegación de abajo se
+   despega; con el scroll adentro de un contenedor eso no puede pasar. */
+function alTope(){
+  const a=document.getElementById('app');
+  if(a)a.scrollTop=0;
+  try{scrollTo(0,0)}catch(_){}     // por si algún navegador scrollea el documento igual
+}
 function go(id){
   if(!byS[id])return;
   hist.push({tab:st.tab,ent:st.ent});
   if(hist.length>60)hist.shift();
-  st.ent=id;st.tab='ficha';st.editing=null;st.ecamp=null;r();scrollTo(0,0);
+  st.ent=id;st.tab='ficha';st.editing=null;st.ecamp=null;r();alTope();
 }
 function tab(t){
   hist.push({tab:st.tab,ent:st.ent});
   if(hist.length>60)hist.shift();
-  st.tab=t;st.editing=null;st.ecamp=null;st.q='';r();scrollTo(0,0);
+  st.tab=t;st.editing=null;st.ecamp=null;st.q='';r();alTope();
 }
 function back(){
   const prev=hist.pop();
   if(prev){st.tab=prev.tab;st.ent=prev.ent}else st.tab='idx';
-  st.editing=null;st.ecamp=null;r();scrollTo(0,0);
+  st.editing=null;st.ecamp=null;r();alTope();
 }
 async function setCamp(i){
   hist=[];st.ent=null;await loadCamp(CAMPS[i]);
   st.tab='idx';st.q='';st.editing=null;
   st.pick=!st.me&&quienes().length>0;
-  r();scrollTo(0,0);
+  r();alTope();
 }
-function home(){hist=[];st.tab='home';st.q='';r();scrollTo(0,0)}
+function home(){hist=[];st.tab='home';st.q='';r();alTope()}
 
 /* ---------- toasts (sin re-render: antes borraban lo que estabas escribiendo) ---------- */
 /* devuelve una función para cerrarlo antes de tiempo; con sticky no se va solo */
@@ -503,13 +511,13 @@ function vFicha(){
       <span class="chip">${bl.length} menciones</span>
       <span class="chip">${rel.length} conexiones</span></div>
     <div class="prose">${prose(e.b)||'<p style="color:var(--dim)">Sin descripción todavía.</p>'}</div>
-    ${e.c?`<div class="sec"><div class="sech">Con nosotros</div>
+    ${e.c?`<div class="sec"><div class="sech">Comentarios</div>
       <div class="ours">${prose(e.c)}</div></div>`:''}
     ${bl.length?`<div class="sec"><div class="sech">Se lo menciona en</div>
       <div class="rail">${bl.map(b=>{const src=byS[b.s];if(!src)return'';
         return `<div class="bl" style="color:${TY(src).c}" data-go="${att(b.s)}">
           <div class="blsrc">${av(src,AV.xs)}<span>${esc(src.n)}</span>${
-            b.where==='ours'?'<span class="blnote">· con nosotros</span>':''}</div>
+            b.where==='ours'?'<span class="blnote">· en comentarios</span>':''}</div>
           <div class="blsnip">${esc(b.snip).replace(/§(.*?)§/g,'<em>$1</em>')}</div></div>`}).join('')}
       </div></div>`:''}
     ${rel.length?`<div class="sec"><div class="sech">Conectado con</div>
@@ -525,7 +533,7 @@ function vFicha(){
 }
 
 /* ================= EDITAR CAMPAÑA ================= */
-function editCamp(){st.ecamp={};st.tab='edcamp';r();scrollTo(0,0)}
+function editCamp(){st.ecamp={};st.tab='edcamp';r();alTope()}
 /* mismo criterio que el editor de fichas: rescatar lo tipeado antes de
    cualquier re-render, si no un toast o una subida de portada lo borran */
 function keepCampDraft(){
@@ -590,7 +598,7 @@ async function saveCamp(){
   Object.assign(cur,{name,blurb,party_name:party||null});
   const i=CAMPS.findIndex(c=>c.id===cur.id);
   if(i>=0)CAMPS[i]=Object.assign({},CAMPS[i],{name,blurb,party_name:party||null});
-  st.ecamp=null;st.tab='idx';r();scrollTo(0,0);
+  st.ecamp=null;st.tab='idx';r();alTope();
   toast('Campaña actualizada','ok');
 }
 
@@ -605,7 +613,7 @@ function edit(slug){
     rels:e?REL.filter(x=>x.de===e.s).map(x=>({id:x.id,a:x.a,l:x.l})):[],
     base:(e&&e.up)||null};   // versión sobre la que estoy editando
   st.dup=null;
-  st.tab='ed';st.ac=null;st.acPick=null;r();scrollTo(0,0);
+  st.tab='ed';st.ac=null;st.acPick=null;r();alTope();
 }
 function vEd(){
   const E=st.editing, e=E.slug?byS[E.slug]:null;
@@ -703,7 +711,7 @@ function vEd(){
         data-ph="Escribí acá. Poné @ para enlazar con otra ficha."
         oninput="onEd(this)" onkeyup="onEd(this)" onclick="onEd(this)">${toHTML(bodyTxt)}</div>
     </div>
-    <div class="eyebrow mt">Con nosotros — qué nos pasó</div>
+    <div class="eyebrow mt">Comentarios — qué nos pasó con esto</div>
     <div class="acwrap">
       <div class="ed short" id="edC" contenteditable="true"
         data-ph="Lo que hicimos, lo que sospechamos, lo que nos deben."
@@ -1042,7 +1050,7 @@ async function save(pisar){
   else if(relErr)toast('La ficha se guardó, los vínculos no: '+relErr.message,'err');
   st.ent=res.data.slug;st.editing=null;st.tab='ficha';
   const added=[...(ADJ[st.ent]||[])].filter(x=>!before.has(x)).length;
-  r();scrollTo(0,0);
+  r();alTope();
   toast(added?`Guardado · ${added} vínculo${added>1?'s':''} nuevo${added>1?'s':''}`:'Guardado','ok');
 }
 
@@ -1090,7 +1098,7 @@ function usarLaQueEsta(slug){
   /* sin esto el próximo render rescataría el borrador del DOM viejo y pisaría
      lo que acabamos de armar */
   RENDERED=null;
-  st.tab='ed';r();scrollTo(0,0);
+  st.tab='ed';r();alTope();
   toast('Seguís sobre '+d.n+'. Revisá y guardá.','ok');
 }
 function vDup(){
@@ -1168,7 +1176,7 @@ const PROMPT=[
 '  "otrosNombres":["Volo","Volos"],',
 '  "resumen":"Escritor. Nos pidió ayuda para encontrar a su amigo Floon.",',
 '  "descripcion":"Quién es y qué se sabe de él.",',
-'  "conNosotros":"Qué pasó entre él y nosotros."',
+'  "comentarios":"Qué pasó entre él y nosotros."',
 '}]}',
 '',
 'Reglas:',
@@ -1180,7 +1188,7 @@ const PROMPT=[
 '- En "otrosNombres" van también apodos, apellidos sueltos y el nombre en',
 '  otro idioma si aparece.',
 '- "resumen": una línea. "descripcion": qué es, en tercera persona.',
-'  "conNosotros": lo que pasó con el grupo.',
+'  "comentarios": lo que pasó con el grupo.',
 '- Si algo no está en las notas, dejá el campo vacío. No inventes nada.',
 '- Lo que en las notas es sospecha o teoría va con esas palabras ("se rumorea',
 '  que", "creemos que"), nunca como un hecho.',
@@ -1195,7 +1203,7 @@ const PROMPT=[
 const IMPTIPOS={character:1,location:1,item:1,faction:1,creature:1};
 function importar(){
   st.imp={paso:'pegar',txt:'',plan:null,err:''};
-  st.tab='imp';r();scrollTo(0,0);
+  st.tab='imp';r();alTope();
 }
 
 /* ---------- enlazado automático ----------
@@ -1283,7 +1291,9 @@ function leerPlan(txt){
       nombre,tipo,als,
       resumen:String(f.resumen||f.summary||'').trim(),
       cuerpo:String(f.descripcion||f.body||'').trim(),
-      notas:String(f.conNosotros||f.notes||'').trim(),
+      /* conNosotros es como se llamaba antes: sigue entrando por si alguien
+         guardó el texto viejo del prompt */
+      notas:String(f.comentarios||f.conNosotros||f.notes||'').trim(),
       e:e||(dudas.length?dudas[0].e:null),
       duda:!e&&dudas.length>0,
       acc:(e||dudas.length)?'sumar':'crear'
@@ -1357,7 +1367,7 @@ async function aplicarImp(){
   }
   st.busy=false;
   await loadCamp(cur);
-  st.imp=null;st.tab='idx';r();scrollTo(0,0);
+  st.imp=null;st.tab='idx';r();alTope();
   if(fallos.length)toast(fallos.length+' no entraron. '+fallos[0],'err');
   else toast(creadas+' nuevas · '+sumadas+' ampliadas'+
     (alias?' · '+alias+' nombres':''),'ok');
@@ -1419,7 +1429,7 @@ function vImp(){
 async function openHist(slug){
   const e=byS[slug];if(!e)return;
   hist.push({tab:st.tab,ent:st.ent});
-  st.ent=slug;st.hist={slug,rows:null};st.tab='hist';r();scrollTo(0,0);
+  st.ent=slug;st.hist={slug,rows:null};st.tab='hist';r();alTope();
   const {data,error}=await SB.from('entity_revisions')
     .select('id,name,summary,body,notes,status,tags,edited_by,replaced_at')
     .eq('entity_id',e.id).order('replaced_at',{ascending:false});
@@ -1486,7 +1496,7 @@ async function restaurar(id){
   st.busy=false;
   if(error){toast('No se pudo restaurar: '+error.message,'err');r();return}
   await loadCamp(cur);
-  st.ent=H.slug;st.hist=null;st.tab='ficha';r();scrollTo(0,0);
+  st.ent=H.slug;st.hist=null;st.tab='ficha';r();alTope();
   toast('Versión restaurada','ok');
 }
 
@@ -2188,7 +2198,7 @@ function porQue(aId,bId){
   const out=[];
   const mirar=(de,hacia)=>{
     const e=byS[de];if(!e)return;
-    [['Descripción',e.b],['Con nosotros',e.c]].forEach(par=>{
+    [['Descripción',e.b],['Comentarios',e.c]].forEach(par=>{
       const marca='[['+hacia+']]';
       if(!par[1]||par[1].indexOf(marca)<0)return;
       partirFrases(par[1]).forEach(f=>{
@@ -2352,7 +2362,8 @@ function gFull(){
   G.full=!G.full;
   const w=document.getElementById('gwrap');if(!w)return;
   w.classList.toggle('full',G.full);
-  document.body.style.overflow=G.full?'hidden':'';
+  const app=document.getElementById('app');
+  if(app)app.style.overflow=G.full?'hidden':'';
   /* el botón cambia de sentido: al entrar muestra cómo salir */
   const b=w.querySelector('[data-act="full"]');
   if(b){const t=G.full?'Salir de pantalla completa':'Pantalla completa';
@@ -2386,7 +2397,7 @@ function r(){
   if(RENDERED==='edcamp'&&st.ecamp)keepCampDraft();
   if(RENDERED==='imp'&&st.imp){const t=document.getElementById('impta');if(t)st.imp.txt=t.value}
   if(RENDERED==='grafo'){gStop();marcarVisita()}
-  if(G.full){G.full=false;document.body.style.overflow=''}
+  if(G.full){G.full=false;const a=document.getElementById('app');if(a)a.style.overflow=''}
   const f=snapFocus();
   const navEl=document.querySelector('.nav');
   const dlgEl=document.getElementById('dialogs');
@@ -2439,13 +2450,13 @@ const ACT={
   restaurar:v=>restaurar(v),
   confpisar:()=>{st.conf=null;save(true)},
   confver:()=>{const s2=st.conf.slug;st.conf=null;st.editing=null;
-    loadCamp(cur).then(()=>{st.ent=s2;st.tab='ficha';r();scrollTo(0,0)})},
+    loadCamp(cur).then(()=>{st.ent=s2;st.tab='ficha';r();alTope()})},
   confvolver:()=>{st.conf=null;r()},
-  cancelcamp:()=>{st.ecamp=null;st.tab='idx';r();scrollTo(0,0)},
+  cancelcamp:()=>{st.ecamp=null;st.tab='idx';r();alTope()},
   edit:v=>edit(v),
   new:()=>edit(null),
   cancel:()=>{const E=st.editing;st.editing=null;
-    if(E&&E.slug&&byS[E.slug]){st.tab='ficha';st.ent=E.slug;r();scrollTo(0,0)}else tab('idx')},
+    if(E&&E.slug&&byS[E.slug]){st.tab='ficha';st.ent=E.slug;r();alTope()}else tab('idx')},
   save,
   type:v=>{keepDraft();st.editing.type=v;r()},
   stt:v=>{keepDraft();st.editing.stt=v||null;r()},
@@ -2458,13 +2469,13 @@ const ACT={
   dupvolver:()=>{st.dup=null;r()},
   importar,
   impsalir:()=>{st.imp=null;tab('idx')},
-  impvolver:()=>{st.imp.paso='pegar';st.imp.err='';r();scrollTo(0,0)},
+  impvolver:()=>{st.imp.paso='pegar';st.imp.err='';r();alTope()},
   impprompt:()=>copiar(PROMPT,'Texto copiado. Pegáselo a tu AI con tus notas.'),
   impleer:()=>{
     const t=document.getElementById('impta');
     const res=leerPlan(t?t.value:'');
     if(res.err){st.imp.err=res.err;r();return}
-    st.imp.plan=res.items;st.imp.err='';st.imp.paso='revisar';r();scrollTo(0,0);
+    st.imp.plan=res.items;st.imp.err='';st.imp.paso='revisar';r();alTope();
   },
   /* cada toque cambia qué se va a hacer con esa fila */
   impacc:v=>{
@@ -2485,7 +2496,7 @@ const ACT={
   acnew:()=>{if(st.ac){st.acPick=st.ac.q;paintAC()}},
   mknew:v=>mkNew(v),
   graphof:v=>{hist.push({tab:'ficha',ent:st.ent});st.ent=v;G.sel=v;G.selUser=false;
-    st.tab='grafo';r();scrollTo(0,0)},
+    st.tab='grafo';r();alTope()},
   gmode:v=>{
     if(v==='all')G.mode='all';else{G.mode='ego';G.depth=+v}
     G.pos={};document.getElementById('gctl').innerHTML=gControls();gBuild();gCard();
@@ -2509,7 +2520,7 @@ const ACT={
     const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
     gPaint();
     if(G.verGrupos)toast((G.grupos&&G.grupos.length||0)+' grupos',null);},
-  gcentrar:v=>{gCenter(v);r();scrollTo(0,0)},
+  gcentrar:v=>{gCenter(v);r();alTope()},
   center:()=>{},
   search:()=>{}
 };

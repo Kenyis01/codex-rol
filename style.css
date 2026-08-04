@@ -68,19 +68,16 @@
 *,*::before,*::after{box-sizing:border-box}
 *{-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
-/* El rebote al llegar al borde arrastra con él a los elementos fijos: en el
-   iPad la navegación de abajo se despegaba al scrollear más allá del tope. */
-html{overscroll-behavior-y:none}
+/* El documento no scrollea: scrollea #app.
+   En iOS el rebote del scroll del documento arrastra con él a los elementos
+   fijos, y la navegación de abajo se despegaba y quedaba a mitad de pantalla.
+   Con el scroll adentro de un contenedor, la nav se apoya en un viewport que
+   nunca se mueve y el problema no puede existir. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{
   background:var(--bg); color:var(--ink);
   font-family:var(--body); font-size:var(--f-base); line-height:var(--lh-snug);
   -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-  /* hidden en un eje obliga al otro a auto, y con eso el body pasa a ser
-     contenedor de scroll y la navegación fija deja de tomar el viewport
-     como referencia. clip recorta igual sin crear el contenedor.
-     El hidden queda de respaldo para quien no entienda clip. */
-  overflow-x:hidden;
-  overflow-x:clip;
 }
 .glow{
   position:fixed; inset:0; z-index:0; pointer-events:none;
@@ -89,8 +86,12 @@ body{
     radial-gradient(700px 500px at 110% 100%, rgba(79,183,149,.055), transparent 70%),
     radial-gradient(600px 460px at -10% 60%, rgba(180,139,216,.05), transparent 70%);
 }
-#app{position:relative;z-index:1;max-width:var(--appmax);margin:0 auto;
+#app{position:relative;z-index:1;height:100%;overflow-y:auto;overflow-x:clip;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   padding-bottom:calc(var(--navh) + var(--s3))}
+/* el ancho máximo pasa al contenido: si lo llevara #app, la barra de scroll
+   quedaría en el medio de la pantalla en vez de en el borde */
+#app > *{max-width:var(--appmax);margin-inline:auto}
 ::selection{background:rgba(224,178,92,.28)}
 *::-webkit-scrollbar{width:10px;height:10px}
 *::-webkit-scrollbar-thumb{background:var(--surf3);border-radius:var(--rf);
@@ -457,8 +458,11 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 /* ============ listas y cards ============ */
 .grp{margin-bottom:var(--s6)}
 .grph{margin-bottom:var(--s3)}
-.grph .ct{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
-  letter-spacing:0;font-weight:400}
+/* El número al lado del rótulo se oculta pero no se saca: sigue en el HTML
+   para quien navegue con lector de pantalla, que ahí sí sirve saber cuántas
+   fichas tiene el grupo antes de entrar. */
+.grph .ct{position:absolute;width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap}
 .card{background:var(--surf);border:1px solid var(--line);border-radius:var(--r3);overflow:hidden}
 .row{display:flex;gap:var(--s3);align-items:center;cursor:pointer;
   padding:var(--s3) var(--s4);border-bottom:1px solid var(--line);transition:background .14s}
