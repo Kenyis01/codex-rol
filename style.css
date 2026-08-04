@@ -308,18 +308,26 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   -webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;
   -webkit-mask-position:center;mask-position:center}
 .aka{font-family:var(--mono);font-size:var(--f-sm);color:var(--dim);margin-top:var(--s3)}
-/* ---- atributos de personaje ----
-   Fila propia, separada de las menciones y las conexiones: estos los cargó
-   alguien, los otros los cuenta la app. El icono va a 16px porque a 13 varios
-   de los dibujos de raza se vuelven un borrón. */
-.atrs{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
-.atr{display:inline-flex;align-items:center;gap:var(--s2);
-  height:var(--h-chip);padding:0 var(--s3);border-radius:var(--rf);
-  background:var(--surf2);border:1px solid var(--line2);color:var(--ink2);
-  font-size:var(--f-cap);line-height:1;white-space:nowrap}
-.atr .gi{width:16px;height:16px;color:var(--gold);flex:none}
-.atrs + .meta{margin-top:var(--s3)}
-/* dentro del repaso de importar va en línea con el texto */
+/* ---- lo que describe a la ficha ----
+   Sin píldora: icono y texto sueltos sobre el fondo, separados por un punto
+   medio. El icono va a 18px porque a 13 varios de los dibujos de raza se
+   vuelven un borrón, y el interlineado de 20 es lo que da el ritmo de la fila.
+
+   El punto cuelga del elemento anterior y no del siguiente: así, cuando la
+   fila pasa de renglón, puede quedar al final de una línea —que es como se
+   escriben las listas corridas— pero nunca empezando la de abajo, que se leía
+   como si faltara algo antes.
+
+   Los renglones de una misma fila van más juntos (8) que las dos filas entre
+   sí (20): si no, envolver se ve igual que cambiar de grupo. */
+.atrs{display:flex;flex-wrap:wrap;align-items:center;
+  column-gap:var(--s2);row-gap:var(--s2);margin-top:var(--s4)}
+.atr{display:inline-flex;align-items:center;
+  font-size:14px;line-height:20px;color:var(--ink2);white-space:nowrap}
+.atr .gi{width:18px;height:18px;flex:none;margin-right:var(--s1)}
+.atr:not(:last-child)::after{content:'·';color:var(--dim);margin-left:var(--s2)}
+/* los dos conteos van abajo, separados de la fila de arriba */
+.atrs.cuenta{margin-top:var(--s5);margin-bottom:var(--s5)}
 .impct .atrs{display:inline-flex;margin-top:0}
 .meta{display:flex;gap:var(--s2);flex-wrap:wrap;margin:var(--s4) 0 var(--s5)}
 .aka + .meta{margin-top:var(--s3)}

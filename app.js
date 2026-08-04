@@ -27,54 +27,89 @@ const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3'};
    puede escribir cualquier otra cosa y se guarda igual, nada más que sin icono.
    El nivel y las estadísticas quedan afuera a propósito: esto es un códice, no
    una hoja de personaje, y son datos que envejecen en una sesión. */
-const RAZAS={humano:'Humano',elfo:'Elfo',semielfo:'Semielfo',enano:'Enano',
-  mediano:'Mediano',gnomo:'Gnomo',semiorco:'Semiorco',tiefling:'Tiefling',
-  draconido:'Dracónido',warforged:'Warforged'};
-const CLASES={barbaro:'Bárbaro',bardo:'Bardo',brujo:'Brujo',clerigo:'Clérigo',
-  druida:'Druida',explorador:'Explorador',guerrero:'Guerrero',hechicero:'Hechicero',
-  mago:'Mago',monje:'Monje',paladin:'Paladín',picaro:'Pícaro'};
-const ALINE={lb:'Legal bueno',nb:'Neutral bueno',cb:'Caótico bueno',
-  ln:'Legal neutral',nn:'Neutral',cn:'Caótico neutral',
-  lm:'Legal malo',nm:'Neutral malo',cm:'Caótico malo'};
-const TRASF={acolito:'Acólito',artesano:'Artesano',artista:'Artista',
-  criminal:'Criminal',ermitano:'Ermitaño',forastero:'Forastero',
-  heroe:'Héroe del pueblo',huerfano:'Huérfano',marinero:'Marinero',
-  noble:'Noble',sabio:'Sabio',soldado:'Soldado'};
+/* Las palabras que cambian con el género llevan las dos terminaciones entre
+   llaves: "Muert{o|a}", "Palad{ín|ina}". El género se elige en la ficha pero no
+   se muestra en ningún lado: existe solo para que concuerden. Sin dato gana el
+   masculino, que es el genérico. */
+const gen=(t,g)=>String(t==null?'':t)
+  .replace(/\{([^|}]*)\|([^}]*)\}/g,(_,m,f)=>g==='f'?f:m);
+const GENERO={m:'Masculino',f:'Femenino'};
+const RAZAS={humano:'Human{o|a}',elfo:'Elf{o|a}',semielfo:'Semielf{o|a}',
+  enano:'Enan{o|a}',mediano:'Median{o|a}',gnomo:'Gnom{o|a}',semiorco:'Semiorc{o|a}',
+  tiefling:'Tiefling',draconido:'Dracónid{o|a}',warforged:'Warforged'};
+const CLASES={barbaro:'Bárbar{o|a}',bardo:'Bard{o|a}',brujo:'Bruj{o|a}',
+  clerigo:'Clérig{o|a}',druida:'Druida',explorador:'Explorador{|a}',
+  guerrero:'Guerrer{o|a}',hechicero:'Hechicer{o|a}',mago:'Mag{o|a}',
+  monje:'Monj{e|a}',paladin:'Palad{ín|ina}',picaro:'Pícar{o|a}'};
+const ALINE={lb:'Legal buen{o|a}',nb:'Neutral buen{o|a}',cb:'Caótic{o|a} buen{o|a}',
+  ln:'Legal neutral',nn:'Neutral',cn:'Caótic{o|a} neutral',
+  lm:'Legal mal{o|a}',nm:'Neutral mal{o|a}',cm:'Caótic{o|a} mal{o|a}'};
+const TRASF={acolito:'Acólit{o|a}',artesano:'Artesan{o|a}',artista:'Artista',
+  criminal:'Criminal',ermitano:'Ermitañ{o|a}',forastero:'Foraster{o|a}',
+  heroe:'H{éroe|eroína} del pueblo',huerfano:'Huérfan{o|a}',marinero:'Mariner{o|a}',
+  noble:'Noble',sabio:'Sabi{o|a}',soldado:'Soldad{o|a}'};
+/* El estado dejó de ser una columna con una sola opción: es una etiqueta más,
+   así una ficha puede estar muerta Y revivida, que es lo que pasa en la mesa.
+   "Vivo" no está a propósito: si no dice lo contrario, está viva. */
+const ETIQ={muerto:'Muert{o|a}',revivido:'Revivid{o|a}',
+  desaparecido:'Desaparecid{o|a}',encarcelado:'Encarcelad{o|a}'};
+const ETORDER=['muerto','revivido','desaparecido','encarcelado'];
+
 /* El orden es el que se ve, en la ficha y en el editor. "en" dice en qué tipos
    de ficha tiene sentido pedirlo: una facción no tiene raza y un lugar no tiene
    trasfondo, así que ahí ni se ofrecen. Agregar un atributo a otro tipo es
-   sumarlo a esta lista y nada más. */
+   sumarlo a esa lista y nada más. */
 const ATRIB=[
   {k:'raza',        l:'Raza',        tb:RAZAS,  ic:v=>'raza-'+v,  ui:'chips', en:['character']},
   {k:'clase',       l:'Clase',       tb:CLASES, ic:v=>'clase-'+v, ui:'chips', en:['character']},
   /* el alineamiento va en desplegable y no en botones: son nueve y todos
      llevarían la misma balanza, que repetida nueve veces es ruido */
   {k:'alineamiento',l:'Alineamiento',tb:ALINE,  ic:()=>'align',   ui:'lista', en:['character']},
-  {k:'trasfondo',   l:'Trasfondo',   tb:TRASF,                    ui:'texto', en:['character']}
+  {k:'trasfondo',   l:'Trasfondo',   tb:TRASF,  ic:v=>'trasf-'+v, icoDef:'trasf-otro',
+                                                                  ui:'chips', en:['character']},
+  /* no se muestra: solo hace concordar las palabras */
+  {k:'genero',      l:'Género',      tb:GENERO,                   ui:'lista', en:['character'],
+   oculto:true}
 ];
 const atrDeTipo=t=>ATRIB.filter(a=>a.en.indexOf(t)>=0);
+const tieneEtiq=(e,k)=>((e&&e.tg)||[]).some(t=>nm(t)===k);
 /* Lo que se escribe se guarda con la clave de la lista cuando coincide con
    alguna, y tal cual cuando no. Así "elfo", "Elfo" y "ELFO" son la misma cosa
    y se pueden contar juntas, pero nada impide poner algo de tu mesa. */
+/* Lo escrito se guarda con la clave de la lista cuando coincide con alguna
+   —en cualquiera de sus dos géneros— y tal cual cuando no. */
 function claveAtr(tb,v){
   const t=nm(v);if(!t)return '';
-  for(const k in tb)if(nm(k)===t||nm(tb[k])===t)return k;
+  for(const k in tb)
+    if(nm(k)===t||nm(gen(tb[k],'m'))===t||nm(gen(tb[k],'f'))===t)return k;
   return String(v).trim().slice(0,80);
 }
-const etiqAtr=(tb,v)=>(tb&&tb[v])||v;
-const iconoAtr=(a,v)=>a.ic&&GI[a.ic(v)]?a.ic(v):'';
-/* La fila de chips: se usa igual en la ficha y en el repaso de la importación,
-   así lo que se ve antes de escribir es lo mismo que va a quedar. */
-function chipsAtr(e){
-  const A=atrsDe(e);
-  if(!A.length)return '';
-  return `<span class="atrs">${A.map(a=>{
-    const v=e.at[a.k], i=iconoAtr(a,v);
-    return `<span class="atr" title="${att(a.l)}">${i?ic(i):''}${esc(etiqAtr(a.tb,v))}</span>`;
-  }).join('')}</span>`;
+const etiqAtr=(tb,v,g)=>gen((tb&&tb[v])||v,g);
+function iconoAtr(a,v){
+  if(!a.ic)return '';
+  return GI[a.ic(v)]?a.ic(v):(a.icoDef||'');
 }
-/* los que tienen algo cargado, en orden */
-const atrsDe=e=>ATRIB.filter(a=>e&&e.at&&e.at[a.k]);
+/* los que tienen algo cargado y se muestran, en orden */
+const atrsDe=e=>ATRIB.filter(a=>!a.oculto&&e&&e.at&&e.at[a.k]);
+/* las etiquetas de la lista y las propias, cada grupo por su lado */
+const etiqsDe=e=>ETORDER.filter(k=>(e&&e.tg||[]).some(t=>nm(t)===k));
+const libresDe=e=>((e&&e.tg)||[]).filter(t=>ETORDER.indexOf(nm(t))<0);
+
+/* La fila: atributos, después el estado, después lo que cada uno agregó.
+   Se usa igual en la ficha y en el repaso de la importación, así lo que se ve
+   antes de escribir es lo mismo que va a quedar. */
+function chipsAtr(e){
+  const g=e&&e.at&&e.at.genero;
+  const p=[];
+  atrsDe(e).forEach(a=>{const v=e.at[a.k];
+    p.push([iconoAtr(a,v),etiqAtr(a.tb,v,g),a.l]);});
+  etiqsDe(e).forEach(k=>p.push(['etiq-'+k,gen(ETIQ[k],g),'Estado']));
+  libresDe(e).forEach(t=>p.push(['',t,'Etiqueta']));
+  if(!p.length)return '';
+  return `<span class="atrs">${p.map(([i,txt,rot])=>
+    `<span class="atr" title="${att(rot)}">${i&&GI[i]?ic(i):''}${esc(txt)}</span>`
+  ).join('')}</span>`;
+}
 /* se quitan los vacíos: la base no acepta cadenas en blanco */
 function limpiarAtrs(at){
   const o={};ATRIB.forEach(a=>{const v=at&&at[a.k];if(v)o[a.k]=String(v).slice(0,80)});
@@ -85,8 +120,9 @@ const colorDe=t=>'hsl('+(hashN(t)%360)+' 52% 63%)';
 const deslug=t=>{const x=String(t||'').replace(/-/g,' ').trim();
   return x?x[0].toUpperCase()+x.slice(1):FALLBACK.l};
 /* La base acepta solo estos cuatro estados (o ninguno); acá van sus nombres */
+/* La columna status ya no se escribe: el estado vive en las etiquetas. Esto
+   queda solo para leer las versiones viejas del historial, que sí la tienen. */
 const STATUS={alive:'Vivo',dead:'Muerto',missing:'Desaparecido',unknown:'Se desconoce'};
-const STORDER=['alive','dead','missing','unknown'];
 const ORDER=['character','faction','location','item','creature'];
 /* nunca explota si la base trae un tipo que no conocemos: le arma uno */
 function TYT(t){
@@ -287,7 +323,7 @@ async function loadCamp(c){
      tiene sentido bajar la de todas las campañas para listar nombres */
   const [ents,als,rel,cov]=await Promise.all([
     SB.from('entities')
-      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,is_gm,tags,attrs,created_at,updated_at,edited_by')
+      .select('id,slug,type,name,summary,body,notes,image_url,is_party,is_gm,tags,attrs,created_at,updated_at,edited_by')
       .eq('campaign_id',c.id).is('archived_at',null).order('name'),
     SB.from('entity_aliases').select('alias,entities!inner(campaign_id,slug)')
       .eq('entities.campaign_id',c.id),
@@ -301,7 +337,7 @@ async function loadCamp(c){
   const amap={};
   (als.data||[]).forEach(x=>{const s=x.entities.slug;(amap[s]=amap[s]||[]).push(x.alias)});
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
-    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],at:e.attrs||{},up:e.updated_at,cr:e.created_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
+    b:e.body||'',c:e.notes||'',tg:e.tags||[],at:e.attrs||{},up:e.updated_at,cr:e.created_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
   /* las relaciones vienen por id de ficha; se pasan a slug, que es con lo que
      trabaja todo el resto de la app */
   const porId={};D.forEach(e=>{porId[e.id]=e.s});
@@ -561,7 +597,8 @@ function cardHTML(e){
       /* En la tarjeta pesa más saber qué es el personaje que cuántas veces se
          lo nombra; si no tiene atributos cargados sigue yendo el conteo. */
       const A=atrsDe(e).filter(a=>a.k==='raza'||a.k==='clase');
-      return A.length?A.map(a=>esc(etiqAtr(a.tb,e.at[a.k]))).join(' · ')
+      const g=e.at&&e.at.genero;
+      return A.length?A.map(a=>esc(etiqAtr(a.tb,e.at[a.k],g))).join(' · ')
                      :b3(e)+' menc.';
     })()}</div></div>`;
 }
@@ -665,15 +702,14 @@ function vFicha(){
         <h1>${esc(e.n)}</h1></div></div>
     ${e.a&&e.a.length?`<div class="aka">también: ${e.a.slice()
       .sort((x,y)=>x.localeCompare(y,'es')).map(esc).join(' · ')}</div>`:''}
-    ${/* Los atributos van en su propia fila y no mezclados con las menciones y
-          las conexiones: unos los cargó alguien y los otros los cuenta la app.
-          Si no hay ninguno la fila no aparece, que la mayoría de los NPC van a
-          estar vacíos y no tienen por qué verse incompletos. */
+    ${/* Todo lo que describe a la ficha en una sola fila —atributos, estado y
+          lo que cada uno agregó—, y los dos conteos en otra. Si no hay nada
+          cargado la primera no aparece: la mayoría de los NPC van a estar
+          vacíos y no tienen por qué verse incompletos. */
       chipsAtr(e)}
-    <div class="meta">${e.st?`<span class="chip acc" style="--c:${c}">${esc(STATUS[e.st]||e.st)}</span>`:''}
-      ${(e.tg||[]).map(t=>`<span class="chip mine">${esc(t)}</span>`).join('')}
-      <span class="chip">${bl.length} menciones</span>
-      <span class="chip">${rel.length} conexiones</span></div>
+    <div class="atrs cuenta">
+      <span class="atr">${ic('menciones')}${bl.length} menciones</span>
+      <span class="atr">${ic('link')}${rel.length} conexiones</span></div>
     <div class="prose">${prose(e.b)||'<p style="color:var(--dim)">Sin descripción todavía.</p>'}</div>
     ${e.c?`<div class="sec"><div class="sech">Comentarios</div>
       <div class="ours">${prose(e.c)}</div></div>`:''}
@@ -828,7 +864,7 @@ function edit(slug){
   /* objeto nuevo: sin _live, no arrastra borradores. Estado y etiquetas se
      copian de entrada porque se editan tocando botones, no escribiendo. */
   st.editing={slug:slug||null,isNew:!slug,
-    stt:(e&&e.st)||null, tags:((e&&e.tg)||[]).slice(),
+    tags:((e&&e.tg)||[]).slice(),
     at:Object.assign({},(e&&e.at)||{}),
     als:((e&&e.a)||[]).slice(),
     rels:e?REL.filter(x=>x.de===e.s).map(x=>({id:x.id,a:x.a,l:x.l})):[],
@@ -931,13 +967,14 @@ function vEd(){
       const hay=atrDeTipo(type);
       const V=ATRIB.filter(a=>hay.indexOf(a)>=0||AT[a.k]);
       if(!V.length)return '';
+      const G=AT.genero;
       const chips=(a,tb)=>`<div class="eyebrow mt">${esc(a.l)}</div>
         <div class="btnrow">
           <button class="gbtn ${AT[a.k]?'':'on'}" data-act="atr"
             data-v="${a.k}:">Sin ${esc(a.l.toLowerCase())}</button>
           ${Object.keys(tb).map(k=>`<button class="gbtn ${AT[a.k]===k?'on':''}"
             data-act="atr" data-v="${a.k}:${k}">${
-            iconoAtr(a,k)?ic(iconoAtr(a,k)):''}${esc(tb[k])}</button>`).join('')}
+            iconoAtr(a,k)?ic(iconoAtr(a,k)):''}${esc(gen(tb[k],G))}</button>`).join('')}
           ${AT[a.k]&&!tb[AT[a.k]]
             ? `<button class="gbtn on" data-act="atr" data-v="${a.k}:${att(AT[a.k])}"
                 >${esc(AT[a.k])}</button>`:''}
@@ -951,11 +988,11 @@ function vEd(){
           <div class="hint">Se guarda tal cual, sin icono.</div></div>`:''}`;
       const libre=a=>`<div class="eyebrow mt">${esc(a.l)}</div>
         <input class="sfield" data-at="${a.k}" list="dl-${a.k}"
-          value="${att(etiqAtr(a.tb,AT[a.k])||'')}"
-          placeholder="${esc(Object.values(a.tb).slice(0,3).join(', '))}…"
+          value="${att(etiqAtr(a.tb,AT[a.k],G)||'')}"
+          placeholder="${esc(Object.values(a.tb).slice(0,3).map(v=>gen(v,G)).join(', '))}…"
           oninput="atrEscrito(this)">
         <datalist id="dl-${a.k}">${Object.values(a.tb)
-          .map(v=>`<option value="${att(v)}">`).join('')}</datalist>`;
+          .map(v=>`<option value="${att(gen(v,G))}">`).join('')}</datalist>`;
       /* Cada atributo se dibuja según cómo se elige: los que tienen icono van
          como botones, el alineamiento como desplegable —son nueve y con nueve
          dibujos distintos sería ruido— y el resto como texto con sugerencias. */
@@ -963,7 +1000,7 @@ function vEd(){
         <select class="sfield" data-at="${a.k}" onchange="atrEscrito(this)">
           <option value="">Sin ${esc(a.l.toLowerCase())}</option>
           ${Object.keys(a.tb).map(k=>`<option value="${k}"${
-            AT[a.k]===k?' selected':''}>${esc(a.tb[k])}</option>`).join('')}
+            AT[a.k]===k?' selected':''}>${esc(gen(a.tb[k],G))}</option>`).join('')}
         </select>`;
       const pinta=a=>({chips:chips,lista:desple,texto:libre}[a.ui]||libre)(a,a.tb);
       return `<div id="atrib">
@@ -973,22 +1010,27 @@ function vEd(){
       </div>`;
     })()}
 
-    <div class="eyebrow mt">Estado</div>
-    <div class="btnrow">
-      <button class="gbtn ${!E.stt?'on':''}" data-act="stt" data-v="">Sin estado</button>
-      ${STORDER.map(k=>`<button class="gbtn ${E.stt===k?'on':''}"
-        data-act="stt" data-v="${k}">${esc(STATUS[k])}</button>`).join('')}
-    </div>
+    <div class="eyebrow mt">Qué le pasó</div>
+    <div class="btnrow">${(()=>{
+      /* Varias a la vez: alguien puede estar muerto y revivido, o revivido y
+         encarcelado. "Vivo" no está a propósito: si no dice lo contrario, lo
+         está. */
+      const g=(E.at||{}).genero;
+      return ETORDER.map(k=>`<button class="gbtn ${tieneEtiq({tg:E.tags},k)?'on':''}"
+        data-act="etiq" data-v="${k}">${ic('etiq-'+k)}${esc(gen(ETIQ[k],g))}</button>`).join('');
+    })()}</div>
 
-    <div class="eyebrow mt">Etiquetas</div>
+    <div class="eyebrow mt">Otras etiquetas</div>
     <div class="tagbox">
-      ${(E.tags||[]).map((t,i)=>`<span class="tagch">${esc(t)}<button data-act="rmtag"
+      ${(E.tags||[]).map((t,i)=>ETORDER.indexOf(nm(t))>=0?''
+        :`<span class="tagch">${esc(t)}<button data-act="rmtag"
         data-v="${i}" aria-label="Quitar ${att(t)}">${ic('x')}</button></span>`).join('')}
       <input class="taginput" id="tagin" placeholder="Agregar etiqueta"
         onkeydown="tagKey(event)" onblur="tagAdd(this)">
     </div>
-    <div class="hint">Escribí y presioná Enter. Va donde el estado no alcanza:
-      "revivido", "nos debe plata", "no confiar".</div>
+    <div class="hint">Escribí y presioná Enter. Va donde las de arriba no
+      alcanzan: "nos debe plata", "no confiar". Estas van sin dibujo; si alguna
+      se repite mucho, la sumamos a la lista con el suyo.</div>
 
     <div class="eyebrow mt">Descripción — qué es</div>
     <div class="acwrap">
@@ -1316,7 +1358,7 @@ async function mkNew(type){
       summary:'Ficha nueva, falta completar.',body:'',notes:''}).select().single();
     if(error){toast('No se pudo crear: '+error.message,'err');return}
     D.push({id:data.id,s:data.slug,t:type,n:data.name,sm:data.summary||'',
-      b:'',c:'',st:data.status||null,img:data.image_url||null,pc:0,a:[]});
+      b:'',c:'',tg:data.tags||[],img:data.image_url||null,pc:0,a:[]});
     rebuild();
   }
   pick(slug);toast('Ficha "'+name+'" creada','ok');
@@ -1345,7 +1387,7 @@ async function save(pisar){
   // una etiqueta a medio escribir en el campo también cuenta
   tagAdd(document.getElementById('tagin')||{value:''});
   alsAdd(document.getElementById('alsin')||{value:''});
-  const status=E.stt||null, tags=(E.tags||[]).slice();
+  const tags=(E.tags||[]).slice();
   /* Antes de crear una ficha nueva: si hay alguna parecida, se pregunta. Solo
      al crear — renombrar una que ya existe es otra cosa y ahí el aviso de
      arriba alcanza. E.igual queda marcado si ya dijo que es otra. */
@@ -1354,7 +1396,7 @@ async function save(pisar){
     if(c.length){st.dup={name,cands:c};r();return}
   }
   const before=e?new Set([...(ADJ[e.s]||[])]):new Set();
-  const campo={name,body,notes,type,summary,status,tags,image_url:img,
+  const campo={name,body,notes,type,summary,tags,image_url:img,
     attrs:limpiarAtrs(E.at),is_party:pc,is_gm:gm,edited_by:st.me||null};
   st.busy=true;r();
   let res;
@@ -1425,7 +1467,8 @@ function usarLaQueEsta(slug){
   const suma=(base,extra)=>!extra?(base||''):((base||'').trim()?base.trimEnd()+'\n\n'+extra:extra);
   const N={slug,isNew:false,base:d.up,
     dn:d.n, db:suma(d.b,(V.db||'').trim()), dc:suma(d.c,(V.dc||'').trim()),
-    stt:V.slug?d.st||null:(V.stt||d.st||null),
+    /* los atributos de la que ya existe mandan; lo del borrador solo completa */
+    at:Object.assign({},V.at||{},d.at||{}),
     tags:(d.tg||[]).slice(), als:(d.a||[]).slice()};
   (V.tags||[]).forEach(t=>{if(!N.tags.some(x=>nm(x)===nm(t)))N.tags.push(t)});
   (V.als||[]).forEach(a=>{if(!N.als.some(x=>nm(x)===nm(a)))N.als.push(a)});
@@ -1933,13 +1976,16 @@ async function openHist(slug){
 }
 /* estado, atributos y etiquetas de una versión, como chips chicos */
 function marcas(status,tags,at){
-  const ch=[];
+  const ch=[], g=at&&at.genero;
+  /* status solo aparece en versiones anteriores a que el estado pasara a ser
+     una etiqueta; en las nuevas siempre viene vacío */
   if(status)ch.push(`<span class="hchip acc">${esc(STATUS[status]||status)}</span>`);
   /* con el rótulo delante: acá no hay icono ni lugar para adivinar si "Noble"
      es el trasfondo o una etiqueta que alguien puso */
   atrsDe({at}).forEach(a=>ch.push(`<span class="hchip">${esc(a.l)}: ${
     esc(etiqAtr(a.tb,at[a.k]))}</span>`));
-  (tags||[]).forEach(t=>ch.push(`<span class="hchip">${esc(t)}</span>`));
+  (tags||[]).forEach(t=>ch.push(`<span class="hchip">${
+    esc(ETIQ[nm(t)]?gen(ETIQ[nm(t)],g):t)}</span>`));
   return ch.length?`<div class="hmarks">${ch.join('')}</div>`:'';
 }
 function vHist(){
@@ -1955,7 +2001,7 @@ function vHist(){
         <div class="row hrow"><div class="grow">
           <div class="rn">Versión actual</div>
           <div class="rs">${esc(plano(e.b))||'Sin descripción'}</div>
-          ${marcas(e.st,e.tg,e.at)}
+          ${marcas(null,e.tg,e.at)}
           ${e.eb?`<div class="hwhen">por ${esc(nombreDe(e.eb))}</div>`:''}</div></div>
         ${H.rows.map(v=>`<div class="row hrow"><div class="grow">
           <div class="rn">${esc(v.name||e.n)}</div>
@@ -1990,7 +2036,14 @@ async function restaurar(id){
   const upd={name:v.name,summary:v.summary,body:v.body,notes:v.notes};
   /* tags NULL marca una revisión anterior a que se registraran estos campos:
      ahí no se sabe qué había, así que se dejan como están en vez de borrarlos */
-  if(v.tags!==null&&v.tags!==undefined){upd.status=v.status||null;upd.tags=v.tags}
+  if(v.tags!==null&&v.tags!==undefined){
+    /* la versión puede ser anterior a la mudanza: ahí el estado viene en su
+       columna vieja y se restaura como la etiqueta que le corresponde */
+    const t=(v.tags||[]).slice();
+    const eq={dead:'muerto',missing:'desaparecido'}[v.status];
+    if(eq&&!t.some(x=>nm(x)===eq))t.push(eq);
+    upd.tags=t;
+  }
   /* lo mismo con los atributos, que se empezaron a registrar después */
   if(v.attrs!==null&&v.attrs!==undefined)upd.attrs=v.attrs;
   const {error}=await SB.from('entities').update(upd).eq('id',e.id);
@@ -2323,7 +2376,7 @@ function gDraw(){
        ficha: al alejarse se lee de una cuántos quedaron en el camino.
        "Se desconoce" no se marca a propósito: es lo mismo que no saber nada,
        que es como está la mayoría. */
-    if(n.e.st==='dead'){
+    if(tieneEtiq(n.e,'muerto')){
       cx.beginPath();cx.arc(n.x,n.y,r,0,6.2832);
       cx.fillStyle='rgba(13,16,21,.6)';cx.fill();
       const d=r*.7;
@@ -2331,7 +2384,7 @@ function gDraw(){
       cx.lineWidth=1.5/cam.k+.5;cx.lineCap='round';
       cx.beginPath();cx.moveTo(n.x-d,n.y+d);cx.lineTo(n.x+d,n.y-d);cx.stroke();
       cx.globalAlpha=on?1:.3;
-    }else if(n.e.st==='missing'){
+    }else if(tieneEtiq(n.e,'desaparecido')){
       cx.save();
       cx.setLineDash([3.2/cam.k,3.2/cam.k]);
       cx.beginPath();cx.arc(n.x,n.y,r+3/cam.k+1.5,0,6.2832);
@@ -3006,9 +3059,15 @@ const ACT={
     st.editing.at=st.editing.at||{};
     if(!x||st.editing.at[k]===x)delete st.editing.at[k];else st.editing.at[k]=x;
     st.editing.atNuevo=null;r()},
+  /* prende o apaga una etiqueta de la lista, sin tocar las propias */
+  etiq:v=>{keepDraft();
+    const T=st.editing.tags||(st.editing.tags=[]);
+    const i=T.findIndex(t=>nm(t)===v);
+    if(i>=0)T.splice(i,1);else T.push(v);
+    r()},
   atrotro:v=>{keepDraft();
     st.editing.atNuevo=st.editing.atNuevo===v?null:v;r()},
-  stt:v=>{keepDraft();st.editing.stt=v||null;r()},
+
   rmtag:v=>{keepDraft();(st.editing.tags||[]).splice(+v,1);r()},
   rmals:v=>{keepDraft();(st.editing.als||[]).splice(+v,1);r()},
   rmrel:v=>{keepDraft();(st.editing.rels||[]).splice(+v,1);r()},
