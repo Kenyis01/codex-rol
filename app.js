@@ -1769,38 +1769,68 @@ function vGrafo(){
   </div>
   <div class="gctl" id="gctl">${gControls()}</div>
   <div class="glegend" id="glegend">${gLegend()}</div>
+  <div class="gacc" id="gacc">${gAcciones()}</div>
   <div class="page">${(()=>{
       const nv=novedades();
       if(!nv)return '';
       const p1=nv.nuevas.length?nv.nuevas.length+' ficha'+(nv.nuevas.length===1?'':'s')+' nueva'+(nv.nuevas.length===1?'':'s'):'';
       const p2=nv.tocadas.length?nv.tocadas.length+' cambiada'+(nv.tocadas.length===1?'':'s'):'';
-      return `<div class="nov"><span class="novt">Desde la última vez</span>
-        ${esc([p1,p2].filter(Boolean).join(' · '))}
+      return `<div class="nov"><span class="novt">Novedades del códice</span>
+        Desde tu última visita (${esc(cuando(nv.desde))}):
+        ${esc([p1,p2].filter(Boolean).join(' · '))}.
         <div class="novl">${nv.nuevas.concat(nv.tocadas).slice(0,8).map(e=>
           `<span class="novn" data-act="gcentrar" data-v="${att(e.s)}"
             style="color:${TY(e).c}">${esc(e.n)}</span>`).join('')}</div></div>`;
     })()}<div class="hint" id="gstat"></div>
   </div>`;
 }
+/* refresca las tres filas de abajo sin volver a dibujar la pantalla */
+function gRefrescar(){
+  const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
+  const l=document.getElementById('glegend');if(l)l.innerHTML=gLegend();
+  const a=document.getElementById('gacc');if(a)a.innerHTML=gAcciones();
+}
+
+/* Debajo del grafo conviven tres cosas distintas que antes se veían iguales:
+   elegir hasta dónde llega (una sola opción), prender y apagar qué se muestra
+   (varias a la vez), y hacer algo (acciones). Van separadas y rotuladas. */
 function gControls(){
-  const b=(v,l,on)=>`<button class="gbtn ${on?'on':''}" data-act="gmode" data-v="${v}">${l}</button>`;
-  return b('1','1 salto',G.mode==='ego'&&G.depth===1)+
-         b('2','2 saltos',G.mode==='ego'&&G.depth===2)+
-         b('3','3 saltos',G.mode==='ego'&&G.depth===3)+
-         b('all','Todo',G.mode==='all')+
-         (G.pin.size?`<button class="gbtn" data-act="gsoltar"
-           title="Soltar los clavados">Soltar ${G.pin.size}</button>`:'')+
-         `<span class="spacer"></span><button class="gbtn ${G.verGrupos?'on':''}"
-           data-act="ggrupos">Grupos</button>`+
-         `<button class="gbtn" data-act="gexport" title="Guardar como imagen"
-           aria-label="Guardar como imagen">${ic('scroll')}</button>`;
+  const b=(v,l,on)=>`<button class="${on?'on':''}" data-act="gmode" data-v="${v}">${l}</button>`;
+  return `<div class="gfila">
+      <span class="gfr">Saltos desde la ficha</span>
+      <div class="seg gseg">
+        ${b('1','1',G.mode==='ego'&&G.depth===1)}
+        ${b('2','2',G.mode==='ego'&&G.depth===2)}
+        ${b('3','3',G.mode==='ego'&&G.depth===3)}
+        ${b('all','Todo',G.mode==='all')}
+      </div>
+    </div>`;
+}
+/* las acciones van juntas y al final, para que no se confundan con los filtros */
+function gAcciones(){
+  return `<div class="gfila acciones">
+    <button class="gbtn ${G.verGrupos?'on':''}" data-act="ggrupos">
+      ${ic('mesh')}Grupos</button>
+    <button class="gbtn" data-act="gexport">${ic('scroll')}Guardar imagen</button>
+    ${G.pin.size?`<button class="gbtn" data-act="gsoltar">
+      Soltar ${G.pin.size} clavada${G.pin.size===1?'':'s'}</button>`:''}
+  </div>`;
 }
 function gLegend(){
-  const tipos=tiposTodos().map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
-    data-act="gtype" data-v="${t}"><span class="sw"></span>${esc(TYT(t).l)}</button>`).join('');
-  const tags=etiquetasUsadas().map(t=>`<button class="lgb tag ${G.tag===t?'on':''}"
-    data-act="gtag" data-v="${att(t)}">${esc(t)}</button>`).join('');
-  return tipos+tags;
+  const tipos=tiposTodos().map(t=>`<button class="lgb ${G.off.has(t)?'off':'on'}"
+    style="--c:${TYT(t).c}" data-act="gtype" data-v="${t}"
+    aria-pressed="${!G.off.has(t)}"><span class="sw"></span>${esc(TYT(t).l)}</button>`).join('');
+  const tags=etiquetasUsadas();
+  return `<div class="gfila">
+      <span class="gfr">Qué se muestra</span>
+      <div class="gchips">${tipos}</div>
+    </div>
+    ${tags.length?`<div class="gfila">
+      <span class="gfr">Solo con la etiqueta</span>
+      <div class="gchips">${tags.map(t=>`<button class="lgb tag ${G.tag===t?'on':''}"
+        data-act="gtag" data-v="${att(t)}" aria-pressed="${G.tag===t}"
+        >#${esc(t)}</button>`).join('')}</div>
+    </div>`:''}`;
 }
 
 function gBuild(reheat){
@@ -2222,7 +2252,7 @@ function soltarPins(){
   G.pin.clear();guardarPins();
   G.alpha=Math.max(G.alpha,.5);gLoop();
   toast('Se soltaron todos','ok');
-  const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
+  gRefrescar();
 }
 
 /* La cámara viaja hasta el nodo en vez de aparecer ya encima: ubica mucho
@@ -2522,7 +2552,7 @@ function gWire(){
     if(wasNode&&moved&&G.drag===wasNode){
       /* lo moviste a propósito: se queda ahí */
       G.pin.add(wasNode.id);guardarPins();
-      const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
+      gRefrescar();
     }
     G.drag=null;G.panning=null;G.downNode=null;
     if(wasNode&&!moved){
@@ -2717,11 +2747,11 @@ const ACT={
     st.tab='grafo';r();alTope()},
   gmode:v=>{
     if(v==='all')G.mode='all';else{G.mode='ego';G.depth=+v}
-    G.pos={};document.getElementById('gctl').innerHTML=gControls();gBuild();gCard();
+    G.pos={};gRefrescar();gBuild();gCard();
   },
   gtype:v=>{
     if(G.off.has(v))G.off.delete(v);else G.off.add(v);
-    document.getElementById('glegend').innerHTML=gLegend();gBuild();gCard();
+    gRefrescar();gBuild();gCard();
   },
   reheat:()=>{G.pos={};gBuild();},
   zoom:v=>gZoom(v==='in'?1.3:1/1.3),
@@ -2729,14 +2759,13 @@ const ACT={
   full:gFull,
   gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()},
   gsoltar:soltarPins,
+  /* al soltar o prender grupos hay que redibujar esa fila */
   gexport:exportarGrafo,
   gtag:v=>{G.tag=(G.tag===v?null:v);G.pos={};gBuild();
-    const l=document.getElementById('glegend');if(l)l.innerHTML=gLegend();
-    gFit();gPaint();},
+    gRefrescar();gFit();gPaint();},
   ggrupos:()=>{G.verGrupos=!G.verGrupos;
     G.grupos=G.verGrupos?detectarGrupos(G.nodes,G.edges):null;
-    const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
-    gPaint();
+    gRefrescar();gPaint();
     if(G.verGrupos)toast((G.grupos&&G.grupos.length||0)+' grupos',null);},
   gcentrar:v=>{gCenter(v);r();alTope()},
   center:()=>{},
