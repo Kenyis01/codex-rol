@@ -188,7 +188,7 @@ async function loadCamp(c){
      tiene sentido bajar la de todas las campañas para listar nombres */
   const [ents,als,rel,cov]=await Promise.all([
     SB.from('entities')
-      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,is_gm,tags,updated_at,edited_by')
+      .select('id,slug,type,name,summary,body,notes,status,image_url,is_party,is_gm,tags,created_at,updated_at,edited_by')
       .eq('campaign_id',c.id).is('archived_at',null).order('name'),
     SB.from('entity_aliases').select('alias,entities!inner(campaign_id,slug)')
       .eq('entities.campaign_id',c.id),
@@ -202,7 +202,7 @@ async function loadCamp(c){
   const amap={};
   (als.data||[]).forEach(x=>{const s=x.entities.slug;(amap[s]=amap[s]||[]).push(x.alias)});
   D=(ents.data||[]).map(e=>({id:e.id,s:e.slug,t:e.type,n:e.name,sm:e.summary||'',
-    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
+    b:e.body||'',c:e.notes||'',st:e.status,tg:e.tags||[],up:e.updated_at,cr:e.created_at,img:e.image_url,pc:e.is_party?1:0,gm:e.is_gm?1:0,eb:e.edited_by||null,a:amap[e.slug]||[]}));
   /* las relaciones vienen por id de ficha; se pasan a slug, que es con lo que
      trabaja todo el resto de la app */
   const porId={};D.forEach(e=>{porId[e.id]=e.s});
@@ -210,6 +210,7 @@ async function loadCamp(c){
     a:porId[x.to_entity_id],l:x.label})).filter(x=>x.de&&x.a);
   cur=c;rebuild();loadMe();
   G.pos={};G.sel=null;G.selEdge=null;limpiarCamino();  // arranca limpio en cada campaña
+  G.hist=null;G.tiempo=false;HREV=null;
   if(!st.ent||!byS[st.ent]){
     const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s)||b3(b)-b3(a))[0];
     st.ent=top?top.s:null;
@@ -1503,7 +1504,7 @@ const G={
   sel:null,selUser:false,hot:null,selEdge:null,
   picking:false,path:null,pathA:null,pathB:null,
   drag:null,panning:null,moved:false,downNode:null,
-  depth:2,mode:'ego',off:new Set(),full:false,panel:false,
+  depth:2,mode:'ego',off:new Set(),full:false,panel:false,tiempo:false,hist:null,
   ro:null,pts:new Map(),pinch:null
 };
 const IMGC={};                                  // cache de imágenes para el canvas
@@ -1548,6 +1549,9 @@ function vGrafo(){
   <div class="gctl" id="gctl">${gControls()}</div>
   <div class="glegend" id="glegend">${gLegend()}</div>
   <div class="page"><div class="hint" id="gstat"></div>
+    <button class="btn sec2 ${G.tiempo?'on':''}" data-act="gtiempo">
+      ${ic('time')}${G.tiempo?'Cerrar la línea de tiempo':'Ver cómo estaba'}</button>
+    <div id="gtime">${vTiempo()}</div>
     <button class="btn sec2 ${G.panel?'on':''}" data-act="gsalud">
       ${ic('crosshair')}${G.panel?'Ocultar':'Qué falta trabajar'}</button>
     <div id="gsalud">${G.panel?vSalud():''}</div>
@@ -1571,22 +1575,32 @@ function gLegend(){
 
 function gBuild(reheat){
   const center=st.ent;
+  /* con el control de tiempo abierto se trabaja sobre el grafo rearmado */
+  const HADJ=G.hist?G.hist.adj:ADJ, HEDG=G.hist?G.hist.edges:EDGES;
+  const HIDS=G.hist?G.hist.ids:D.map(e=>e.s);
   let ids;
-  if(G.mode==='all')ids=D.map(e=>e.s);
+  if(G.mode==='all')ids=HIDS.slice();
   else{
     const seen={},q=[[center,0]];seen[center]=0;
     while(q.length){const[id,d]=q.shift();if(d>=G.depth)continue;
-      (ADJ[id]||[]).forEach(n=>{if(!(n in seen)){seen[n]=d+1;q.push([n,d+1])}})}
+      (HADJ[id]||[]).forEach(n=>{if(!(n in seen)){seen[n]=d+1;q.push([n,d+1])}})}
     ids=Object.keys(seen);
   }
-  ids=ids.filter(id=>byS[id]&&(id===center||!G.off.has(byS[id].t)));
+  const vivo=new Set(HIDS);
+  ids=ids.filter(id=>byS[id]&&vivo.has(id)&&(id===center||!G.off.has(byS[id].t)));
+  /* el centro puede no existir todavía en el momento que se está mirando */
+  if(!ids.length&&HIDS.length)ids=[HIDS[0]];
   const set=new Set(ids);
   const dg={};ids.forEach(i=>dg[i]=0);
-  const edges=EDGES.filter(e=>set.has(e.a)&&set.has(e.b));
+  const edges=HEDG.filter(e=>set.has(e.a)&&set.has(e.b));
   edges.forEach(e=>{dg[e.a]++;dg[e.b]++});
   const n=ids.length,rad=70+Math.sqrt(n)*26;
   G.nodes=ids.map((id,i)=>{
-    const p=G.pos[id],e=byS[id],ang=i/Math.max(1,n)*Math.PI*2;
+    const base=byS[id];
+    /* el nombre puede haber cambiado desde entonces */
+    const e=(G.hist&&G.hist.texto[id]&&G.hist.texto[id].n&&G.hist.texto[id].n!==base.n)
+      ? Object.assign({},base,{n:G.hist.texto[id].n}) : base;
+    const p=G.pos[id],ang=i/Math.max(1,n)*Math.PI*2;
     gImg(e.img);
     return{id,e,
       x:p?p.x:(id===center?0:Math.cos(ang)*rad+(Math.random()-.5)*14),
@@ -1674,7 +1688,7 @@ function gDraw(){
   const arCam=cam2?aristasDelCamino():null;
   const near=cam2?cam2
     :(G.selEdge?new Set([G.selEdge.a,G.selEdge.b])
-    :(focus?new Set([focus,...(ADJ[focus]||[])]):null));
+    :(focus?new Set([focus,...((G.hist?G.hist.adj:ADJ)[focus]||[])]):null));
 
   /* --- aristas, en coordenadas del mundo --- */
   cx.save();cx.translate(cam.x,cam.y);cx.scale(cam.k,cam.k);
@@ -1916,7 +1930,8 @@ function gHit(sx,sy){
    medio. Con la distancia al segmento recto el toque erraba justo en el
    medio de las líneas largas, así que se muestrea la misma curva. */
 function gHitEdge(sx,sy){
-  const x=wx(sx),y=wy(sy), tope=11/G.cam.k;
+  /* 14px de margen: una línea es un objetivo finito para un dedo */
+  const x=wx(sx),y=wy(sy), tope=14/G.cam.k;
   let best=null,bd=tope;
   for(const e of G.edges){
     const a=G.map[e.a],b=G.map[e.b];if(!a||!b)continue;
@@ -1961,6 +1976,113 @@ function partirFrases(t){
   if(resto)out.push(resto);
   return out;
 }
+/* ---------- retroceder en el tiempo ----------
+   Cada guardado deja la versión anterior con su fecha. Con eso se puede
+   rearmar el grafo como estaba: qué fichas ya existían y a quién nombraban
+   entonces. Las revisiones se piden una sola vez, cuando se abre el control.
+   Tipo y foto no están versionados, así que esos se muestran como están hoy;
+   lo que sí se rearma es el nombre y los vínculos, que es lo que dibuja. */
+let HREV=null;                       // {slug:[{n,b,c,at}]}, ordenadas
+async function cargarRevisiones(){
+  if(HREV)return null;
+  const {data,error}=await SB.from('entity_revisions')
+    .select('name,body,notes,replaced_at,entities!inner(campaign_id,slug)')
+    .eq('entities.campaign_id',cur.id).order('replaced_at');
+  if(error)return error;
+  HREV={};
+  (data||[]).forEach(x=>{
+    const sl=x.entities&&x.entities.slug;if(!sl)return;
+    (HREV[sl]=HREV[sl]||[]).push({n:x.name,b:x.body||'',c:x.notes||'',
+      at:new Date(x.replaced_at).getTime()});
+  });
+  Object.keys(HREV).forEach(k=>HREV[k].sort((a,b)=>a.at-b.at));
+  return null;
+}
+/* desde cuándo tiene sentido mirar: la ficha más vieja */
+function desdeCuando(){
+  let t=Infinity;
+  D.forEach(e=>{if(e.cr){const v=new Date(e.cr).getTime();if(v<t)t=v}});
+  return isFinite(t)?t:Date.now()-86400000*30;
+}
+function reconstruir(T){
+  const ids=[], texto={};
+  D.forEach(e=>{
+    if(e.cr&&new Date(e.cr).getTime()>T)return;      // todavía no existía
+    ids.push(e.s);
+    /* la versión que estaba viva en T es la primera que fue reemplazada
+       después de T; si ninguna, es la de ahora */
+    const revs=HREV&&HREV[e.s]||[];
+    let v=null;
+    for(const rv of revs){if(rv.at>T){v=rv;break}}
+    texto[e.s]=v?{n:v.n||e.n,b:v.b,c:v.c}:{n:e.n,b:e.b,c:e.c};
+  });
+  const set=new Set(ids);
+  const adj={};ids.forEach(id=>adj[id]=new Set());
+  const wmap={};
+  ids.forEach(id=>{
+    const t=texto[id];
+    [t.b,t.c].forEach(txt=>{
+      LK.lastIndex=0;let m;
+      while((m=LK.exec(txt||''))){
+        const o=m[1];
+        if(o===id||!set.has(o))continue;
+        adj[id].add(o);adj[o].add(id);
+        const k=clavePar(id,o);
+        wmap[k]=(wmap[k]||0)+1;
+      }
+    });
+  });
+  const edges=Object.keys(wmap).map(k=>{const[a,b]=k.split('|');
+    return{a,b,w:wmap[k],rel:false}});
+  return {ids,adj,edges,texto,T};
+}
+function vTiempo(){
+  if(!G.tiempo)return '';
+  const t0=desdeCuando(), t1=Date.now();
+  const H=G.hist;
+  const pos=H?Math.round((H.T-t0)/(t1-t0||1)*100):100;
+  const fecha=H?new Date(H.T):new Date();
+  return `<div class="tbox">
+    <input type="range" class="trange" id="trange" min="0" max="100" value="${pos}"
+      oninput="tiempoSlider(this.value)" aria-label="Momento">
+    <div class="trow">
+      <span class="tfecha" id="tfecha">${H?esc(fecha.toLocaleDateString('es',
+        {day:'numeric',month:'long',year:'numeric'})):'Ahora'}</span>
+      <span class="tcuenta" id="tcuenta">${H
+        ? H.ids.length+' fichas · '+H.edges.length+' vínculos'
+        : D.length+' fichas · '+EDGES.length+' vínculos'}</span>
+    </div>
+    ${H?`<button class="btn sec2" data-act="tahora">Volver a ahora</button>`:''}
+  </div>`;
+}
+function tiempoSlider(v){
+  const t0=desdeCuando(), t1=Date.now();
+  const T=t0+(t1-t0)*(+v/100);
+  G.hist=(+v>=100)?null:reconstruir(T);
+  const f=document.getElementById('tfecha'), c=document.getElementById('tcuenta');
+  if(f)f.textContent=G.hist
+    ? new Date(T).toLocaleDateString('es',{day:'numeric',month:'long',year:'numeric'})
+    : 'Ahora';
+  if(c)c.textContent=G.hist
+    ? G.hist.ids.length+' fichas · '+G.hist.edges.length+' vínculos'
+    : D.length+' fichas · '+EDGES.length+' vínculos';
+  /* sin re-render: arrastrar el control redibujando la pantalla entera
+     perdería el foco del propio control en cada paso */
+  G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();
+  gBuild();gCard();
+  const st2=document.getElementById('gstat');
+  if(st2&&G.hist)st2.innerHTML=`Como estaba el ${esc(new Date(T).toLocaleDateString('es',
+    {day:'numeric',month:'long'}))}: ${G.hist.ids.length} fichas, ${G.hist.edges.length} vínculos.`;
+}
+async function abrirTiempo(){
+  if(G.tiempo){G.tiempo=false;G.hist=null;gBuild();r();return}
+  const cerrar=toast('Buscando versiones anteriores…',null,true);
+  const err=await cargarRevisiones();
+  cerrar();
+  if(err){toast('No pude traer el historial: '+err.message,'err');return}
+  G.tiempo=true;r();
+}
+
 /* ---------- qué falta trabajar ----------
    Nodos puente: si sacás uno, el grafo se parte en dos. En una campaña suele
    ser el personaje que sostiene dos tramas a la vez, y casi siempre nadie se
@@ -2412,6 +2534,8 @@ const ACT={
   gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();gCard();gPaint()},
   gpath:pedirCamino,
   gsalud:()=>{G.panel=!G.panel;r()},
+  gtiempo:abrirTiempo,
+  tahora:()=>{G.hist=null;gBuild();r()},
   gcentrar:v=>{gCenter(v);G.panel=false;r();scrollTo(0,0)},
   center:()=>{},
   search:()=>{}

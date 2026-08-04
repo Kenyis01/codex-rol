@@ -672,6 +672,26 @@ canvas.pointing{cursor:pointer}
 .gerel{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--ink2)}
 .gerl{font-family:var(--mono);font-size:var(--f-xs);color:var(--gold);
   padding:0 var(--s1);letter-spacing:.04em}
+
+/* ============ línea de tiempo del grafo ============ */
+.tbox{margin-top:var(--s3);padding:var(--s4);border:1px solid var(--line);
+  border-radius:var(--r2);background:var(--surf)}
+.trange{width:100%;appearance:none;background:none;height:24px;margin:0;cursor:pointer}
+.trange::-webkit-slider-runnable-track{height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--surf3),var(--gold))}
+.trange::-moz-range-track{height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--surf3),var(--gold))}
+.trange::-webkit-slider-thumb{appearance:none;width:20px;height:20px;margin-top:-8px;
+  border-radius:50%;background:var(--gold);border:2px solid var(--bg);
+  box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.trange::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+  background:var(--gold);border:2px solid var(--bg)}
+.trow{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s3);
+  margin-top:var(--s2)}
+.tfecha{font-family:var(--disp);font-size:var(--f-md);color:var(--ink)}
+.tcuenta{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
+  text-align:right}
+.tbox .btn{margin-top:var(--s3)}
 @media(hover:hover){.gcx:hover{color:var(--ink);background:var(--surf3)}}
 
 /* ============ diálogo ============ */
