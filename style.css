@@ -692,6 +692,20 @@ canvas.pointing{cursor:pointer}
 .tcuenta{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
   text-align:right}
 .tbox .btn{margin-top:var(--s3)}
+
+/* qué cambió desde la última vez que miré el grafo */
+.nov{margin-bottom:var(--s4);padding:var(--s3) var(--s4);border-radius:var(--r2);
+  background:rgba(224,178,92,.06);border:1px solid rgba(224,178,92,.24);
+  font-size:var(--f-cap);color:var(--ink2);line-height:var(--lh-snug)}
+.novt{display:block;font-family:var(--mono);font-size:var(--f-xs);color:var(--gold);
+  letter-spacing:var(--track);text-transform:uppercase;margin-bottom:var(--s1)}
+.novl{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s2)}
+.novn{font-size:var(--f-sm);font-weight:600;cursor:pointer;
+  border-bottom:1px solid currentColor}
+/* filtro por etiqueta, al lado de los tipos */
+.lgb.tag{font-family:var(--mono);font-size:var(--f-xs);padding:0 var(--s3);
+  color:var(--dim)}
+.lgb.tag.on{border-color:var(--gold);color:var(--gold)}
 @media(hover:hover){.gcx:hover{color:var(--ink);background:var(--surf3)}}
 
 /* ============ diálogo ============ */

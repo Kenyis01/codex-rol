@@ -210,7 +210,7 @@ async function loadCamp(c){
     a:porId[x.to_entity_id],l:x.label})).filter(x=>x.de&&x.a);
   cur=c;rebuild();loadMe();
   G.pos={};G.sel=null;G.selEdge=null;limpiarCamino();  // arranca limpio en cada campaña
-  G.hist=null;G.tiempo=false;HREV=null;
+  G.hist=null;G.tiempo=false;HREV=null;G.tag=null;cargarPins();
   if(!st.ent||!byS[st.ent]){
     const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s)||b3(b)-b3(a))[0];
     st.ent=top?top.s:null;
@@ -1505,7 +1505,7 @@ const G={
   picking:false,path:null,pathA:null,pathB:null,
   drag:null,panning:null,moved:false,downNode:null,
   depth:2,mode:'ego',off:new Set(),full:false,panel:false,tiempo:false,hist:null,
-  verGrupos:false,grupos:null,
+  verGrupos:false,grupos:null,pin:new Set(),tag:null,
   ro:null,pts:new Map(),pinch:null
 };
 const IMGC={};                                  // cache de imágenes para el canvas
@@ -1549,7 +1549,17 @@ function vGrafo(){
   </div>
   <div class="gctl" id="gctl">${gControls()}</div>
   <div class="glegend" id="glegend">${gLegend()}</div>
-  <div class="page"><div class="hint" id="gstat"></div>
+  <div class="page">${(()=>{
+      const nv=novedades();
+      if(!nv)return '';
+      const p1=nv.nuevas.length?nv.nuevas.length+' ficha'+(nv.nuevas.length===1?'':'s')+' nueva'+(nv.nuevas.length===1?'':'s'):'';
+      const p2=nv.tocadas.length?nv.tocadas.length+' cambiada'+(nv.tocadas.length===1?'':'s'):'';
+      return `<div class="nov"><span class="novt">Desde la última vez</span>
+        ${esc([p1,p2].filter(Boolean).join(' · '))}
+        <div class="novl">${nv.nuevas.concat(nv.tocadas).slice(0,8).map(e=>
+          `<span class="novn" data-act="gcentrar" data-v="${att(e.s)}"
+            style="color:${TY(e).c}">${esc(e.n)}</span>`).join('')}</div></div>`;
+    })()}<div class="hint" id="gstat"></div>
     <button class="btn sec2 ${G.tiempo?'on':''}" data-act="gtiempo">
       ${ic('time')}${G.tiempo?'Cerrar la línea de tiempo':'Ver cómo estaba'}</button>
     <div id="gtime">${vTiempo()}</div>
@@ -1564,8 +1574,12 @@ function gControls(){
          b('2','2 saltos',G.mode==='ego'&&G.depth===2)+
          b('3','3 saltos',G.mode==='ego'&&G.depth===3)+
          b('all','Todo',G.mode==='all')+
+         (G.pin.size?`<button class="gbtn" data-act="gsoltar"
+           title="Soltar los clavados">Soltar ${G.pin.size}</button>`:'')+
          `<span class="spacer"></span><button class="gbtn ${G.verGrupos?'on':''}"
-           data-act="ggrupos">Grupos</button>`;
+           data-act="ggrupos">Grupos</button>`+
+         `<button class="gbtn" data-act="gexport" title="Guardar como imagen"
+           aria-label="Guardar como imagen">${ic('scroll')}</button>`;
 }
 function gLegend(){
   const tipos=ORDER.map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
@@ -1573,7 +1587,9 @@ function gLegend(){
   /* las marcas de estado se explican solo si hay alguna en pantalla */
   const marca=(k,l)=>D.some(e=>e.st===k)
     ? `<span class="lgn"><i class="mk ${k}"></i>${l}</span>`:'';
-  return tipos+marca('dead','muerto')+marca('missing','desaparecido');
+  const tags=etiquetasUsadas().map(t=>`<button class="lgb tag ${G.tag===t?'on':''}"
+    data-act="gtag" data-v="${att(t)}">${esc(t)}</button>`).join('');
+  return tipos+marca('dead','muerto')+marca('missing','desaparecido')+tags;
 }
 
 function gBuild(reheat){
@@ -1591,6 +1607,7 @@ function gBuild(reheat){
   }
   const vivo=new Set(HIDS);
   ids=ids.filter(id=>byS[id]&&vivo.has(id)&&(id===center||!G.off.has(byS[id].t)));
+  if(G.tag)ids=ids.filter(id=>id===center||(byS[id].tg||[]).some(t=>nm(t)===nm(G.tag)));
   /* el centro puede no existir todavía en el momento que se está mirando */
   if(!ids.length&&HIDS.length)ids=[HIDS[0]];
   const set=new Set(ids);
@@ -1650,6 +1667,7 @@ function gTick(){
   N.forEach(nd=>{
     nd.vx-=nd.x*.011;nd.vy-=nd.y*.011;      // gravedad hacia el centro
     if(nd===G.drag){nd.vx=nd.vy=0;G.pos[nd.id]={x:nd.x,y:nd.y};return}
+    if(G.pin.has(nd.id)){nd.vx=nd.vy=0;G.pos[nd.id]={x:nd.x,y:nd.y};return}
     nd.vx*=.82;nd.vy*=.82;
     nd.x+=nd.vx*G.alpha;nd.y+=nd.vy*G.alpha;
     G.pos[nd.id]={x:nd.x,y:nd.y};
@@ -1753,6 +1771,13 @@ function gDraw(){
         cx.textAlign='center';cx.textBaseline='middle';
         cx.fillText(initials(n.e.n,true),n.x,n.y+r*.04);
       }
+    }
+    if(G.pin.has(n.id)){
+      /* un puntito arriba a la derecha marca los que están clavados */
+      const d=r*.72;
+      cx.beginPath();cx.arc(n.x+d,n.y-d,2.2/cam.k+1,0,6.2832);
+      cx.fillStyle='#EDE7DA';cx.globalAlpha=on?.9:.28;cx.fill();
+      cx.globalAlpha=on?1:.3;
     }
     /* El Máster: un aro propio, sin animar. Acá se dibujan decenas de nodos
        por cuadro, no es lugar para las chispas que lleva en el índice. */
@@ -1981,6 +2006,102 @@ function partirFrases(t){
   if(resto)out.push(resto);
   return out;
 }
+/* ---------- micro-interacciones del grafo ---------- */
+
+/* Nodos clavados: al arrastrar uno queda fijo donde lo soltaste, para poder
+   armarse el mapa a mano en vez de aceptar el que salga. Se guardan por
+   campaña en el navegador, así sobreviven a recargar. */
+const pinKey=()=>'codex.pin.'+(cur?cur.id:'');
+function cargarPins(){
+  try{G.pin=new Set(JSON.parse(localStorage.getItem(pinKey())||'[]'))}
+  catch(_){G.pin=new Set()}
+}
+function guardarPins(){
+  try{localStorage.setItem(pinKey(),JSON.stringify([...G.pin]))}catch(_){}
+}
+function soltarPins(){
+  G.pin.clear();guardarPins();
+  G.alpha=Math.max(G.alpha,.5);gLoop();
+  toast('Se soltaron todos','ok');
+  const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
+}
+
+/* La cámara viaja hasta el nodo en vez de aparecer ya encima: ubica mucho
+   mejor de dónde a dónde se fue. */
+function volarA(id,k){
+  const n=G.map[id];if(!n||!G.W)return;
+  const destino={k:k||Math.max(G.cam.k,.95)};
+  destino.x=G.W/2-n.x*destino.k;
+  destino.y=G.H/2-n.y*destino.k;
+  if(REDUCED){Object.assign(G.cam,destino);gPaint();return}
+  const desde={...G.cam}, t0=performance.now(), dur=420;
+  const paso=()=>{
+    const t=Math.min(1,(performance.now()-t0)/dur);
+    const e=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;   // suave en las dos puntas
+    G.cam.k=desde.k+(destino.k-desde.k)*e;
+    G.cam.x=desde.x+(destino.x-desde.x)*e;
+    G.cam.y=desde.y+(destino.y-desde.y)*e;
+    gDraw();
+    if(t<1)requestAnimationFrame(paso);
+  };
+  G.autofit=false;
+  requestAnimationFrame(paso);
+}
+
+/* Qué cambió desde la última vez que miré este grafo. */
+const visKey=()=>'codex.vis.'+(cur?cur.id:'');
+function marcarVisita(){
+  try{localStorage.setItem(visKey(),String(Date.now()))}catch(_){}
+}
+function ultimaVisita(){
+  try{const v=+localStorage.getItem(visKey());return v>0?v:0}catch(_){return 0}
+}
+function novedades(){
+  const t=ultimaVisita();
+  if(!t)return null;
+  const nuevas=D.filter(e=>e.cr&&new Date(e.cr).getTime()>t);
+  const tocadas=D.filter(e=>e.up&&new Date(e.up).getTime()>t&&
+    !(e.cr&&new Date(e.cr).getTime()>t));
+  if(!nuevas.length&&!tocadas.length)return null;
+  return {nuevas,tocadas,desde:t};
+}
+
+/* Guardar el grafo como imagen para tirarlo al grupo. El canvas ya está
+   dibujado: se copia sobre un fondo opaco, porque si no sale transparente y
+   en cualquier chat se ve negro sobre negro. */
+function exportarGrafo(){
+  const cv=G.cv;if(!cv)return;
+  try{
+    const out=document.createElement('canvas');
+    out.width=cv.width;out.height=cv.height;
+    const c2=out.getContext('2d');
+    c2.fillStyle='#0D1015';c2.fillRect(0,0,out.width,out.height);
+    c2.drawImage(cv,0,0);
+    /* una firma discreta, que si no la imagen suelta no dice de qué es */
+    c2.setTransform(G.dpr,0,0,G.dpr,0,0);
+    c2.font="500 11px 'JetBrains Mono',monospace";
+    c2.fillStyle='rgba(149,161,180,.75)';
+    c2.textAlign='right';c2.textBaseline='bottom';
+    c2.fillText((cur&&cur.name||'Codex')+' · '+G.nodes.length+' fichas',G.W-12,G.H-10);
+    out.toBlob(b=>{
+      if(!b){toast('No pude generar la imagen','err');return}
+      const u=URL.createObjectURL(b);
+      const a=document.createElement('a');
+      a.href=u;a.download=(slugify(cur&&cur.name||'codex')||'codex')+'-grafo.png';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(u),4000);
+      toast('Imagen guardada','ok');
+    },'image/png');
+  }catch(err){toast('No pude generar la imagen: '+err.message,'err')}
+}
+
+/* Etiquetas que se usan en la campaña, para poder filtrar por ellas. */
+function etiquetasUsadas(){
+  const c={};
+  D.forEach(e=>(e.tg||[]).forEach(t=>{c[t]=(c[t]||0)+1}));
+  return Object.keys(c).sort((a,b)=>c[b]-c[a]||a.localeCompare(b)).slice(0,10);
+}
+
 /* ---------- grupos que se formaron solos ----------
    Propagación de etiquetas: cada ficha se queda con el grupo más votado por
    sus vecinas, pesando cada voto por la fuerza del vínculo, hasta que nadie
@@ -2387,6 +2508,7 @@ function gCard(){
 function gCenter(slug){
   if(!byS[slug])return;
   st.ent=slug;G.sel=slug;G.selUser=false;gBuild();gCard();
+  requestAnimationFrame(()=>volarA(slug));
   const sel=document.getElementById('gsel');if(sel&&sel.value!==slug)sel.value=slug;
 }
 function gWire(){
@@ -2439,6 +2561,11 @@ function gWire(){
     if(G.pts.size<2)G.pinch=null;
     cv.classList.remove('grabbing');
     const wasNode=G.downNode,moved=G.moved;
+    if(wasNode&&moved&&G.drag===wasNode){
+      /* lo moviste a propósito: se queda ahí */
+      G.pin.add(wasNode.id);guardarPins();
+      const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
+    }
     G.drag=null;G.panning=null;G.downNode=null;
     if(wasNode&&!moved&&G.picking){
       /* estamos eligiendo el destino del camino */
@@ -2460,7 +2587,9 @@ function gWire(){
   cv.onpointerup=end;cv.onpointercancel=end;
   cv.onpointerleave=()=>{if(!G.drag&&!G.panning&&G.hot){G.hot=null;gPaint()}};
   cv.ondblclick=ev=>{const b=cv.getBoundingClientRect();
-    const n=gHit(ev.clientX-b.left,ev.clientY-b.top);if(n)go(n.id)};
+    const n=gHit(ev.clientX-b.left,ev.clientY-b.top);
+    if(n)go(n.id);
+    else{G.autofit=true;gFit();gDraw()}};      // en el vacío, encuadra
   cv.onwheel=ev=>{ev.preventDefault();const b=cv.getBoundingClientRect();
     gZoom(Math.pow(.999,ev.deltaY),ev.clientX-b.left,ev.clientY-b.top)};
   cv.oncontextmenu=ev=>ev.preventDefault();
@@ -2512,7 +2641,7 @@ function r(){
   if(RENDERED==='ed'&&st.editing&&st.editing._live)keepDraft();
   if(RENDERED==='edcamp'&&st.ecamp)keepCampDraft();
   if(RENDERED==='imp'&&st.imp){const t=document.getElementById('impta');if(t)st.imp.txt=t.value}
-  if(RENDERED==='grafo')gStop();
+  if(RENDERED==='grafo'){gStop();marcarVisita()}
   if(G.full){G.full=false;document.body.style.overflow=''}
   const f=snapFocus();
   const navEl=document.querySelector('.nav');
@@ -2629,6 +2758,11 @@ const ACT={
   gpath:pedirCamino,
   gsalud:()=>{G.panel=!G.panel;r()},
   gtiempo:abrirTiempo,
+  gsoltar:soltarPins,
+  gexport:exportarGrafo,
+  gtag:v=>{G.tag=(G.tag===v?null:v);G.pos={};gBuild();
+    const l=document.getElementById('glegend');if(l)l.innerHTML=gLegend();
+    gFit();gPaint();},
   ggrupos:()=>{G.verGrupos=!G.verGrupos;
     G.grupos=G.verGrupos?detectarGrupos(G.nodes,G.edges):null;
     const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
