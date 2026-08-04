@@ -40,14 +40,12 @@ const TRASF={acolito:'Acólito',artesano:'Artesano',artista:'Artista',
   criminal:'Criminal',ermitano:'Ermitaño',forastero:'Forastero',
   heroe:'Héroe del pueblo',huerfano:'Huérfano',marinero:'Marinero',
   noble:'Noble',sabio:'Sabio',soldado:'Soldado'};
-const PRONOM={el:'Él',ella:'Ella',elle:'Elle'};
 /* El orden es el que se ve, en la ficha y en el editor. */
 const ATRIB=[
   {k:'raza',        l:'Raza',        tb:RAZAS,  ic:v=>'raza-'+v},
   {k:'clase',       l:'Clase',       tb:CLASES, ic:v=>'clase-'+v},
   {k:'alineamiento',l:'Alineamiento',tb:ALINE,  ic:()=>'align'},
-  {k:'trasfondo',   l:'Trasfondo',   tb:TRASF},
-  {k:'pronombre',   l:'Pronombre',   tb:PRONOM}
+  {k:'trasfondo',   l:'Trasfondo',   tb:TRASF}
 ];
 /* Lo que se escribe se guarda con la clave de la lista cuando coincide con
    alguna, y tal cual cuando no. Así "elfo", "Elfo" y "ELFO" son la misma cosa
@@ -957,7 +955,6 @@ function vEd(){
             AT.alineamiento===k?' selected':''}>${esc(ALINE[k])}</option>`).join('')}
         </select>
         ${libre(ATRIB[3])}
-        ${libre(ATRIB[4])}
         <div class="hint">Todos son opcionales. Los que dejes vacíos no se
           muestran en la ficha.</div>
       </div>`;
@@ -1505,7 +1502,7 @@ const PROMPT=[
 '  "descripcion":"Quién es y qué se sabe de él.",',
 '  "comentarios":"Qué pasó entre él y nosotros.",',
 '  "raza":"humano", "clase":"bardo",',
-'  "alineamiento":"cn", "trasfondo":"artista", "pronombre":"él"',
+'  "alineamiento":"cn", "trasfondo":"artista"',
 '}]}',
 '',
 'Reglas:',
@@ -1518,13 +1515,13 @@ const PROMPT=[
 '  otro idioma si aparece.',
 '- "resumen": una línea. "descripcion": qué es, en tercera persona.',
 '  "comentarios": lo que pasó con el grupo.',
-'- Los cinco últimos son solo para "character" y solo si las notas lo dicen:',
+'- Los cuatro últimos son solo para "character" y solo si las notas lo dicen:',
 '  raza: humano, elfo, semielfo, enano, mediano, gnomo, semiorco, tiefling,',
 '  draconido — o lo que digan las notas si es otra cosa.',
 '  clase: barbaro, bardo, brujo, clerigo, druida, explorador, guerrero,',
 '  hechicero, mago, monje, paladin, picaro.',
 '  alineamiento: lb, nb, cb, ln, nn, cn, lm, nm, cm (legal/neutral/caótico +',
-'  bueno/neutral/malo). trasfondo: una palabra. pronombre: él, ella o elle.',
+'  bueno/neutral/malo). trasfondo: una palabra.',
 '- Si algo no está en las notas, dejá el campo vacío. No inventes nada.',
 '  La raza y la clase de un NPC casi nunca están escritas: no las adivines.',
 '- Lo que en las notas es sospecha o teoría va con esas palabras ("se rumorea',
