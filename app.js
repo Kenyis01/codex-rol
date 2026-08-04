@@ -25,7 +25,7 @@ const TYT=t=>TYPES[t]||FALLBACK;
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
 /* relaciones con nombre: {de, a, l} en slugs. Van aparte de EDGES porque
    una relación declarada no es lo mismo que una mención suelta. */
-let REL=[], RELK={};
+let REL=[], RELK={}, GRPK={};
 let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,dup:null,imp:null,me:null,pick:false,ac:null,acPick:null,
         busy:false,view:'list',err:''};
 let hist=[];
@@ -111,8 +111,20 @@ function rebuild(){
     if(!wmap[k])wmap[k]=1;
     (RELK[k]=RELK[k]||[]).push(x);
   });
+  /* Los del grupo andan juntos: que su conexión dependa de que alguien la
+     haya escrito es un accidente del texto, no la realidad de la mesa. Se
+     conectan todos con todos, aparte, para poder dibujarlos distinto. */
+  GRPK={};
+  const party=D.filter(e=>e.pc&&!e.gm).map(e=>e.s);
+  for(let i=0;i<party.length;i++)for(let j=i+1;j<party.length;j++){
+    const a=party[i],b=party[j];
+    ADJ[a].add(b);ADJ[b].add(a);
+    const k=a<b?a+'|'+b:b+'|'+a;
+    if(!wmap[k])wmap[k]=1;
+    GRPK[k]=1;
+  }
   EDGES=Object.keys(wmap).map(k=>{const[a,b]=k.split('|');
-    return{a,b,w:wmap[k],rel:!!RELK[k]}});
+    return{a,b,w:wmap[k],rel:!!RELK[k],grp:!!GRPK[k]}});
 }
 const b3=e=>(BL[e.s]||[]).length;
 const deg=s=>(ADJ[s]||{size:0}).size||0;
@@ -1708,10 +1720,17 @@ function gDraw(){
     /* una relación que alguien escribió a propósito pesa más que una mención
        suelta, así que se ve un poco más firme */
     if(e.rel&&!hi)cx.globalAlpha=Math.min(1,cx.globalAlpha*1.5);
+    /* la del grupo es contexto y no novedad: va punteada y al fondo, si no
+       cinco personajes hacen una maraña que tapa lo que sí pasó */
+    const soloGrupo=e.grp&&!e.rel&&e.w<=1;
+    if(soloGrupo&&!hi){
+      cx.globalAlpha*=.5;cx.setLineDash([5/cam.k,4/cam.k]);
+    }
     const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y;
     cx.beginPath();cx.moveTo(a.x,a.y);
     cx.quadraticCurveTo(mx-dy*.06,my+dx*.06,b.x,b.y);
     cx.stroke();
+    if(soloGrupo)cx.setLineDash([]);
   });
 
   /* --- nodos --- */
@@ -2187,7 +2206,14 @@ function gCard(){
     const E=G.selEdge, a=byS[E.a], b=byS[E.b];
     if(!a||!b){G.selEdge=null;return gCard()}
     if(hint)hint.hidden=true;
+    const clave=clavePar(E.a,E.b);
+    const rels=RELK[clave]||[], grupo=!!GRPK[clave];
     const razones=porQue(E.a,E.b);
+    /* el título dice de qué clase es la conexión: sin eso la tarjeta mostraba
+       un renglón suelto y no se entendía qué estabas mirando */
+    const titulo=rels.length?(rels.length>1?'Vínculos':'Vínculo')
+      :razones.length?'Se nombran'
+      :grupo?'Del mismo grupo':'Conectadas';
     const pinta=f=>esc(f).replace(LK,(m,k)=>{
       const e=byS[k];if(!e)return '';
       return (k===E.a||k===E.b)
@@ -2195,23 +2221,26 @@ function gCard(){
     });
     host.innerHTML=`<div class="gcard gecard">
       <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button>
+      <div class="eyebrow">${titulo}</div>
       <div class="gehead">
         <span class="genom" style="color:${TY(a).c}" data-go="${att(a.s)}">${esc(a.n)}</span>
-        <span class="gelin"></span>
+        <span class="geic">${ic(rels.length?'link':grupo&&!razones.length?'grupo':'link')}</span>
         <span class="genom" style="color:${TY(b).c}" data-go="${att(b.s)}">${esc(b.n)}</span>
       </div>
-      ${(RELK[clavePar(E.a,E.b)]||[]).length?`<div class="gerels">${
-        (RELK[clavePar(E.a,E.b)]).map(x=>`<div class="gerel">
-          <b style="color:${TY(byS[x.de]).c}">${esc(byS[x.de].n)}</b>
-          <span class="gerl">${esc(x.l)}</span>
-          <b style="color:${TY(byS[x.a]).c}">${esc(byS[x.a].n)}</b></div>`).join('')}</div>`:''}
-      ${razones.length
-        ? `<div class="gewhy">${razones.map(x=>`<div class="gefr">
-             <span class="gede">${esc(byS[x.de].n)} · ${esc(x.campo)}</span>
-             ${pinta(x.f)}</div>`).join('')}</div>`
-        : ((RELK[clavePar(E.a,E.b)]||[]).length?''
-        : `<div class="gewhy"><div class="gefr dim">Se nombran, pero no encontré
-             la frase. Puede que el enlace esté en el resumen.</div></div>`)}
+      ${rels.length?`<div class="gerels">${rels.map(x=>`<div class="gerel">
+        <b style="color:${TY(byS[x.de]).c}">${esc(byS[x.de].n)}</b>
+        <span class="gerl">${esc(x.l)}</span>${ic('arrow','r')}
+        <b style="color:${TY(byS[x.a]).c}">${esc(byS[x.a].n)}</b></div>`).join('')}</div>`:''}
+      ${razones.length?`<div class="gewhy">${razones.map(x=>`<div class="gefr">
+        <span class="gede">${esc(byS[x.de].n)} · ${esc(x.campo)}</span>
+        ${pinta(x.f)}</div>`).join('')}</div>`:''}
+      ${grupo&&!rels.length&&!razones.length
+        ? `<div class="gewhy"><div class="gefr dim">Los dos son de
+             ${esc(cur.party_name||'nuestro grupo')}. Todos los del grupo quedan
+             conectados entre sí, sin que haga falta escribirlo.</div></div>`
+        : (!rels.length&&!razones.length
+          ? `<div class="gewhy"><div class="gefr dim">Se nombran, pero no encontré
+               la frase. Puede que el enlace esté en el resumen.</div></div>`:'')}
     </div>`;
     return;
   }
