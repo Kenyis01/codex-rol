@@ -87,8 +87,12 @@ body{
     radial-gradient(600px 460px at -10% 60%, rgba(180,139,216,.05), transparent 70%);
 }
 #app{position:relative;z-index:1;height:100%;overflow-y:auto;overflow-x:clip;
-  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-  padding-bottom:calc(var(--navh) + var(--s3))}
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* El aire para que el contenido pase por encima de la navegación va como
+   espaciador y no como padding de #app: el rectángulo contra el que se apoya
+   un sticky se mide desde el borde interno del contenedor, así que con
+   padding la barra de guardar quedaba 73px por encima de la nav. */
+#app::after{content:'';display:block;height:calc(var(--navh) + var(--s3))}
 /* el ancho máximo pasa al contenido: si lo llevara #app, la barra de scroll
    quedaría en el medio de la pantalla en vez de en el borde */
 #app > *{max-width:var(--appmax);margin-inline:auto}

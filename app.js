@@ -14,13 +14,37 @@ const TYPES={
   creature :{l:'Criaturas' ,s:'Criatura' ,c:'#6F9AD6'}
 };
 const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3'};
+/* Los cinco de arriba son los que vienen puestos, pero no alcanzan para todo:
+   una casa noble no es una facción. Cualquier ficha puede llevar un tipo
+   propio; el nombre se guarda como slug y se le arma un color estable a
+   partir de él, para que el mismo tipo tenga siempre el mismo. */
+/* El tono sale del nombre, con la saturación y la claridad fijas en los
+   valores de los cinco que vienen puestos: así un tipo propio nunca
+   desentona, y con 360 tonos dos tipos distintos casi nunca chocan. Una
+   paleta corta hacía que "casa noble" y "deidad" salieran del mismo color. */
+const hashN=t=>{let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return h};
+const colorDe=t=>'hsl('+(hashN(t)%360)+' 52% 63%)';
+const deslug=t=>{const x=String(t||'').replace(/-/g,' ').trim();
+  return x?x[0].toUpperCase()+x.slice(1):FALLBACK.l};
 /* La base acepta solo estos cuatro estados (o ninguno); acá van sus nombres */
 const STATUS={alive:'Vivo',dead:'Muerto',missing:'Desaparecido',unknown:'Se desconoce'};
 const STORDER=['alive','dead','missing','unknown'];
 const ORDER=['character','faction','location','item','creature'];
-/* nunca explota si la base trae un tipo que no conocemos */
-const TY=e=>(e&&TYPES[e.t])||FALLBACK;
-const TYT=t=>TYPES[t]||FALLBACK;
+/* nunca explota si la base trae un tipo que no conocemos: le arma uno */
+function TYT(t){
+  if(TYPES[t])return TYPES[t];
+  if(!t)return FALLBACK;
+  const l=deslug(t);
+  return {l,s:l,c:colorDe(t),propio:true};
+}
+const TY=e=>TYT(e&&e.t);
+/* los tipos propios que de verdad se están usando en esta campaña */
+function tiposPropios(){
+  const vistos={};
+  D.forEach(e=>{if(e.t&&!TYPES[e.t])vistos[e.t]=(vistos[e.t]||0)+1});
+  return Object.keys(vistos).sort((a,b)=>vistos[b]-vistos[a]||a.localeCompare(b));
+}
+const tiposTodos=()=>ORDER.concat(tiposPropios());
 
 let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
 /* relaciones con nombre: {de, a, l} en slugs. Van aparte de EDGES porque
@@ -430,13 +454,14 @@ function vIdx(){
     out+=pcs.length?`<div class="grp">
       <div class="grph" style="color:var(--ink)">${esc(cur.party_name||'Nuestro grupo')}
         <span class="ct">${pcs.length}</span></div>${group(pcs)}</div>`:'';
-    out+=ORDER.map(t=>{
+    out+=tiposTodos().map(t=>{
       const g=D.filter(e=>e.t===t&&!e.pc&&!e.gm).sort((a,b)=>b3(b)-b3(a)||a.n.localeCompare(b.n));
       if(!g.length)return'';
       return `<div class="grp"><div class="grph" style="color:${TYT(t).c}">
         ${TYT(t).l}<span class="ct">${g.length}</span></div>${group(g)}</div>`;
     }).join('');
-    const rest=D.filter(e=>!e.pc&&!e.gm&&!TYPES[e.t]);
+    /* solo quedan acá las que no tienen tipo ninguno */
+    const rest=D.filter(e=>!e.pc&&!e.gm&&!e.t);
     if(rest.length)out+=`<div class="grp"><div class="grph" style="color:${FALLBACK.c}">
       ${FALLBACK.l}<span class="ct">${rest.length}</span></div>${group(rest)}</div>`;
     return out;
@@ -526,9 +551,9 @@ function vFicha(){
         <div class="rs">${esc(x.sm)}</div></div>
         <span class="rc">${esc(TY(x).s)}</span></div>`).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2" data-act="graphof" data-v="${att(e.s)}">
-      ${ic('mesh')}Ver en el grafo</button>
+      Ver en el grafo</button>
       <button class="btn sec2" data-act="hist" data-v="${att(e.s)}">
-      ${ic('time')}Historial de cambios</button></div>
+      Historial de cambios</button></div>
   </div>`;
 }
 
@@ -679,9 +704,19 @@ function vEd(){
       le debe plata a → Yagra". En el grafo la línea muestra el nombre.</div>
 
     <div class="eyebrow mt">Tipo</div>
-    <div class="btnrow">${ORDER.map(t=>`<button class="gbtn ${type===t?'on':''}"
-      style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
-      data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}</div>
+    <div class="btnrow">${
+      /* el tipo que tenga esta ficha entra siempre, aunque sea el único que
+         lo use y todavía no esté guardado */
+      tiposTodos().concat(type&&tiposTodos().indexOf(type)<0?[type]:[])
+      .map(t=>`<button class="gbtn ${type===t?'on':''}"
+        style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
+        data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}
+      <button class="gbtn" data-act="tiponuevo">+ Otro</button></div>
+    ${E.tipoNuevo?`<div class="relnew">
+      <input class="sfield" id="tipoN" placeholder="Casa noble, deidad, taberna…"
+        onkeydown="tipoKey(event)" autofocus>
+      <div class="hint">Queda disponible para el resto de las fichas.</div>
+    </div>`:''}
 
     <button class="btn sec2 ${isPc?'on':''}" data-act="pc">
       ${isPc?'✓ ':''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
@@ -756,6 +791,24 @@ function alsAdd(el){
   if(a.some(x=>nm(x)===nm(v)))return false;   // no repetir
   a.push(v);return true;
 }
+/* ---------- tipos propios ---------- */
+function tipoAdd(){
+  const el=document.getElementById('tipoN');
+  if(!el||!st.editing)return false;
+  const bruto=(el.value||'').trim();
+  if(!bruto){toast('Escribí cómo se llama el tipo','err');return false}
+  const t=slugify(bruto);
+  if(!t){toast('Ese nombre no sirve como tipo','err');return false}
+  keepDraft();
+  st.editing.type=t;st.editing.tipoNuevo=false;
+  return true;
+}
+function tipoKey(ev){
+  if(ev.key!=='Enter')return;
+  ev.preventDefault();
+  if(tipoAdd())r();
+}
+
 /* ---------- vínculos con nombre ---------- */
 function relAdd(){
   const E=st.editing;if(!E)return false;
@@ -1598,7 +1651,7 @@ function gControls(){
            aria-label="Guardar como imagen">${ic('scroll')}</button>`;
 }
 function gLegend(){
-  const tipos=ORDER.map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
+  const tipos=tiposTodos().map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
     data-act="gtype" data-v="${t}"><span class="sw"></span>${esc(TYT(t).l)}</button>`).join('');
   const tags=etiquetasUsadas().map(t=>`<button class="lgb tag ${G.tag===t?'on':''}"
     data-act="gtag" data-v="${att(t)}">${esc(t)}</button>`).join('');
@@ -2464,6 +2517,8 @@ const ACT={
   rmals:v=>{keepDraft();(st.editing.als||[]).splice(+v,1);r()},
   rmrel:v=>{keepDraft();(st.editing.rels||[]).splice(+v,1);r()},
   reladd:()=>{if(relAdd())r()},
+  tiponuevo:()=>{keepDraft();st.editing.tipoNuevo=!st.editing.tipoNuevo;r()},
+  tipoadd:()=>{if(tipoAdd())r()},
   misma:v=>usarLaQueEsta(v),
   dupcrear:()=>{st.editing.igual=true;st.dup=null;save()},
   dupvolver:()=>{st.dup=null;r()},
