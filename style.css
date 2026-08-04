@@ -151,22 +151,20 @@ body{
   color:var(--ink);border-radius:var(--r2);padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--body);outline:none}
 .topin .sfield{flex:1}
-/* el buscador lleva la lupa adentro, a la izquierda */
-.searchw{position:relative;flex:1;display:flex}
-.searchw .gi{position:absolute;left:var(--s4);top:50%;margin-top:-8px;
-  width:16px;height:16px;color:var(--dim);pointer-events:none}
-.searchw .sfield{padding-left:calc(var(--s4) + 16px + var(--s2))}
-.searchw:focus-within .gi{color:var(--gold)}
+.searchw{flex:1;display:flex}
 .tag{flex:none;font-family:var(--mono);font-size:var(--f-xs);letter-spacing:var(--track);
   text-transform:uppercase;color:var(--dim);line-height:1}
 @media(hover:hover){.sfield:hover{border-color:var(--line2)}}
 .sfield:focus{border-color:rgba(224,178,92,.55);box-shadow:0 0 0 3px rgba(224,178,92,.10)}
 .sfield::placeholder{color:var(--dim)}
+/* La flechita del desplegable es el mismo icono que el resto de las flechas.
+   Va como fondo y no como <svg> porque un <select> nativo no admite hijos, así
+   que el color va escrito: currentColor no llega hasta acá. */
 select.sfield{appearance:none;padding-right:var(--s8);
-  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
-                   linear-gradient(135deg,var(--muted) 50%,transparent 50%);
-  background-position:calc(100% - 20px) 50%,calc(100% - 15px) 50%;
-  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20512%20512'%3E%3Cpath%20fill='%2395A1B4'%20d='M130.81%2021.785v245.95H43.84L256%20489.382l212.158-221.644H381.19V21.786H130.81z'/%3E%3C/svg%3E");
+  background-position:calc(100% - var(--s4)) 50%;
+  background-size:10px 10px;background-repeat:no-repeat}
+select.sfield:focus{background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20512%20512'%3E%3Cpath%20fill='%23E0B25C'%20d='M130.81%2021.785v245.95H43.84L256%20489.382l212.158-221.644H381.19V21.786H130.81z'/%3E%3C/svg%3E")}
 select.sfield option{background:var(--surf2);color:var(--ink)}
 
 /* ============ avatares ============ */
@@ -332,8 +330,9 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   background:var(--surf3);border:1px solid var(--line2);color:var(--ink);
   font-family:var(--mono);font-size:var(--f-xs);line-height:1;white-space:nowrap}
 .tagch button{width:20px;height:20px;padding:0;border:none;background:none;
-  color:var(--dim);font-size:var(--f-xs);cursor:pointer;border-radius:50%;
+  color:var(--dim);cursor:pointer;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;line-height:1}
+.tagch button .gi{width:9px;height:9px}
 @media(hover:hover){.tagch button:hover{color:var(--ink);background:rgba(237,231,218,.12)}}
 .taginput{flex:1;min-width:120px;height:var(--h-chip);border:none;background:none;
   color:var(--ink);font-family:var(--body);font-size:var(--f-md);outline:none;padding:0 var(--s2)}
@@ -625,6 +624,10 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .btn{width:100%;height:var(--h-lg);padding:0 var(--s5);border-radius:var(--r2);
   font-size:var(--f-md);font-weight:600;white-space:nowrap;gap:var(--s2)}
 .btn .gi{width:16px;height:16px;opacity:.85}
+/* el tilde solo confirma un estado, no lo encabeza: pesa menos que el icono
+   de una acción. Va por data-act y no por .sec2 porque esa clase también la
+   llevan botones con icono de acción, que sí van al tamaño grande. */
+.btn[data-act="pc"] .gi,.btn[data-act="gm"] .gi{width:13px;height:13px;opacity:1}
 .btn.pri{background:linear-gradient(160deg,#F0D9A8,var(--gold));color:#20180A;
   box-shadow:0 8px 22px rgba(224,178,92,.20)}
 @media(hover:hover){.btn.pri:hover{filter:brightness(1.07)}}
@@ -703,8 +706,8 @@ canvas.pointing{cursor:pointer}
   border-color:var(--line2);color:var(--muted)}
 @media(hover:hover){.gzoom button:hover{color:var(--ink);background:var(--surf3)}}
 .gzoom .gi{width:17px;height:17px}
-/* la mira es de trazo fino: al mismo tamaño se ve más floja que el resto */
-.gzoom [data-act="fit"] .gi{width:20px;height:20px}
+/* la mira anterior era de trazo fino y necesitaba ir más grande; esta es
+   maciza como el resto de la columna, así que va al mismo tamaño */
 /* Debajo del grafo hay tres cosas distintas que antes se veían iguales y
    mezcladas en dos rieles: elegir hasta dónde llega (una sola opción),
    prender y apagar qué se ve (varias a la vez) y hacer algo (acciones).
@@ -748,7 +751,9 @@ canvas.pointing{cursor:pointer}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gco{flex:none;padding:0 var(--s4);background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .gcx{flex:none;width:var(--h-sm);height:var(--h-sm);padding:0;border:none;background:none;
-  color:var(--dim);font-size:var(--f-md);cursor:pointer;border-radius:var(--rf);line-height:1}
+  color:var(--dim);cursor:pointer;border-radius:var(--rf);line-height:1;
+  display:inline-flex;align-items:center;justify-content:center}
+.gcx .gi{width:13px;height:13px}
 
 /* tarjeta de una línea: por qué esas dos fichas están conectadas */
 /* el ✕ va absoluto, así que el contenido tiene que terminar donde él empieza:
@@ -779,6 +784,7 @@ canvas.pointing{cursor:pointer}
   letter-spacing:.04em}
 .relf{display:block;font-size:var(--f-md);color:var(--ink);margin-top:2px}
 .gbtn.ico{width:var(--h-sm);padding:0;flex:none;color:var(--dim)}
+.gbtn.ico .gi{margin-right:0;width:13px;height:13px}
 .relnew{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s2)}
 .relnew .btnrow{margin:0}
 .relnew select.sfield{flex:1;min-width:0}
@@ -842,8 +848,10 @@ canvas.pointing{cursor:pointer}
 .lightbox img{width:min(420px,84vw);height:min(420px,84vw);object-fit:cover;
   border-radius:var(--r4);box-shadow:0 30px 80px rgba(0,0,0,.65),0 0 0 1px rgba(237,231,218,.12)}
 .lbx{position:absolute;top:calc(var(--s5) + env(safe-area-inset-top));right:var(--s5);
-  width:var(--h-ic);height:var(--h-ic);border-radius:50%;font-size:var(--f-md);
+  width:var(--h-ic);height:var(--h-ic);border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
   background:var(--surf2);border:1px solid var(--line2);color:var(--ink);cursor:pointer;line-height:1}
+.lbx .gi{width:15px;height:15px}
 
 /* ============ toasts ============ */
 /* Arriba y no abajo: abajo chocaban con el botón de guardar y con la barra de

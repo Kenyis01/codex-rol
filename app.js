@@ -483,7 +483,7 @@ function vHome(){
       <input class="sfield" id="newc" placeholder="Nombre de la campaña nueva">
       <button class="btn sec2" data-act="newcamp">Crear campaña</button></div>
     <div class="credits">Iconos de <a href="https://game-icons.net/" target="_blank"
-      rel="noopener">game-icons.net</a> (Lorc y Delapouite), bajo licencia
+      rel="noopener">game-icons.net</a> (Lorc, Delapouite, Felbrigg y sbed), bajo licencia
       <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</div>
   </div>`;
 }
@@ -556,8 +556,8 @@ function vIdx(){
         </div>
       </div></div>`;
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="home">${ic("back")}Campañas</button>
-      <label class="searchw">${ic('search')}
+      <button class="back" data-act="home">${ic("camp")}Campañas</button>
+      <label class="searchw">
         <input class="sfield" id="q" placeholder="Buscar"
           value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()">
       </label></div></div>
@@ -578,8 +578,10 @@ function vIdx(){
 function vFicha(){
   const e=byS[st.ent],c=TY(e).c,bl=BL[e.s]||[];
   const ho=e.gm?{big:1,gmring:1}:{big:1};
+  /* alfabético y no por cantidad de vínculos: la lista se lee buscando un
+     nombre, y para eso el orden tiene que ser el del abecedario */
   const rel=[...(ADJ[e.s]||[])].map(s=>byS[s]).filter(Boolean)
-    .sort((a,b)=>deg(b.s)-deg(a.s)||a.n.localeCompare(b.n));
+    .sort((a,b)=>a.n.localeCompare(b.n,'es'));
   return `<div class="top"><div class="topin">
       <button class="back" data-act="back">${ic("back")}Atrás</button>
       <button class="back push" data-act="edit" data-v="${att(e.s)}">${ic('quill')}Editar</button>
@@ -597,7 +599,8 @@ function vFicha(){
         <div class="eyebrow" style="color:${e.gm?'var(--gm)':(e.pc?'var(--gold)':c)}">
           ${e.gm?'Máster de la partida':(e.pc?esc(cur.party_name||'Nuestro grupo'):esc(TY(e).s))}</div>
         <h1>${esc(e.n)}</h1></div></div>
-    ${e.a&&e.a.length?`<div class="aka">también: ${e.a.map(esc).join(' · ')}</div>`:''}
+    ${e.a&&e.a.length?`<div class="aka">también: ${e.a.slice()
+      .sort((x,y)=>x.localeCompare(y,'es')).map(esc).join(' · ')}</div>`:''}
     <div class="meta">${e.st?`<span class="chip acc" style="--c:${c}">${esc(STATUS[e.st]||e.st)}</span>`:''}
       ${(e.tg||[]).map(t=>`<span class="chip mine">${esc(t)}</span>`).join('')}
       <span class="chip">${bl.length} menciones</span>
@@ -643,7 +646,7 @@ function vEdCamp(){
   const party=E.dp!==undefined?E.dp:(cur.party_name||'');
   const cov=cur.cover_url;
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancelcamp">${ic("back")}Cancelar</button>
+      <button class="back" data-act="cancelcamp">Cancelar</button>
       <span class="tag push">EDITANDO CAMPAÑA</span></div></div>
   <div class="page">
     <div class="eyebrow">Portada</div>
@@ -774,7 +777,7 @@ function vEd(){
   const type=E.type!==undefined?E.type:(e?e.t:'character');
   const prev={n:name||'?',t:type,img};
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancel">${ic("back")}Cancelar</button>
+      <button class="back" data-act="cancel">Cancelar</button>
       <span class="tag push">${e?'EDITANDO':'FICHA NUEVA'}</span></div></div>
   <div class="page">
     <div class="eyebrow">Retrato</div>
@@ -797,7 +800,7 @@ function vEd(){
     <div class="eyebrow mt">Otros nombres</div>
     <div class="tagbox">
       ${(E.als||[]).map((a,i)=>`<span class="tagch">${esc(a)}<button data-act="rmals"
-        data-v="${i}" aria-label="Quitar ${att(a)}">✕</button></span>`).join('')}
+        data-v="${i}" aria-label="Quitar ${att(a)}">${ic('x')}</button></span>`).join('')}
       <input class="taginput" id="alsin" placeholder="Como también le decimos"
         onkeydown="alsKey(event)" onblur="alsAdd(this)">
     </div>
@@ -811,7 +814,7 @@ function vEd(){
         <div class="grow"><span class="rell">${esc(x.l)}</span>
           <span class="relf">${o?esc(o.n):esc(x.a)}</span></div>
         <button class="gbtn ico" data-act="rmrel" data-v="${i}"
-          aria-label="Quitar">✕</button></div>`;
+          aria-label="Quitar">${ic('x')}</button></div>`;
     }).join('')}</div>`:''}
     <div class="relnew">
       <input class="sfield" id="relL" placeholder="es amigo de, le debe plata, traicionó a"
@@ -842,9 +845,9 @@ function vEd(){
     </div>`:''}
 
     <button class="btn sec2 ${isPc?'on':''}" data-act="pc">
-      ${isPc?'✓ ':''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
+      ${isPc?ic('check'):''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
     <button class="btn sec2 gm ${isGm?'on':''}" data-act="gm">
-      ${isGm?'✓ ':''}Es el Máster</button>
+      ${isGm?ic('check'):''}Es el Máster</button>
 
     <div class="eyebrow mt">Estado</div>
     <div class="btnrow">
@@ -856,7 +859,7 @@ function vEd(){
     <div class="eyebrow mt">Etiquetas</div>
     <div class="tagbox">
       ${(E.tags||[]).map((t,i)=>`<span class="tagch">${esc(t)}<button data-act="rmtag"
-        data-v="${i}" aria-label="Quitar ${att(t)}">✕</button></span>`).join('')}
+        data-v="${i}" aria-label="Quitar ${att(t)}">${ic('x')}</button></span>`).join('')}
       <input class="taginput" id="tagin" placeholder="Agregar etiqueta"
         onkeydown="tagKey(event)" onblur="tagAdd(this)">
     </div>
@@ -1765,7 +1768,7 @@ function openImg(slug){
   const e=byS[slug];if(!e||!e.img)return;
   const d=document.createElement('div');
   d.className='lightbox';
-  d.innerHTML=`<button class="lbx" aria-label="Cerrar">✕</button><img src="${att(e.img)}" alt="${att(e.n)}">`;
+  d.innerHTML=`<button class="lbx" aria-label="Cerrar">${ic('x')}</button><img src="${att(e.img)}" alt="${att(e.n)}">`;
   const close=()=>{d.remove();removeEventListener('keydown',onk)};
   const onk=ev=>{if(ev.key==='Escape')close()};
   d.onclick=close;addEventListener('keydown',onk);
@@ -1786,7 +1789,7 @@ const G={
   sel:null,selUser:false,hot:null,selEdge:null,
   picking:false,path:null,pathA:null,pathB:null,
   drag:null,panning:null,moved:false,downNode:null,
-  depth:2,mode:'ego',off:new Set(),full:false,
+  depth:1,mode:'ego',off:new Set(),full:false,
   verGrupos:false,grupos:null,pin:new Set(),tag:null,
   ro:null,pts:new Map(),pinch:null
 };
@@ -2520,7 +2523,7 @@ function gCard(){
         ? `<b style="color:${TY(e).c}">${esc(e.n)}</b>`:esc(e.n);
     });
     host.innerHTML=`<div class="gcard gecard">
-      <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button>
+      <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('x')}</button>
       <div class="eyebrow">${titulo}</div>
       <div class="gehead">
         <span class="genom" style="color:${TY(a).c}" data-go="${att(a.s)}">${esc(a.n)}</span>
@@ -2553,7 +2556,7 @@ function gCard(){
       <div class="gcn">${esc(e.n)}</div>
       <div class="gcs">${esc(TY(e).s)} · ${n.d} vínculo${n.d===1?'':'s'}</div></div>
     <button class="gco" data-go="${att(e.s)}">Abrir</button>
-    <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button></div>`;
+    <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('x')}</button></div>`;
 }
 function gCenter(slug){
   if(!byS[slug])return;
@@ -2666,7 +2669,7 @@ function gFull(){
    ============================================================ */
 /* pestaña -> icono. El índice es un libro abierto, el grafo la telaraña de
    vínculos y la ficha nueva la pluma con la que se escribe. */
-const NAV=[['idx','Índice','book'],['grafo','Grafo','mesh'],['nueva','Nueva','quill']];
+const NAV=[['idx','Índice','idx'],['grafo','Grafo','grafo'],['nueva','Nueva','nueva']];
 let RENDERED=null;
 function snapFocus(){
   const a=document.activeElement;
