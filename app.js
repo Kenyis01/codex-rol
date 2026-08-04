@@ -209,8 +209,7 @@ async function loadCamp(c){
   REL=(rel.data||[]).map(x=>({id:x.id,de:porId[x.from_entity_id],
     a:porId[x.to_entity_id],l:x.label})).filter(x=>x.de&&x.a);
   cur=c;rebuild();loadMe();
-  G.pos={};G.sel=null;G.selEdge=null;limpiarCamino();  // arranca limpio en cada campaña
-  G.hist=null;G.tiempo=false;HREV=null;G.tag=null;cargarPins();
+  G.pos={};G.sel=null;G.selEdge=null;G.tag=null;cargarPins();  // arranca limpio
   if(!st.ent||!byS[st.ent]){
     const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s)||b3(b)-b3(a))[0];
     st.ent=top?top.s:null;
@@ -380,13 +379,14 @@ function vHome(){
 
 /* ================= ÍNDICE ================= */
 function rowHTML(e,via){
-  return `<div class="row" data-go="${att(e.s)}">${av(e,AV.md,e.gm?{gmring:1}:{})}
+  return `<div class="row${e.gm?' gmrow':''}" data-go="${att(e.s)}">${av(e,AV.md,e.gm?{gmring:1}:{})}
     <div class="grow"><div class="rn">${esc(e.n)}</div>
       <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div>
     <span class="rc">${b3(e)}</span></div>`;
 }
 function cardHTML(e){
-  return `<div class="ccard" data-go="${att(e.s)}" style="--c:${TY(e).c}">${av(e,AV.xl,e.gm?{gmring:1}:{})}
+  return `<div class="ccard${e.gm?' gmcard':''}" data-go="${att(e.s)}" style="--c:${TY(e).c}">${
+    e.gm?'<span class="gmaura" aria-hidden="true"></span>':''}${av(e,AV.xl,e.gm?{gmring:1}:{})}
     <div class="ccn">${esc(e.n)}</div>
     <div class="ccc">${b3(e)} menc.</div></div>`;
 }
@@ -1504,7 +1504,7 @@ const G={
   sel:null,selUser:false,hot:null,selEdge:null,
   picking:false,path:null,pathA:null,pathB:null,
   drag:null,panning:null,moved:false,downNode:null,
-  depth:2,mode:'ego',off:new Set(),full:false,panel:false,tiempo:false,hist:null,
+  depth:2,mode:'ego',off:new Set(),full:false,
   verGrupos:false,grupos:null,pin:new Set(),tag:null,
   ro:null,pts:new Map(),pinch:null
 };
@@ -1560,12 +1560,6 @@ function vGrafo(){
           `<span class="novn" data-act="gcentrar" data-v="${att(e.s)}"
             style="color:${TY(e).c}">${esc(e.n)}</span>`).join('')}</div></div>`;
     })()}<div class="hint" id="gstat"></div>
-    <button class="btn sec2 ${G.tiempo?'on':''}" data-act="gtiempo">
-      ${ic('time')}${G.tiempo?'Cerrar la línea de tiempo':'Ver cómo estaba'}</button>
-    <div id="gtime">${vTiempo()}</div>
-    <button class="btn sec2 ${G.panel?'on':''}" data-act="gsalud">
-      ${ic('crosshair')}${G.panel?'Ocultar':'Qué falta trabajar'}</button>
-    <div id="gsalud">${G.panel?vSalud():''}</div>
   </div>`;
 }
 function gControls(){
@@ -1584,43 +1578,30 @@ function gControls(){
 function gLegend(){
   const tipos=ORDER.map(t=>`<button class="lgb ${G.off.has(t)?'off':''}" style="--c:${TYT(t).c}"
     data-act="gtype" data-v="${t}"><span class="sw"></span>${esc(TYT(t).l)}</button>`).join('');
-  /* las marcas de estado se explican solo si hay alguna en pantalla */
-  const marca=(k,l)=>D.some(e=>e.st===k)
-    ? `<span class="lgn"><i class="mk ${k}"></i>${l}</span>`:'';
   const tags=etiquetasUsadas().map(t=>`<button class="lgb tag ${G.tag===t?'on':''}"
     data-act="gtag" data-v="${att(t)}">${esc(t)}</button>`).join('');
-  return tipos+marca('dead','muerto')+marca('missing','desaparecido')+tags;
+  return tipos+tags;
 }
 
 function gBuild(reheat){
   const center=st.ent;
-  /* con el control de tiempo abierto se trabaja sobre el grafo rearmado */
-  const HADJ=G.hist?G.hist.adj:ADJ, HEDG=G.hist?G.hist.edges:EDGES;
-  const HIDS=G.hist?G.hist.ids:D.map(e=>e.s);
   let ids;
-  if(G.mode==='all')ids=HIDS.slice();
+  if(G.mode==='all')ids=D.map(e=>e.s);
   else{
     const seen={},q=[[center,0]];seen[center]=0;
     while(q.length){const[id,d]=q.shift();if(d>=G.depth)continue;
-      (HADJ[id]||[]).forEach(n=>{if(!(n in seen)){seen[n]=d+1;q.push([n,d+1])}})}
+      (ADJ[id]||[]).forEach(n=>{if(!(n in seen)){seen[n]=d+1;q.push([n,d+1])}})}
     ids=Object.keys(seen);
   }
-  const vivo=new Set(HIDS);
-  ids=ids.filter(id=>byS[id]&&vivo.has(id)&&(id===center||!G.off.has(byS[id].t)));
+  ids=ids.filter(id=>byS[id]&&(id===center||!G.off.has(byS[id].t)));
   if(G.tag)ids=ids.filter(id=>id===center||(byS[id].tg||[]).some(t=>nm(t)===nm(G.tag)));
-  /* el centro puede no existir todavía en el momento que se está mirando */
-  if(!ids.length&&HIDS.length)ids=[HIDS[0]];
   const set=new Set(ids);
   const dg={};ids.forEach(i=>dg[i]=0);
-  const edges=HEDG.filter(e=>set.has(e.a)&&set.has(e.b));
+  const edges=EDGES.filter(e=>set.has(e.a)&&set.has(e.b));
   edges.forEach(e=>{dg[e.a]++;dg[e.b]++});
   const n=ids.length,rad=70+Math.sqrt(n)*26;
   G.nodes=ids.map((id,i)=>{
-    const base=byS[id];
-    /* el nombre puede haber cambiado desde entonces */
-    const e=(G.hist&&G.hist.texto[id]&&G.hist.texto[id].n&&G.hist.texto[id].n!==base.n)
-      ? Object.assign({},base,{n:G.hist.texto[id].n}) : base;
-    const p=G.pos[id],ang=i/Math.max(1,n)*Math.PI*2;
+    const p=G.pos[id],e=byS[id],ang=i/Math.max(1,n)*Math.PI*2;
     gImg(e.img);
     return{id,e,
       x:p?p.x:(id===center?0:Math.cos(ang)*rad+(Math.random()-.5)*14),
@@ -1634,7 +1615,6 @@ function gBuild(reheat){
   if(G.sel&&!G.map[G.sel])G.sel=null;
   /* la línea elegida puede haber quedado fuera del recorte o del filtro */
   if(G.selEdge&&!G.edges.some(e=>e.a===G.selEdge.a&&e.b===G.selEdge.b))G.selEdge=null;
-  if(G.path&&G.path.some(id=>!byS[id]))limpiarCamino();
   const stat=document.getElementById('gstat');
   if(stat)stat.innerHTML=G.mode==='all'
     ? `Toda la campaña: ${n} fichas, ${edges.length} vínculos. Centro: <b style="color:var(--gold)">${esc(byS[center]?byS[center].n:'—')}</b>.`
@@ -1704,13 +1684,10 @@ function gDraw(){
   /* solo atenuamos el resto cuando el usuario está mirando un nodo a propósito:
      al entrar al grafo se ve todo con la misma fuerza */
   const focus=G.hot||(G.selUser?G.sel:null);
-  /* con una línea elegida el foco son sus dos puntas; con un camino, toda la
-     cadena. Si no, el nodo mirado y sus vecinos. */
-  const cam2=G.path&&G.path.length?new Set(G.path):null;
-  const arCam=cam2?aristasDelCamino():null;
-  const near=cam2?cam2
-    :(G.selEdge?new Set([G.selEdge.a,G.selEdge.b])
-    :(focus?new Set([focus,...((G.hist?G.hist.adj:ADJ)[focus]||[])]):null));
+  /* con una línea elegida el foco son sus dos puntas; si no, el nodo mirado
+     y sus vecinos */
+  const near=G.selEdge?new Set([G.selEdge.a,G.selEdge.b])
+    :(focus?new Set([focus,...(ADJ[focus]||[])]):null);
 
   /* --- aristas, en coordenadas del mundo --- */
   cx.save();cx.translate(cam.x,cam.y);cx.scale(cam.k,cam.k);
@@ -1720,16 +1697,11 @@ function gDraw(){
   G.edges.forEach(e=>{
     const a=G.map[e.a],b=G.map[e.b];if(!a||!b)return;
     const on=!near||(near.has(e.a)&&near.has(e.b));
-    const hi=arCam?arCam.has(clavePar(e.a,e.b))
-      :(G.selEdge?(e.a===G.selEdge.a&&e.b===G.selEdge.b)
-      :(near&&(e.a===focus||e.b===focus)));
+    const hi=G.selEdge?(e.a===G.selEdge.a&&e.b===G.selEdge.b)
+      :(near&&(e.a===focus||e.b===focus));
     cx.globalAlpha=hi?.95:(on?.45:.13);
     cx.lineWidth=(hi?1.9:1.15)/cam.k*Math.min(2.2,1+((e.w||1)-1)*.35);
-    if(arCam&&hi){
-      /* el camino va todo del mismo color: degradado por tipo se leía como
-         tramos sueltos y no como una cadena */
-      cx.strokeStyle='#E0B25C';cx.lineWidth=2.4/cam.k;
-    }else if(grad&&hi){
+    if(grad&&hi){
       const g=cx.createLinearGradient(a.x,a.y,b.x,b.y);
       g.addColorStop(0,TY(a.e).c);g.addColorStop(1,TY(b.e).c);cx.strokeStyle=g;
     }else cx.strokeStyle=hi?'#C9D2E0':(e.rel?'#7C8AA2':'#57647A');
@@ -2191,215 +2163,7 @@ function dibujarGrupos(cx,cam){
   });
 }
 
-/* ---------- retroceder en el tiempo ----------
-   Cada guardado deja la versión anterior con su fecha. Con eso se puede
-   rearmar el grafo como estaba: qué fichas ya existían y a quién nombraban
-   entonces. Las revisiones se piden una sola vez, cuando se abre el control.
-   Tipo y foto no están versionados, así que esos se muestran como están hoy;
-   lo que sí se rearma es el nombre y los vínculos, que es lo que dibuja. */
-let HREV=null;                       // {slug:[{n,b,c,at}]}, ordenadas
-async function cargarRevisiones(){
-  if(HREV)return null;
-  const {data,error}=await SB.from('entity_revisions')
-    .select('name,body,notes,replaced_at,entities!inner(campaign_id,slug)')
-    .eq('entities.campaign_id',cur.id).order('replaced_at');
-  if(error)return error;
-  HREV={};
-  (data||[]).forEach(x=>{
-    const sl=x.entities&&x.entities.slug;if(!sl)return;
-    (HREV[sl]=HREV[sl]||[]).push({n:x.name,b:x.body||'',c:x.notes||'',
-      at:new Date(x.replaced_at).getTime()});
-  });
-  Object.keys(HREV).forEach(k=>HREV[k].sort((a,b)=>a.at-b.at));
-  return null;
-}
-/* desde cuándo tiene sentido mirar: la ficha más vieja */
-function desdeCuando(){
-  let t=Infinity;
-  D.forEach(e=>{if(e.cr){const v=new Date(e.cr).getTime();if(v<t)t=v}});
-  return isFinite(t)?t:Date.now()-86400000*30;
-}
-function reconstruir(T){
-  const ids=[], texto={};
-  D.forEach(e=>{
-    if(e.cr&&new Date(e.cr).getTime()>T)return;      // todavía no existía
-    ids.push(e.s);
-    /* la versión que estaba viva en T es la primera que fue reemplazada
-       después de T; si ninguna, es la de ahora */
-    const revs=HREV&&HREV[e.s]||[];
-    let v=null;
-    for(const rv of revs){if(rv.at>T){v=rv;break}}
-    texto[e.s]=v?{n:v.n||e.n,b:v.b,c:v.c}:{n:e.n,b:e.b,c:e.c};
-  });
-  const set=new Set(ids);
-  const adj={};ids.forEach(id=>adj[id]=new Set());
-  const wmap={};
-  ids.forEach(id=>{
-    const t=texto[id];
-    [t.b,t.c].forEach(txt=>{
-      LK.lastIndex=0;let m;
-      while((m=LK.exec(txt||''))){
-        const o=m[1];
-        if(o===id||!set.has(o))continue;
-        adj[id].add(o);adj[o].add(id);
-        const k=clavePar(id,o);
-        wmap[k]=(wmap[k]||0)+1;
-      }
-    });
-  });
-  const edges=Object.keys(wmap).map(k=>{const[a,b]=k.split('|');
-    return{a,b,w:wmap[k],rel:false}});
-  return {ids,adj,edges,texto,T};
-}
-function vTiempo(){
-  if(!G.tiempo)return '';
-  const t0=desdeCuando(), t1=Date.now();
-  const H=G.hist;
-  const pos=H?Math.round((H.T-t0)/(t1-t0||1)*100):100;
-  const fecha=H?new Date(H.T):new Date();
-  return `<div class="tbox">
-    <input type="range" class="trange" id="trange" min="0" max="100" value="${pos}"
-      oninput="tiempoSlider(this.value)" aria-label="Momento">
-    <div class="trow">
-      <span class="tfecha" id="tfecha">${H?esc(fecha.toLocaleDateString('es',
-        {day:'numeric',month:'long',year:'numeric'})):'Ahora'}</span>
-      <span class="tcuenta" id="tcuenta">${H
-        ? H.ids.length+' fichas · '+H.edges.length+' vínculos'
-        : D.length+' fichas · '+EDGES.length+' vínculos'}</span>
-    </div>
-    ${H?`<button class="btn sec2" data-act="tahora">Volver a ahora</button>`:''}
-  </div>`;
-}
-function tiempoSlider(v){
-  const t0=desdeCuando(), t1=Date.now();
-  const T=t0+(t1-t0)*(+v/100);
-  G.hist=(+v>=100)?null:reconstruir(T);
-  const f=document.getElementById('tfecha'), c=document.getElementById('tcuenta');
-  if(f)f.textContent=G.hist
-    ? new Date(T).toLocaleDateString('es',{day:'numeric',month:'long',year:'numeric'})
-    : 'Ahora';
-  if(c)c.textContent=G.hist
-    ? G.hist.ids.length+' fichas · '+G.hist.edges.length+' vínculos'
-    : D.length+' fichas · '+EDGES.length+' vínculos';
-  /* sin re-render: arrastrar el control redibujando la pantalla entera
-     perdería el foco del propio control en cada paso */
-  G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();
-  gBuild();gCard();
-  const st2=document.getElementById('gstat');
-  if(st2&&G.hist)st2.innerHTML=`Como estaba el ${esc(new Date(T).toLocaleDateString('es',
-    {day:'numeric',month:'long'}))}: ${G.hist.ids.length} fichas, ${G.hist.edges.length} vínculos.`;
-}
-async function abrirTiempo(){
-  if(G.tiempo){G.tiempo=false;G.hist=null;gBuild();r();return}
-  const cerrar=toast('Buscando versiones anteriores…',null,true);
-  const err=await cargarRevisiones();
-  cerrar();
-  if(err){toast('No pude traer el historial: '+err.message,'err');return}
-  G.tiempo=true;r();
-}
-
-/* ---------- qué falta trabajar ----------
-   Nodos puente: si sacás uno, el grafo se parte en dos. En una campaña suele
-   ser el personaje que sostiene dos tramas a la vez, y casi siempre nadie se
-   dio cuenta. Es distinto de "el que más aparece": mide de qué depende el
-   resto, no cuánto se lo nombra.
-   Tarjan clásico. Con decenas de fichas la recursión no es problema. */
-function puentes(){
-  const disc={},low={},padre={},art=new Set();
-  let t=0;
-  const dfs=u=>{
-    disc[u]=low[u]=++t;
-    let hijos=0;
-    for(const v of (ADJ[u]||[])){
-      if(!disc[v]){
-        hijos++;padre[v]=u;dfs(v);
-        low[u]=Math.min(low[u],low[v]);
-        if(padre[u]!==undefined&&low[v]>=disc[u])art.add(u);
-      }else if(v!==padre[u])low[u]=Math.min(low[u],disc[v]);
-    }
-    if(padre[u]===undefined&&hijos>1)art.add(u);   // la raíz, con otra regla
-  };
-  D.forEach(e=>{if(!disc[e.s])dfs(e.s)});
-  return [...art].sort((a,b)=>deg(b)-deg(a));
-}
-function vSalud(){
-  const sueltas=D.filter(e=>deg(e.s)===0);
-  const mudas=D.filter(e=>deg(e.s)>0&&b3(e)===0);
-  const pts=puentes().map(s=>byS[s]).filter(Boolean);
-  const viejas=D.filter(e=>e.up).sort((a,b)=>new Date(a.up)-new Date(b.up)).slice(0,5);
-  const bloque=(titulo,lista,pie,extra)=>lista.length?`<div class="sec">
-    <div class="sech">${titulo}<span class="ct">${lista.length}</span></div>
-    <div class="hint">${pie}</div>
-    <div class="card">${lista.slice(0,12).map(e=>`
-      <div class="row" data-act="gcentrar" data-v="${att(e.s)}">
-        ${av(e,AV.sm)}
-        <div class="grow"><div class="rn">${esc(e.n)}</div>
-          <div class="rs">${esc(e.sm||TY(e).s)}</div></div>
-        <span class="rc">${extra?esc(extra(e)):''}</span></div>`).join('')}</div>
-  </div>`:'';
-  const cuerpo=
-    bloque('Sueltas',sueltas,'No están enlazadas con nada. Escribí @ en alguna ficha para conectarlas.')+
-    bloque('Nadie las nombra',mudas,'Ellas mencionan a otras, pero nadie las menciona a ellas. Son puntas sueltas de la historia.')+
-    bloque('Sostienen el mapa',pts,'Si sacaras una, el grafo se partiría en dos. Suelen ser las que atan dos tramas.',e=>deg(e.s)+' vínc.')+
-    bloque('Hace más que no se tocan',viejas,'Las últimas en haberse editado.',e=>cuando(e.up));
-  return cuerpo||`<div class="hint">Nada para señalar: todas las fichas están
-    conectadas y al día.</div>`;
-}
-
-/* ---------- camino entre dos fichas ----------
-   "¿Cómo llegamos de este a este otro?" es la pregunta que uno hace en la
-   mesa. Anchura sobre todos los vínculos, no solo los que están dibujados:
-   el camino corto puede pasar por fichas que el recorte de saltos dejó
-   afuera, y decir que no hay camino cuando sí lo hay sería mentir. */
-function caminoEntre(a,b){
-  if(!byS[a]||!byS[b])return null;
-  if(a===b)return[a];
-  const prev={},vis={};vis[a]=1;
-  const q=[a];
-  for(let i=0;i<q.length;i++){
-    const cur=q[i];
-    for(const nx of (ADJ[cur]||[])){
-      if(vis[nx])continue;
-      vis[nx]=1;prev[nx]=cur;
-      if(nx===b){
-        const out=[b];let c=b;
-        while(c!==a){c=prev[c];out.unshift(c)}
-        return out;
-      }
-      q.push(nx);
-    }
-  }
-  return null;
-}
-const clavePar=(a,b)=>a<b?a+'|'+b:b+'|'+a;
-function aristasDelCamino(){
-  const s=new Set();
-  const p=G.path;
-  if(!p)return s;
-  for(let i=0;i<p.length-1;i++)s.add(clavePar(p[i],p[i+1]));
-  return s;
-}
-function limpiarCamino(){
-  G.picking=false;G.path=null;G.pathA=null;G.pathB=null;
-}
-function pedirCamino(){
-  if(!G.sel)return;
-  G.pathA=G.sel;G.pathB=null;G.path=null;G.picking=true;
-  G.selEdge=null;
-  gCard();gPaint();
-}
-function cerrarCamino(destino){
-  G.pathB=destino;G.picking=false;
-  G.path=caminoEntre(G.pathA,destino);
-  /* si el camino pasa por fichas que el recorte no dibuja, se abre a toda la
-     campaña: de nada sirve resaltar una cadena con eslabones invisibles */
-  if(G.path&&G.path.some(id=>!G.map[id])){
-    G.mode='all';G.pos={};gBuild();
-    const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
-  }
-  G.sel=null;G.selUser=false;
-  gCard();gPaint();
-}
+const clavePar=(a,b)=>a<b?a+"|"+b:b+"|"+a;
 
 function porQue(aId,bId){
   const out=[];
@@ -2419,48 +2183,6 @@ function porQue(aId,bId){
 function gCard(){
   const host=document.getElementById('gcard');if(!host)return;
   const hint=document.getElementById('ghint');
-  /* G.path en null quiere decir dos cosas distintas: que todavía no se buscó,
-     o que se buscó y no hay. Lo que dice que hubo búsqueda es el destino. */
-  if(G.picking||G.pathB){
-    if(hint)hint.hidden=true;
-    const a=byS[G.pathA];
-    if(!a){limpiarCamino();return gCard()}
-    if(G.picking){
-      host.innerHTML=`<div class="gcard gpcard">
-        <button class="gcx" data-act="gclose" aria-label="Cancelar">✕</button>
-        <div class="gehead"><span class="gpq">Desde</span>
-          <span class="genom" style="color:${TY(a).c}">${esc(a.n)}</span></div>
-        <div class="gpmsg">Tocá la otra ficha para ver cómo se conectan.</div>
-      </div>`;
-      return;
-    }
-    const b=byS[G.pathB];
-    if(!b){limpiarCamino();return gCard()}
-    if(!G.path){
-      host.innerHTML=`<div class="gcard gpcard">
-        <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button>
-        <div class="gehead">
-          <span class="genom" style="color:${TY(a).c}">${esc(a.n)}</span>
-          <span class="gelin"></span>
-          <span class="genom" style="color:${TY(b).c}">${esc(b.n)}</span></div>
-        <div class="gpmsg">No hay ningún camino entre las dos. Todavía nada las
-          conecta, ni de a saltos.</div>
-      </div>`;
-      return;
-    }
-    const pasos=G.path.length-1;
-    host.innerHTML=`<div class="gcard gpcard">
-      <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button>
-      <div class="gpmsg">${pasos} paso${pasos===1?'':'s'} de distancia</div>
-      <div class="gpcad">${G.path.map((id,i)=>{
-        const e=byS[id];
-        return (i?'<span class="gpar">→</span>':'')+
-          `<span class="gpnodo" data-go="${att(id)}">${av(e,AV.xs)}
-             <span style="color:${TY(e).c}">${esc(e.n)}</span></span>`;
-      }).join('')}</div>
-    </div>`;
-    return;
-  }
   if(G.selEdge){
     const E=G.selEdge, a=byS[E.a], b=byS[E.b];
     if(!a||!b){G.selEdge=null;return gCard()}
@@ -2501,7 +2223,6 @@ function gCard(){
     <div class="grow">
       <div class="gcn">${esc(e.n)}</div>
       <div class="gcs">${esc(TY(e).s)} · ${n.d} vínculo${n.d===1?'':'s'}</div></div>
-    <button class="gco sec" data-act="gpath" title="Camino hasta otra ficha">Camino</button>
     <button class="gco" data-go="${att(e.s)}">Abrir</button>
     <button class="gcx" data-act="gclose" aria-label="Cerrar">✕</button></div>`;
 }
@@ -2567,21 +2288,15 @@ function gWire(){
       const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
     }
     G.drag=null;G.panning=null;G.downNode=null;
-    if(wasNode&&!moved&&G.picking){
-      /* estamos eligiendo el destino del camino */
-      if(wasNode.id!==G.pathA)cerrarCamino(wasNode.id);
-      return;
-    }
     if(wasNode&&!moved){
-      if(G.path)limpiarCamino();
       if(G.sel===wasNode.id&&!G.selEdge)go(wasNode.id);  // segundo toque abre la ficha
       else{G.sel=wasNode.id;G.selUser=true;G.selEdge=null;gCard();gPaint()}
     }else if(!wasNode&&!moved){
       /* en el vacío no hay nodo, pero puede haber una línea debajo */
       const p=at(ev), ar=gHitEdge(p.x,p.y);
       if(ar){G.selEdge={a:ar.a,b:ar.b};G.sel=null;G.selUser=false;gCard();gPaint()}
-      else if(G.sel||G.selEdge||G.path||G.picking){
-        G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();gCard();gPaint()}
+      else if(G.sel||G.selEdge){
+        G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()}
     }
   };
   cv.onpointerup=end;cv.onpointercancel=end;
@@ -2754,10 +2469,7 @@ const ACT={
   zoom:v=>gZoom(v==='in'?1.3:1/1.3),
   fit:()=>{G.autofit=false;gFit();gDraw()},
   full:gFull,
-  gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;limpiarCamino();gCard();gPaint()},
-  gpath:pedirCamino,
-  gsalud:()=>{G.panel=!G.panel;r()},
-  gtiempo:abrirTiempo,
+  gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()},
   gsoltar:soltarPins,
   gexport:exportarGrafo,
   gtag:v=>{G.tag=(G.tag===v?null:v);G.pos={};gBuild();
@@ -2768,8 +2480,7 @@ const ACT={
     const c=document.getElementById('gctl');if(c)c.innerHTML=gControls();
     gPaint();
     if(G.verGrupos)toast((G.grupos&&G.grupos.length||0)+' grupos',null);},
-  tahora:()=>{G.hist=null;gBuild();r()},
-  gcentrar:v=>{gCenter(v);G.panel=false;r();scrollTo(0,0)},
+  gcentrar:v=>{gCenter(v);r();scrollTo(0,0)},
   center:()=>{},
   search:()=>{}
 };
