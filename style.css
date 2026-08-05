@@ -90,8 +90,11 @@ html,body{margin:0;padding:0}
    hace iOS con cualquier sitio; antes lo evitábamos poniendo el scroll adentro
    de #app, pero eso también se comía el gesto. */
 html,body{height:auto;overflow:visible}
-/* el grafo a pantalla completa traba el scroll, sea quien sea el que scrollea */
+/* En pantalla completa el grafo ocupa todo. La navegación se esconde: además
+   de estorbar, lo tapaba: #app abre contexto de apilado propio, así que por
+   más z-index que tenga el grafo adentro, la nav —que es hermana— le gana. */
 html.trabado,html.trabado body{overflow:hidden;height:100%}
+html.trabado .nav{display:none}
 body{
   background:var(--bg); color:var(--ink);
   font-family:var(--body); font-size:var(--f-base); line-height:var(--lh-snug);
@@ -741,6 +744,8 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   background:radial-gradient(120% 90% at 50% 0%,rgba(224,178,92,.05),transparent 60%),
              linear-gradient(to bottom,var(--bg2),var(--bg))}
 .gwrap.full{position:fixed;inset:0;z-index:70;border:none;background:var(--bg)}
+/* sin la nav abajo, la tarjeta se apoya en el borde real de la pantalla */
+.gwrap.full .gcard{bottom:calc(var(--s3) + env(safe-area-inset-bottom))}
 canvas{display:block;width:100%;touch-action:none;cursor:grab}
 canvas.grabbing{cursor:grabbing}
 canvas.pointing{cursor:pointer}
@@ -943,6 +948,12 @@ canvas.pointing{cursor:pointer}
 .skel{border-radius:var(--r1);
   background:linear-gradient(90deg,var(--surf) 25%,var(--surf2) 37%,var(--surf) 63%);
   background-size:400% 100%;animation:sh 1.4s ease-in-out infinite}
+/* el hueco del retrato, que es redondo */
+.skel.rd{border-radius:50%;flex:none}
+/* Sobre una tarjeta el esqueleto sube un escalón: el degradado arranca en el
+   mismo color que el fondo de la tarjeta y ahí no se veía nada. */
+.card .skel{background-image:linear-gradient(90deg,
+  var(--surf2) 25%,var(--surf3) 37%,var(--surf2) 63%)}
 .empty{text-align:center;padding:var(--s9) var(--s6);color:var(--muted)}
 .empty .ei{line-height:1;margin-bottom:var(--s4);opacity:.5;color:var(--muted)}
 .empty .ei .gi{width:44px;height:44px;margin:0 auto}

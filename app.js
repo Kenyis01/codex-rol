@@ -346,8 +346,10 @@ async function loadCamp(c){
   cur=c;rebuild();loadMe();
   G.pos={};G.sel=null;G.selEdge=null;G.tag=null;cargarPins();  // arranca limpio
   if(!st.ent||!byS[st.ent]){
+    /* si dijiste quién sos, el grafo y la primera ficha arrancan en vos; si no,
+       en la que más conexiones tiene */
     const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s)||b3(b)-b3(a))[0];
-    st.ent=top?top.s:null;
+    st.ent=(st.me&&byS[st.me])?st.me:(top?top.s:null);
   }
 }
 
@@ -394,18 +396,31 @@ function vPick(){
    El que scrollea es #app, no el documento. En iOS el rebote del scroll del
    documento arrastra con él a los elementos fijos y la navegación de abajo se
    despega; con el scroll adentro de un contenedor eso no puede pasar. */
-function alTope(){
+/* Scrollea el documento, pero se lee y se escribe también en #app por si
+   alguna vez vuelve a ser él el que scrollea. */
+function scrollAhora(){
   const a=document.getElementById('app');
-  if(a)a.scrollTop=0;
-  try{scrollTo(0,0)}catch(_){}     // por si algún navegador scrollea el documento igual
+  return Math.round(scrollY||(a&&a.scrollTop)||0);
 }
+function irY(y){
+  const a=document.getElementById('app');
+  if(a)a.scrollTop=y||0;
+  try{scrollTo(0,y||0)}catch(_){}
+}
+const alTope=()=>irY(0);
 /* La app nunca cambia de página, así que el navegador no tenía nada que
    desandar: el gesto de volver del teléfono (deslizar desde el borde en iOS,
    el atrás del sistema en Android) sacaba del códice de una. Ahora cada
    pantalla que se abre deja su entrada en el historial, con la vista adentro.
    De paso la dirección queda escrita, así que recargar te devuelve donde
    estabas en vez de a la lista de campañas, y un link a una ficha se comparte. */
-const verActual=()=>({tab:st.tab,ent:st.ent,camp:cur?cur.id:null});
+const verActual=()=>{
+  const v={tab:st.tab,ent:st.ent,camp:cur?cur.id:null};
+  /* en el grafo se recuerda también qué nodo estaba tocado: al volver aparece
+     la misma tarjeta abierta y no el grafo pelado */
+  if(st.tab==='grafo'&&G.sel)v.sel=G.sel;
+  return v;
+};
 const campSlug=c=>String((c&&(c.slug||c.id))||'');
 function rutaDe(){
   if(!cur||st.tab==='home')return '#/';
@@ -429,7 +444,14 @@ function marcarNav(){try{history.pushState({v:verActual()},'',rutaDe())}catch(_)
 function sellarNav(){try{history.replaceState({v:verActual()},'',rutaDe())}catch(_){}}
 /* la pila interna sólo sirve para saber si el botón de atrás tiene a dónde ir;
    el que manda es el historial del navegador */
-function apilar(){hist.push(verActual());if(hist.length>60)hist.shift()}
+function apilar(){
+  /* La entrada que estamos por dejar se vuelve a sellar con el scroll donde
+     está: al volver a ella se cae en el mismo lugar y no arriba de todo. */
+  const y=scrollAhora();
+  hist.push(Object.assign(verActual(),{y}));
+  if(hist.length>60)hist.shift();
+  try{history.replaceState({v:Object.assign(verActual(),{y})},'')}catch(_){}
+}
 
 /* Ir a donde ya estás no es navegar: si dejara entrada, el historial juntaría
    dos iguales pegadas y el siguiente Atrás no cambiaría nada. */
@@ -481,7 +503,10 @@ async function aplicarVista(v){
     st.pick=!st.me&&quienes().length>0;
   }
   if(v.ent&&byS[v.ent])st.ent=v.ent;
-  st.tab=v.tab;r();alTope();
+  if(v.tab==='grafo'&&v.sel&&byS[v.sel]){G.sel=v.sel;G.selUser=true;G.selEdge=null}
+  st.tab=v.tab;r();
+  /* después de pintar, para que el alto del contenido ya exista */
+  const y=v.y||0;irY(y);requestAnimationFrame(()=>irY(y));
 }
 addEventListener('popstate',ev=>{
   if(hist.length)hist.pop();
@@ -2933,8 +2958,10 @@ function gWire(){
     }
     G.drag=null;G.panning=null;G.downNode=null;
     if(wasNode&&!moved){
-      if(G.sel===wasNode.id&&!G.selEdge)go(wasNode.id);  // segundo toque abre la ficha
-      else{G.sel=wasNode.id;G.selUser=true;G.selEdge=null;gCard();gPaint()}
+      /* tocar un nodo solo lo selecciona. Antes el segundo toque abría la
+         ficha y se disparaba sin querer al mirar un retrato o seguir un hilo;
+         para abrir está el botón de la tarjeta. */
+      G.sel=wasNode.id;G.selUser=true;G.selEdge=null;gCard();gPaint();
     }else if(!wasNode&&!moved){
       /* en el vacío no hay nodo, pero puede haber una línea debajo */
       const p=at(ev), ar=gHitEdge(p.x,p.y);
@@ -3001,12 +3028,32 @@ function restFocus(f){
    la lista de campañas y recién después la ficha, así que recargar mostraba un
    parpadeo de la pantalla principal. */
 let ARRANCANDO=false;
+/* Un esqueleto con la forma de la pantalla que viene, no un bloque cualquiera:
+   si va a abrir una ficha se ve el retrato y el nombre donde van a estar, y si
+   va al índice se ve una lista. Así la espera no cambia de forma al terminar. */
+function vCarga(tab){
+  const barra=(w,h,mt)=>`<div class="skel" style="height:${h}px;width:${w};${
+    mt?'margin-top:'+mt+'px':''}"></div>`;
+  const fila='<div class="row"><div class="skel rd" style="width:38px;height:38px"></div>'+
+    '<div class="grow">'+barra('42%',13)+barra('72%',11,8)+'</div></div>';
+  /* la barra de arriba también, para que al llegar el contenido no salte */
+  const arriba=`<div class="top"><div class="topin">
+    <div class="skel" style="width:96px;height:var(--h-md);border-radius:var(--r2)"></div>
+    <div class="grow"></div>
+    <div class="skel" style="width:96px;height:var(--h-md);border-radius:var(--r2)"></div>
+  </div></div>`;
+  if(tab==='ficha')return arriba+`<div class="page">
+    <div class="imgrow"><div class="skel rd" style="width:72px;height:72px"></div>
+      <div class="grow">${barra('30%',11)}${barra('64%',26,10)}</div></div>
+    ${barra('44%',13,20)}
+    <div style="margin-top:24px">${barra('100%',13)}${barra('96%',13,10)}${barra('58%',13,10)}</div>
+  </div>`;
+  return `<div class="page first">${barra('52%',26)}${barra('34%',13,12)}
+    <div class="card" style="margin-top:24px">${fila.repeat(5)}</div></div>`;
+}
 function r(){
   if(ARRANCANDO){
-    app.innerHTML=`<div class="page first"><div class="card">${
-      '<div class="row"><div class="grow"><div class="skel" style="height:13px;width:38%"></div>'+
-      '<div class="skel" style="height:11px;width:80%;margin-top:8px"></div></div></div>'
-      .repeat(4)}</div></div>`;
+    app.innerHTML=vCarga(ARRANCANDO);
     const nv=document.querySelector('.nav');if(nv)nv.style.display='none';
     RENDERED='carga';return;
   }
@@ -3200,7 +3247,7 @@ addEventListener('keydown',ev=>{
 (async()=>{
   /* si la dirección apunta a algún lado, se abre eso y no la lista */
   const rt=leerRuta();
-  ARRANCANDO=!!rt;
+  ARRANCANDO=rt?rt.tab:false;
   r();await loadCamps();
   const c=rt&&CAMPS.filter(x=>campSlug(x)===rt.camp)[0];
   if(c){
