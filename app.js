@@ -3222,9 +3222,10 @@ function gFull(){
 /* ============================================================
    SHELL
    ============================================================ */
-/* pestaña -> icono. El índice es un libro abierto, el grafo la telaraña de
-   vínculos y la ficha nueva la pluma con la que se escribe. */
-const NAV=[['idx','Índice','idx'],['grafo','Grafo','grafo'],['nueva','Nueva','nueva']];
+/* pestaña -> icono. "idx"/"grafo"/"nueva" siguen siendo las claves internas
+   (st.tab, rutas, etc.); lo único que cambia acá es lo que se ve: Códice,
+   Urdimbre y Forja son los nombres temáticos de Índice, Grafo y Ficha nueva. */
+const NAV=[['idx','Códice','idx'],['grafo','Urdimbre','grafo'],['nueva','Forja','nueva']];
 let RENDERED=null;
 function snapFocus(){
   const a=document.activeElement;
