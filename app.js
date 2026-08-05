@@ -376,10 +376,9 @@ const nombreDe=slug=>slug?(byS[slug]?byS[slug].n:slug):null;
 function vPick(){
   const lista=quienes();
   return `<div class="dlgwrap"><div class="dlg">
-    <div class="eyebrow">Antes de empezar</div>
-    <h2 class="dlgh">¿Quién sos?</h2>
-    <div class="dlgtx">Para saber quién escribió cada cosa. Se guarda en este
-      navegador y no te lo vuelvo a preguntar.</div>
+    <div class="eyebrow">Juramento del códice</div>
+    <h2 class="dlgh">¿Quién osa alterar las escrituras?</h2>
+    <div class="dlgtx">Cada crónica en este códice requiere la firma de su autor. Selecciona tu identidad o arriésgate a que tus palabras se pierdan en el olvido.</div>
     ${lista.length?`<div class="card pickl">${lista.map(e=>`
       <div class="row" data-act="setme" data-v="${att(e.s)}">
         ${av(e,AV.md,e.gm?{gmring:1}:{})}
@@ -388,7 +387,7 @@ function vPick(){
         <span class="rc">${ic("arrow","r")}</span></div>`).join('')}</div>`
     :`<div class="hint">Todavía no hay personajes del grupo ni Máster. Marcá
       alguna ficha como del grupo o como Máster desde su editor.</div>`}
-    <button class="btn sec2" data-act="pickskip">Ahora no</button>
+    <button class="btn sec2" data-act="pickskip">Continuar sin dejar rastro</button>
   </div></div>`;
 }
 
