@@ -78,17 +78,17 @@ html,body{margin:0;padding:0}
    a los elementos fijos. Acá había además un overscroll-behavior:none que era
    redundante para eso y de paso le apagaba al navegador su propio "tirá para
    actualizar". Se fue: los gestos los pone el sistema, no nosotros. */
-/* Quién scrollea, y por qué hay dos modos.
+/* Scrollea el documento, en todos lados.
 
-   Por defecto scrollea el documento. Es lo que hace falta para que Chrome
-   pueda hacer su gesto de tirar para actualizar: ese gesto necesita que el
-   que rebota sea la página, y con overflow:hidden en html/body —que es la
-   receta clásica para desactivarlo— no hay nada que rebote.
+   Es lo que hace falta para que el navegador pueda hacer su gesto de tirar
+   para actualizar: ese gesto necesita que el que rebota sea la página. Con
+   overflow:hidden en html/body —la receta clásica para desactivarlo— o con el
+   scroll metido adentro de un contenedor, el tirón nunca le llega.
 
-   En iOS el rebote del documento se lleva puestos los elementos fijos y la
-   navegación de abajo se despega. Ahí, y solo ahí, el scroll se mete adentro
-   de #app, que es como estaba. La consulta de -webkit-touch-callout distingue
-   iOS de todo lo demás. */
+   Tiene un costo conocido y aceptado: mientras dura el tirón, el rebote
+   arrastra a los elementos fijos y la navegación de abajo acompaña. Es lo que
+   hace iOS con cualquier sitio; antes lo evitábamos poniendo el scroll adentro
+   de #app, pero eso también se comía el gesto. */
 html,body{height:auto;overflow:visible}
 /* el grafo a pantalla completa traba el scroll, sea quien sea el que scrollea */
 html.trabado,html.trabado body{overflow:hidden;height:100%}
@@ -105,10 +105,6 @@ body{
     radial-gradient(600px 460px at -10% 60%, rgba(180,139,216,.05), transparent 70%);
 }
 #app{position:relative;z-index:1}
-@supports (-webkit-touch-callout:none){
-  html,body{height:100%;overflow:hidden}
-  #app{height:100%;overflow-y:auto;overflow-x:clip;-webkit-overflow-scrolling:touch}
-}
 /* El aire para que el contenido pase por encima de la navegación va como
    espaciador y no como padding de #app: el rectángulo contra el que se apoya
    un sticky se mide desde el borde interno del contenedor, así que con
