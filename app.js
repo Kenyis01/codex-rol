@@ -659,22 +659,25 @@ function vIdx(){
     : `<div class="empty"><div class="ei">${ic("search")}</div><div class="et">Nada parecido</div>
        <div class="es">No encontré nada como "${esc(st.q)}". Probá con menos letras.</div></div>`;
   const body = st.q.trim() ? hitsBody : (()=>{
-    const gms=D.filter(e=>e.gm);
+    /* alfabético en cada grupo: la lista se lee buscando un nombre, no el
+       más mencionado */
+    const abc=(a,b)=>a.n.localeCompare(b.n,'es');
+    const gms=D.filter(e=>e.gm).sort(abc);
     let out=gms.length?`<div class="grp gmgrp">
       <div class="grph">Máster<span class="ct">${gms.length}</span></div>
       ${group(gms)}</div>`:'';
-    const pcs=D.filter(e=>e.pc&&!e.gm);
+    const pcs=D.filter(e=>e.pc&&!e.gm).sort(abc);
     out+=pcs.length?`<div class="grp">
       <div class="grph" style="color:var(--ink)">${esc(cur.party_name||'Nuestro grupo')}
         <span class="ct">${pcs.length}</span></div>${group(pcs)}</div>`:'';
     out+=tiposTodos().map(t=>{
-      const g=D.filter(e=>e.t===t&&!e.pc&&!e.gm).sort((a,b)=>b3(b)-b3(a)||a.n.localeCompare(b.n));
+      const g=D.filter(e=>e.t===t&&!e.pc&&!e.gm).sort(abc);
       if(!g.length)return'';
       return `<div class="grp"><div class="grph" style="color:${TYT(t).c}">
         ${TYT(t).l}<span class="ct">${g.length}</span></div>${group(g)}</div>`;
     }).join('');
     /* solo quedan acá las que no tienen tipo ninguno */
-    const rest=D.filter(e=>!e.pc&&!e.gm&&!e.t);
+    const rest=D.filter(e=>!e.pc&&!e.gm&&!e.t).sort(abc);
     if(rest.length)out+=`<div class="grp"><div class="grph" style="color:${FALLBACK.c}">
       ${FALLBACK.l}<span class="ct">${rest.length}</span></div>${group(rest)}</div>`;
     return out;
