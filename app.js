@@ -1002,14 +1002,14 @@ function vEd(){
       ${isGm?ic('check'):''}Es el Máster</button>
 
     ${(()=>{
-      /* Solo para personajes. La sección igual aparece si la ficha ya tiene
-         atributos cargados y se le cambió el tipo: si no, no habría manera de
-         sacárselos. */
+      /* Solo para personajes de la partida: al resto (NPCs, aliados, rivales)
+         no le interesan estos datos. La sección igual aparece si la ficha ya
+         tiene atributos cargados y se le sacó el tipo o el "es del grupo": si
+         no, no habría manera de vaciarlos. */
       const AT=E.at||{};
-      /* Los que corresponden a este tipo, más cualquiera que la ficha ya tenga
-         cargado: si a una que era personaje le cambiaste el tipo, el campo
-         tiene que seguir estando para poder vaciarlo. */
-      const hay=atrDeTipo(type);
+      /* Los que corresponden a este tipo (solo si es del grupo), más
+         cualquiera que la ficha ya tenga cargado. */
+      const hay=isPc?atrDeTipo(type):[];
       const V=ATRIB.filter(a=>hay.indexOf(a)>=0||AT[a.k]);
       if(!V.length)return '';
       const G=AT.genero;
