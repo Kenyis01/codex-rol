@@ -683,7 +683,21 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .btn.sec2{background:var(--surf);border-color:var(--line);color:var(--muted)}
 @media(hover:hover){.btn.sec2:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
 .btn.sec2.on{border-color:var(--gold);color:var(--gold)}
+/* Borrar. Se lee distinto pero no grita: es una acción que existe y que a
+   veces hace falta, no una trampa. El relleno rojo se guarda para el botón
+   que confirma de verdad, adentro del diálogo. */
+.btn.peligro{background:var(--surf);color:var(--faction);
+  border-color:color-mix(in srgb,var(--faction) 40%,transparent)}
+@media(hover:hover){.btn.peligro:hover{
+  background:color-mix(in srgb,var(--faction) 12%,transparent);
+  border-color:var(--faction)}}
+.dlg .btn.peligro{background:var(--faction);color:#2A0F11;border-color:var(--faction)}
+@media(hover:hover){.dlg .btn.peligro:hover{filter:brightness(1.08)}}
 .btn + .btn{margin-top:var(--s2)}
+/* separa la acción destructiva de la que está arriba, que no lo es */
+.btn.mt{margin-top:var(--s5)}
+/* la candidata elegida en el diálogo de fusionar */
+.dlg .row.on{background:color-mix(in srgb,var(--gold) 12%,transparent)}
 .btnrow + .btn,.hint + .btn,.sfield + .btn{margin-top:var(--s4)}
 .btn:disabled{opacity:.55;cursor:default;transform:none}
 .btn.narrow{max-width:280px;margin-inline:auto}

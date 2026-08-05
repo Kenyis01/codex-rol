@@ -144,7 +144,7 @@ let CAMPS=[], cur=null, D=[], byS={}, BL={}, ADJ={}, EDGES=[];
 /* relaciones con nombre: {de, a, l} en slugs. Van aparte de EDGES porque
    una relación declarada no es lo mismo que una mención suelta. */
 let REL=[], RELK={}, GRPK={};
-let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,dup:null,imp:null,me:null,pick:false,ac:null,acPick:null,
+let st={tab:'home',ent:null,q:'',editing:null,ecamp:null,hist:null,conf:null,dup:null,del:null,fus:null,imp:null,me:null,pick:false,ac:null,acPick:null,
         busy:false,view:'list',err:''};
 let hist=[];
 const app=document.getElementById('app');
@@ -1092,9 +1092,197 @@ function vEd(){
     <div class="hint">Escribí @ y las primeras letras. Encuentra igual si le errás.<br>
       Para sacar un nombre ya enlazado, tocalo una vez (queda marcado) y tocalo de nuevo.
       La tecla de borrar también funciona.</div>
+    ${e?`<div class="sec">
+      <button class="btn sec2" data-act="fusion" data-v="${att(e.s)}">
+        Es la misma que otra ficha</button>
+      <div class="hint">Junta las dos: el texto, los otros nombres, los vínculos
+        y las menciones se mudan a la que elijas, y esta se archiva.</div>
+      <button class="btn peligro mt" data-act="borrar" data-v="${att(e.s)}">
+        Borrar ficha</button>
+      <div class="hint">Deja de aparecer en todos lados. No se borra de la base:
+        si te arrepentís, avisame y la traigo de vuelta.</div></div>`:''}
     <div class="savebar"><button class="btn pri" data-act="save" ${st.busy?'disabled':''}>
       ${st.busy?'Guardando…':'Guardar'}</button></div>
   </div>`;
+}
+
+/* ---------- fusionar dos fichas ----------
+   Cuando la misma persona quedó cargada dos veces —pasa cuando el nombre viene
+   escrito distinto y nadie lo ató a tiempo—, borrar la duplicada no alcanza:
+   se perderían su texto y las menciones que otras fichas le hacen. Fusionar
+   muda todo a la que se queda y recién ahí archiva la otra.
+
+   Lo que se muda, y en este orden: los nombres, el texto, los datos que
+   falten, las etiquetas, los vínculos con nombre y —la parte que es fácil
+   olvidar— los [[enlaces]] que el resto de las fichas le hacían. */
+function planFusion(muereS,sobreS){
+  const m=byS[muereS], s=byS[sobreS];
+  if(!m||!s||m.s===s.s)return null;
+  /* el texto de la que se va se reescribe primero: si nombraba a la que se
+     queda, o a sí misma, todo termina apuntando al mismo lado */
+  const remap=t=>String(t||'').split('[['+muereS+']]').join('[['+sobreS+']]');
+  const nombres=[m.n].concat(m.a||[])
+    .filter(x=>nm(x)!==nm(s.n)&&!(s.a||[]).some(y=>nm(y)===nm(x)))
+    .filter((x,i,arr)=>arr.findIndex(y=>nm(y)===nm(x))===i);
+  const cuerpo=parrafosNuevos(s.b,remap(m.b));
+  const notas=parrafosNuevos(s.c,remap(m.c));
+  const atrs={};ATRIB.forEach(a=>{
+    const v=m.at&&m.at[a.k];if(v&&!(s.at&&s.at[a.k]))atrs[a.k]=v});
+  const etiq=(m.tg||[]).filter(t=>!(s.tg||[]).some(y=>nm(y)===nm(t)));
+  /* los vínculos se repuntan; se tiran los que quedarían apuntando a sí misma
+     o repitiendo uno que la que se queda ya tiene */
+  const mios=REL.filter(x=>x.de===muereS||x.a===muereS);
+  const mueven=[],sobran=[];
+  mios.forEach(x=>{
+    const de=x.de===muereS?sobreS:x.de, a=x.a===muereS?sobreS:x.a;
+    if(de===a)return sobran.push(x);
+    if(REL.some(y=>y!==x&&y.de===de&&y.a===a&&nm(y.l)===nm(x.l)))return sobran.push(x);
+    mueven.push({rel:x,de,a});
+  });
+  const textos=D.filter(o=>o.s!==muereS&&o.s!==sobreS&&
+    (String(o.b||'')+String(o.c||'')).indexOf('[['+muereS+']]')>=0);
+  return {m,s,remap,nombres,cuerpo,notas,atrs,etiq,mueven,sobran,textos};
+}
+async function fusionar(muereS,sobreS){
+  const P=planFusion(muereS,sobreS);
+  if(!P||st.busy)return;
+  st.busy=true;r();
+  const fallos=[];
+  const cae=e=>{if(e)fallos.push(e.message||String(e))};
+  try{
+    /* 1. la que se queda: texto, resumen si no tenía, datos y etiquetas */
+    const upd={edited_by:st.me||null};
+    if(P.cuerpo.length)upd.body=(P.s.b||'').trim()
+      ?P.s.b.trimEnd()+'\n\n'+P.cuerpo.join('\n\n'):P.cuerpo.join('\n\n');
+    if(P.notas.length)upd.notes=(P.s.c||'').trim()
+      ?P.s.c.trimEnd()+'\n\n'+P.notas.join('\n\n'):P.notas.join('\n\n');
+    if(!P.s.sm&&P.m.sm)upd.summary=P.m.sm;
+    if(Object.keys(P.atrs).length)upd.attrs=Object.assign({},P.s.at||{},P.atrs);
+    if(P.etiq.length)upd.tags=(P.s.tg||[]).concat(P.etiq);
+    cae((await SB.from('entities').update(upd).eq('id',P.s.id)).error);
+
+    /* 2. los nombres de la que se va pasan a ser otros nombres de la que queda */
+    if(P.nombres.length)cae(await guardarAlias(P.s.id,(P.s.a||[]).concat(P.nombres),P.s.a||[]));
+
+    /* 3. los vínculos se repuntan uno por uno; los que sobran se van */
+    for(const x of P.mueven)
+      cae((await SB.from('relationships').update({
+        from_entity_id:byS[x.de].id,to_entity_id:byS[x.a].id}).eq('id',x.rel.id)).error);
+    if(P.sobran.length)
+      cae((await SB.from('relationships').delete().in('id',P.sobran.map(x=>x.id))).error);
+
+    /* 4. las menciones del resto de las fichas apuntan a la que queda */
+    for(const o of P.textos)
+      cae((await SB.from('entities').update({
+        body:P.remap(o.b),notes:P.remap(o.c),edited_by:st.me||null}).eq('id',o.id)).error);
+
+    /* 5. y recién ahora se archiva */
+    cae((await SB.from('entities').update({
+      archived_at:new Date().toISOString(),edited_by:st.me||null}).eq('id',P.m.id)).error);
+  }catch(err){fallos.push(err.message||String(err))}
+  st.busy=false;st.fus=null;st.editing=null;
+  await loadCamp(cur);
+  st.ent=sobreS;cerrar({tab:'ficha',ent:sobreS});
+  if(fallos.length)toast('Se fusionó a medias: '+fallos[0],'err');
+  else toast(P.m.n+' se fusionó con '+P.s.n,'ok');
+}
+function vFus(){
+  const F=st.fus, m=byS[F.slug];
+  if(!m){st.fus=null;return ''}
+  const P=F.cand?planFusion(F.slug,F.cand):null;
+  const cands=parecidas(m.n,m.s);
+  const linea=(rot,txt)=>txt?`<div class="dlgbox"><div class="dlgl">${esc(rot)}</div>
+    <div class="dlgv">${txt}</div></div>`:'';
+  return `<div class="dlgwrap"><div class="dlg">
+    <div class="eyebrow">Fusionar</div>
+    <h2 class="dlgh">¿Con cuál se junta ${esc(m.n)}?</h2>
+    <div class="dlgtx">Todo lo de ${esc(m.n)} se muda a la que elijas —el texto,
+      los otros nombres, los vínculos y las menciones que le hacen las demás—
+      y ${esc(m.n)} se archiva. No se pierde nada.</div>
+    ${cands.length?`<div class="card">${cands.map(x=>`
+      <div class="row${F.cand===x.e.s?' on':''}" data-act="fuscand" data-v="${att(x.e.s)}">
+        ${av(x.e,AV.md)}
+        <div class="grow"><div class="rn">${esc(x.e.n)}</div>
+          <div class="rs">${porqueSeParece(x)}</div></div>
+        <span class="rc">${F.cand===x.e.s?ic('check'):ic('arrow','r')}</span></div>`).join('')}</div>`:''}
+    <div class="eyebrow mt">${cands.length?'O buscala en la lista':'Elegí con cuál'}</div>
+    <select class="sfield" data-act="fussel" onchange="ACT.fuscand(this.value)">
+      <option value="">Elegí una ficha…</option>
+      ${D.filter(x=>x.s!==m.s).sort((a,b)=>a.n.localeCompare(b.n,'es'))
+        .map(x=>`<option value="${att(x.s)}"${F.cand===x.s?' selected':''}
+          >${esc(x.n)}</option>`).join('')}
+    </select>
+    ${P?`<div class="eyebrow mt">Qué se muda</div>
+      ${linea('Otros nombres',P.nombres.map(esc).join(' · '))}
+      ${linea('Párrafos de descripción',P.cuerpo.length||'')}
+      ${linea('Párrafos de comentarios',P.notas.length||'')}
+      ${linea('Vínculos con nombre',P.mueven.length||'')}
+      ${linea('Fichas que la nombran',P.textos.length?P.textos.map(o=>esc(o.n)).join(' · '):'')}
+      ${!P.nombres.length&&!P.cuerpo.length&&!P.notas.length&&!P.mueven.length&&!P.textos.length
+        ? '<div class="hint">No trae nada nuevo: se archiva y listo.</div>':''}
+      ${P.sobran.length?`<div class="hint">${P.sobran.length} vínculo${
+        P.sobran.length===1?'':'s'} se descarta${P.sobran.length===1?'':'n'}:
+        quedaría${P.sobran.length===1?'':'n'} apuntando a sí misma o repetido${
+        P.sobran.length===1?'':'s'}.</div>`:''}
+      <button class="btn pri" data-act="fusok"${st.busy?' disabled':''}>
+        ${st.busy?'Fusionando…':'Fusionar con '+esc(byS[F.cand].n)}</button>`
+      :'<div class="hint">Elegí una para ver qué se muda.</div>'}
+    <button class="btn sec2" data-act="fusno">Cancelar</button>
+  </div></div>`;
+}
+
+/* ---------- borrar una ficha ----------
+   No se borra de verdad: se marca como archivada y deja de aparecer. Así una
+   equivocación se deshace desde la base sin haber perdido nada.
+   Lo que sí hay que decir antes es a quién le va a dejar un agujero: las
+   menciones que le hacen otras fichas quedan escritas como [[slug]] a la
+   vista, porque ya no hay ficha a la que apuntar. */
+function pedirBorrar(slug){
+  const e=byS[slug];if(!e)return;
+  const mencionan=D.filter(o=>o.s!==slug&&
+    (String(o.b||'')+String(o.c||'')).indexOf('[['+slug+']]')>=0);
+  const vinculos=REL.filter(x=>x.de===slug||x.a===slug).length;
+  st.del={slug,mencionan:mencionan.map(o=>o.n),vinculos};
+  r();
+}
+function vDel(){
+  const B=st.del, e=byS[B.slug];
+  if(!e){st.del=null;return ''}
+  return `<div class="dlgwrap"><div class="dlg">
+    <div class="eyebrow">Borrar</div>
+    <h2 class="dlgh">¿Borrar ${esc(e.n)}?</h2>
+    <div class="dlgtx">Deja de aparecer en el índice, en el grafo y en las
+      búsquedas. No se borra de la base: si te arrepentís se puede traer de
+      vuelta.</div>
+    ${B.mencionan.length?`<div class="dlgbox">
+      <div class="dlgl">La nombran ${B.mencionan.length} ficha${B.mencionan.length===1?'':'s'}</div>
+      <div class="dlgv">${B.mencionan.slice(0,6).map(esc).join(' · ')}${
+        B.mencionan.length>6?' y '+(B.mencionan.length-6)+' más':''}</div>
+    </div>
+    <div class="hint">En esas fichas el nombre va a quedar escrito sin enlace.
+      Si en realidad es la misma que otra, conviene fusionarlas en vez de
+      borrarla: así el texto y las menciones se mudan.</div>`:''}
+    ${B.vinculos?`<div class="hint">También se van sus ${B.vinculos} vínculo${
+      B.vinculos===1?'':'s'} con nombre.</div>`:''}
+    <button class="btn sec2" data-act="fusion" data-v="${att(B.slug)}"
+      >Mejor fusionarla con otra</button>
+    <button class="btn peligro" data-act="delok"${st.busy?' disabled':''}>
+      ${st.busy?'Borrando…':'Borrar '+esc(e.n)}</button>
+    <button class="btn sec2" data-act="delno">Dejarla</button>
+  </div></div>`;
+}
+async function borrarFicha(slug){
+  const e=byS[slug];if(!e||st.busy)return;
+  st.busy=true;r();
+  const {error}=await SB.from('entities')
+    .update({archived_at:new Date().toISOString(),edited_by:st.me||null})
+    .eq('id',e.id);
+  st.busy=false;
+  if(error){toast('No se pudo borrar: '+error.message,'err');r();return}
+  st.del=null;st.editing=null;
+  await loadCamp(cur);
+  st.ent=null;cerrar({tab:'idx'});
+  toast(e.n+' se borró','ok');
 }
 /* El aviso se redibuja solo, sin volver a dibujar el editor entero: en cada
    tecla se perdería la posición del cursor dentro del campo. */
@@ -1509,9 +1697,8 @@ function usarLaQueEsta(slug){
   keepDraft();
   const V=st.editing;
   if(V.slug===slug){st.dup=null;r();return}   // ya estoy en esa
-  const suma=(base,extra)=>!extra?(base||''):((base||'').trim()?base.trimEnd()+'\n\n'+extra:extra);
   const N={slug,isNew:false,base:d.up,
-    dn:d.n, db:suma(d.b,(V.db||'').trim()), dc:suma(d.c,(V.dc||'').trim()),
+    dn:d.n, db:sumarTexto(d.b,(V.db||'').trim()), dc:sumarTexto(d.c,(V.dc||'').trim()),
     /* los atributos de la que ya existe mandan; lo del borrador solo completa */
     at:Object.assign({},V.at||{},d.at||{}),
     tags:(d.tg||[]).slice(), als:(d.a||[]).slice()};
@@ -1748,6 +1935,32 @@ function leerPlan(txt){
   return{items};
 }
 
+/* Un texto se compara sin sus enlaces: la ficha lo tiene guardado como
+   [[slug]] y lo que viene de la AI trae el nombre escrito. */
+const sinEnlaces=t=>nm(String(t||'').replace(LK,(_,k)=>byS[k]?byS[k].n:k));
+/* Los párrafos de "extra" que la ficha todavía no tiene, en orden. */
+function parrafosNuevos(base,extra){
+  if(!extra)return [];
+  const tengo={};
+  String(base||'').split(/\n\n+/).forEach(p=>{const k=sinEnlaces(p);if(k)tengo[k]=1});
+  const out=[];
+  String(extra).split(/\n\n+/).forEach(p=>{
+    const t=p.trim(), k=sinEnlaces(t);
+    if(!k||tengo[k])return;
+    tengo[k]=1;out.push(t);
+  });
+  return out;
+}
+/* Agrega al final solo lo que falte. Sin esto, aplicar dos veces la misma
+   importación duplicaba todo: pasó de verdad y dejó 28 bloques repetidos en
+   18 fichas. Se compara párrafo por párrafo y no el bloque entero, porque
+   entre una pasada y otra el texto pudo haber crecido. */
+function sumarTexto(base,extra){
+  const b=String(base||''), nue=parrafosNuevos(b,extra);
+  if(!nue.length)return b;
+  return b.trim()?b.trimEnd()+'\n\n'+nue.join('\n\n'):nue.join('\n\n');
+}
+
 /* Los atributos que la importación agregaría a una ficha que ya existe: solo
    los que ella todavía no tiene. Lo cargado a mano gana siempre. */
 function atrsNuevos(x,e){
@@ -1800,11 +2013,7 @@ async function aplicarImp(){
       }else{
         const e=x.e;
         if(!e)continue;
-        const suma=(base,extra)=>{
-          const t=liga(extra,e.s);
-          if(!t)return base||'';
-          return (base||'').trim()?base.trimEnd()+'\n\n'+t:t;
-        };
+        const suma=(base,extra)=>sumarTexto(base,liga(extra,e.s));
         const upd={body:suma(e.b,x.cuerpo),notes:suma(e.c,x.notas),
                    edited_by:st.me||null};
         if(!e.sm&&x.resumen)upd.summary=x.resumen;
@@ -1911,7 +2120,13 @@ function vImp(){
     const e=x.e;
     const alsNuevos=x.als.filter(a=>nm(a)!==nm(e.n)&&!(e.a||[]).some(y=>nm(y)===nm(a)));
     const alsYa=x.als.filter(a=>!alsNuevos.includes(a));
-    const nada=!x.cuerpo&&!x.notas&&!alsNuevos.length&&!(x.resumen&&!e.sm);
+    /* lo que de verdad falta: si la ficha ya tiene ese párrafo no se muestra
+       ni se escribe, así aplicar dos veces la misma importación no repite */
+    const cuerpoN=parrafosNuevos(e.b,x.cuerpo).join('\n\n');
+    const notasN=parrafosNuevos(e.c,x.notas).join('\n\n');
+    const yaTenia=(x.cuerpo&&!cuerpoN)||(x.notas&&!notasN);
+    const nada=!cuerpoN&&!notasN&&!alsNuevos.length&&!(x.resumen&&!e.sm)
+      &&!Object.keys(atrsNuevos(x,e)).length;
     return `<div class="impdet">
       ${x.duda?`<div class="impcampo"><div class="impcr">¿Cuál es?</div>
         <div class="impelegir">${x.cands.map(c=>`
@@ -1925,9 +2140,11 @@ function vImp(){
         </div></div>`:''}
       ${nada
         ? `<div class="impnada">No trae nada que ${esc(e.n)} no tenga ya.
-             Tocar el botón la saltea.</div>`
+             ${x.cuerpo||x.notas?'Este texto ya está escrito en la ficha. ':''
+             }Tocar el botón la saltea.</div>`
         : `<div class="impaviso">Lo que ${esc(e.n)} ya tiene no se toca:
-            todo esto se agrega al final.</div>
+            todo esto se agrega al final.${yaTenia
+              ? ' Los párrafos que ya estaban no se repiten.':''}</div>
           ${alsNuevos.length?`<div class="impcampo">
             <div class="impcr">Se le van a agregar estos nombres</div>
             <div class="impct">${alsNuevos.map(esc).join(' · ')}${
@@ -1947,8 +2164,8 @@ function vImp(){
           ${x.resumen&&!e.sm?`<div class="impcampo">
             <div class="impcr">Se le va a poner resumen, porque no tenía</div>
             <div class="impct">${previa(x.resumen,e.s)}</div></div>`:''}
-          ${trozo('Se agrega al final de la descripción',x.cuerpo,e.s)}
-          ${trozo('Se agrega al final de los comentarios',x.notas,e.s)}`}
+          ${trozo('Se agrega al final de la descripción',cuerpoN,e.s)}
+          ${trozo('Se agrega al final de los comentarios',notasN,e.s)}`}
     </div>`;
   };
 
@@ -3079,7 +3296,8 @@ function r(){
   if(st.tab==='imp'&&!st.imp)st.tab='idx';
   const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist,imp:vImp}[st.tab]||vIdx;
   app.innerHTML=v();
-  dlgEl.innerHTML=(st.conf?vConf():'')+(st.dup?vDup():'')+(st.pick?vPick():'');
+  dlgEl.innerHTML=(st.conf?vConf():'')+(st.dup?vDup():'')+(st.del?vDel():'')
+    +(st.fus?vFus():'')+(st.pick?vPick():'');
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
   document.getElementById('nav').innerHTML=NAV
     .map(([k,l,i])=>`<button class="nb ${on===k?'on':''}" data-act="nav" data-v="${k}">
@@ -3128,6 +3346,13 @@ const ACT={
   confvolver:()=>{st.conf=null;r()},
   cancelcamp:()=>cerrar({tab:'idx'}),
   edit:v=>edit(v),
+  borrar:v=>pedirBorrar(v),
+  fusion:v=>{st.fus={slug:v,cand:null};st.del=null;r()},
+  fuscand:v=>{st.fus.cand=v||null;r()},
+  fusok:()=>fusionar(st.fus.slug,st.fus.cand),
+  fusno:()=>{st.fus=null;r()},
+  delok:()=>borrarFicha(st.del.slug),
+  delno:()=>{st.del=null;r()},
   new:()=>edit(null),
   /* sin destino: vuelve a donde se estaba antes de abrir el editor */
   cancel:()=>cerrar(),
