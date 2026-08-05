@@ -2968,7 +2968,7 @@ function gFull(){
   const w=document.getElementById('gwrap');if(!w)return;
   w.classList.toggle('full',G.full);
   const app=document.getElementById('app');
-  if(app)app.style.overflow=G.full?'hidden':'';
+  document.documentElement.classList.toggle('trabado',G.full);
   /* el botón cambia de sentido: al entrar muestra cómo salir */
   const b=w.querySelector('[data-act="full"]');
   if(b){const t=G.full?'Salir de pantalla completa':'Pantalla completa';
@@ -2996,13 +2996,26 @@ function restFocus(f){
   try{el.focus({preventScroll:true});
     if(f.s!=null&&el.setSelectionRange)el.setSelectionRange(f.s,f.e)}catch(_){}
 }
+/* Al entrar por una dirección que apunta a una ficha hay que pedir las
+   campañas y después la campaña: dos viajes. Sin esto, en el medio se dibujaba
+   la lista de campañas y recién después la ficha, así que recargar mostraba un
+   parpadeo de la pantalla principal. */
+let ARRANCANDO=false;
 function r(){
+  if(ARRANCANDO){
+    app.innerHTML=`<div class="page first"><div class="card">${
+      '<div class="row"><div class="grow"><div class="skel" style="height:13px;width:38%"></div>'+
+      '<div class="skel" style="height:11px;width:80%;margin-top:8px"></div></div></div>'
+      .repeat(4)}</div></div>`;
+    const nv=document.querySelector('.nav');if(nv)nv.style.display='none';
+    RENDERED='carga';return;
+  }
   /* si veníamos del editor, primero rescatamos lo tipeado */
   if(RENDERED==='ed'&&st.editing&&st.editing._live)keepDraft();
   if(RENDERED==='edcamp'&&st.ecamp)keepCampDraft();
   if(RENDERED==='imp'&&st.imp){const t=document.getElementById('impta');if(t)st.imp.txt=t.value}
   if(RENDERED==='grafo'){gStop();marcarVisita()}
-  if(G.full){G.full=false;const a=document.getElementById('app');if(a)a.style.overflow=''}
+  if(G.full){G.full=false;document.documentElement.classList.remove('trabado')}
   const f=snapFocus();
   const navEl=document.querySelector('.nav');
   const dlgEl=document.getElementById('dialogs');
@@ -3185,9 +3198,10 @@ addEventListener('keydown',ev=>{
 });
 
 (async()=>{
-  r();await loadCamps();
   /* si la dirección apunta a algún lado, se abre eso y no la lista */
   const rt=leerRuta();
+  ARRANCANDO=!!rt;
+  r();await loadCamps();
   const c=rt&&CAMPS.filter(x=>campSlug(x)===rt.camp)[0];
   if(c){
     st.ent=rt.ent;await loadCamp(c);
@@ -3195,5 +3209,6 @@ addEventListener('keydown',ev=>{
     st.tab=rt.tab;st.q='';
     st.pick=!st.me&&quienes().length>0;
   }
+  ARRANCANDO=false;
   r();sellarNav();
 })();

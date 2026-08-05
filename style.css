@@ -78,7 +78,20 @@ html,body{margin:0;padding:0}
    a los elementos fijos. Acá había además un overscroll-behavior:none que era
    redundante para eso y de paso le apagaba al navegador su propio "tirá para
    actualizar". Se fue: los gestos los pone el sistema, no nosotros. */
-html,body{height:100%;overflow:hidden}
+/* Quién scrollea, y por qué hay dos modos.
+
+   Por defecto scrollea el documento. Es lo que hace falta para que Chrome
+   pueda hacer su gesto de tirar para actualizar: ese gesto necesita que el
+   que rebota sea la página, y con overflow:hidden en html/body —que es la
+   receta clásica para desactivarlo— no hay nada que rebote.
+
+   En iOS el rebote del documento se lleva puestos los elementos fijos y la
+   navegación de abajo se despega. Ahí, y solo ahí, el scroll se mete adentro
+   de #app, que es como estaba. La consulta de -webkit-touch-callout distingue
+   iOS de todo lo demás. */
+html,body{height:auto;overflow:visible}
+/* el grafo a pantalla completa traba el scroll, sea quien sea el que scrollea */
+html.trabado,html.trabado body{overflow:hidden;height:100%}
 body{
   background:var(--bg); color:var(--ink);
   font-family:var(--body); font-size:var(--f-base); line-height:var(--lh-snug);
@@ -91,10 +104,11 @@ body{
     radial-gradient(700px 500px at 110% 100%, rgba(79,183,149,.055), transparent 70%),
     radial-gradient(600px 460px at -10% 60%, rgba(180,139,216,.05), transparent 70%);
 }
-/* sin overscroll-behavior: al llegar arriba del todo el tirón sigue de largo
-   hasta el navegador, que es el que sabe hacer el gesto de actualizar */
-#app{position:relative;z-index:1;height:100%;overflow-y:auto;overflow-x:clip;
-  -webkit-overflow-scrolling:touch}
+#app{position:relative;z-index:1}
+@supports (-webkit-touch-callout:none){
+  html,body{height:100%;overflow:hidden}
+  #app{height:100%;overflow-y:auto;overflow-x:clip;-webkit-overflow-scrolling:touch}
+}
 /* El aire para que el contenido pase por encima de la navegación va como
    espaciador y no como padding de #app: el rectángulo contra el que se apoya
    un sticky se mide desde el borde interno del contenedor, así que con
