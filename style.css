@@ -55,6 +55,10 @@
   /* onda de los rótulos de sección: un período de 18px que se repite en x.
      Va como máscara, así toma el color del rótulo (gris o el del tipo). */
   --wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='9' viewBox='0 0 18 9'%3E%3Cpath d='M0 4.5q4.5-5 9 0t9 0' fill='none' stroke='%23000' stroke-width='1.35' stroke-linecap='round'/%3E%3C/svg%3E");
+  /* puntas redondeadas de los botones tipo "select" de carta: una máscara
+     por lado (ver .lozenge), así la curva no se deforma al estirarse. */
+  --cap-l:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 20 40'%3E%3Cpath d='M20,0 H6 Q0,0 0,20 Q0,40 6,40 H20 Z' fill='%23000'/%3E%3C/svg%3E");
+  --cap-r:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 20 40'%3E%3Cpath d='M0,0 H14 Q20,0 20,20 Q20,40 14,40 H0 Z' fill='%23000'/%3E%3C/svg%3E");
   --navh:calc(72px + env(safe-area-inset-bottom));
   --toph:calc(68px + env(safe-area-inset-top));   /* alto de la barra superior */
   --gut:var(--s4);          /* margen lateral de página */
@@ -166,16 +170,18 @@ body{
   color:#20180A;border-color:transparent;font-weight:600}
 .back.pri:disabled{opacity:.45;cursor:default}
 @media(hover:hover){.back.pri:not(:disabled):hover{filter:brightness(1.07)}}
-/* Botones con punta, como el "select" de una carta de D&D Beyond: en vez de
-   un rectángulo, una banderita que apunta hacia la acción. clip-path corta
-   la punta; el lado sin punta conserva el borde redondeado normal porque
-   ahí el recorte coincide exacto con el borde de la caja. */
-.tag-r{--pt:14px;border-radius:var(--r2) 0 0 var(--r2);
-  padding-right:calc(var(--s4) + var(--pt));
-  clip-path:polygon(0 0,calc(100% - var(--pt)) 0,100% 50%,calc(100% - var(--pt)) 100%,0 100%)}
-.tag-l{--pt:14px;border-radius:0 var(--r2) var(--r2) 0;
-  padding-left:calc(var(--s4) + var(--pt));
-  clip-path:polygon(var(--pt) 0,100% 0,100% 100%,var(--pt) 100%,0 50%)}
+/* Botones con puntas a los dos lados, como el "select" de una carta de
+   D&D Beyond: un hexágono con las puntas redondeadas, no un recorte en V.
+   Una máscara SVG en cada punta (mismo truco que --wave) más un rectángulo
+   liso en el medio, así el ancho se adapta al texto sin deformar la curva. */
+.lozenge{--pt:16px;
+  padding-left:calc(var(--s4) + var(--pt));padding-right:calc(var(--s4) + var(--pt));
+  -webkit-mask-repeat:no-repeat,no-repeat,no-repeat;mask-repeat:no-repeat,no-repeat,no-repeat;
+  -webkit-mask-position:left center,right center,center;mask-position:left center,right center,center;
+  -webkit-mask-size:var(--pt) 100%,var(--pt) 100%,calc(100% - 2*var(--pt)) 100%;
+  mask-size:var(--pt) 100%,var(--pt) 100%,calc(100% - 2*var(--pt)) 100%;
+  -webkit-mask-image:var(--cap-l),var(--cap-r),linear-gradient(#000,#000);
+  mask-image:var(--cap-l),var(--cap-r),linear-gradient(#000,#000)}
 .sfield{height:var(--h-md);width:100%;background:var(--surf);border-color:var(--line);
   color:var(--ink);border-radius:var(--r2);padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--body);outline:none}
@@ -516,16 +522,6 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 /* barniz: un brillo diagonal muy tenue */
 .book::after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
   background:linear-gradient(118deg,rgba(255,255,255,.15),transparent 38%)}
-/* El marco ornamental: una esquina dibujada en el SVG (ver book() en
-   app.js) y espejada tres veces. Va por encima del barniz (z-index 3), y
-   las líneas no llegan a cerrar el rectángulo —terminan a mitad de cada
-   lado, con un rulito en la punta— para que se lea como un adorno y no
-   como un borde común. */
-.bookframe{position:absolute;inset:0;width:100%;height:100%;z-index:4;
-  pointer-events:none}
-.bf-in{fill:none;stroke:var(--gold);stroke-width:1.5;stroke-linecap:round;opacity:.85}
-.bf-out{fill:none;stroke:var(--gold);stroke-width:4.5;stroke-linecap:round;opacity:.9}
-.bf-hook{fill:none;stroke:var(--gold);stroke-width:4.5;stroke-linecap:round;opacity:.9}
 .bkini{font-family:var(--title);font-weight:600;letter-spacing:.08em;
   font-size:calc(var(--bw) * .24);color:rgba(224,178,92,.5);line-height:1}
 /* tapa sin imagen: un recuadro grabado, como una encuadernación lisa */
@@ -547,6 +543,22 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .banner:not(.has)::before{inset:0;filter:none;opacity:1;
   background:radial-gradient(120% 100% at 20% 0%,rgba(224,178,92,.13),transparent 65%)}
 .banner:not(.has)::after{background:none}
+/* El marco dorado, estilo carta de D&D Beyond: doble línea (una gruesa por
+   fuera, una fina por dentro) bordeando todo el rectángulo del banner —la
+   tapa, el nombre, los botones, todo— con un adorno espejado en cada
+   esquina (un solo trazo dibujado una vez en book()/orn(), en app.js, y
+   repetido con CSS transform en las otras tres). Va en un div propio, no
+   en ::before/::after, porque esos ya están ocupados por el fondo. */
+.bnframe{position:absolute;inset:9px;z-index:2;pointer-events:none;border-radius:10px}
+.bnframe::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  border:2px solid var(--gold);opacity:.8}
+.bnframe::after{content:'';position:absolute;inset:5px;border-radius:6px;
+  border:1px solid var(--gold);opacity:.45}
+.bfo{position:absolute;width:22px;height:22px;color:var(--gold);opacity:.9}
+.bfo.tl{top:-2px;left:-2px}
+.bfo.tr{top:-2px;right:-2px;transform:scaleX(-1)}
+.bfo.bl{bottom:-2px;left:-2px;transform:scaleY(-1)}
+.bfo.br{bottom:-2px;right:-2px;transform:scale(-1,-1)}
 .bnin{position:relative;z-index:1;display:flex;gap:var(--s5);align-items:flex-end}
 .bntx{min-width:0;flex:1}
 .bntx h1{text-shadow:0 2px 20px rgba(13,16,21,.75)}

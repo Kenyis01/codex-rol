@@ -597,31 +597,27 @@ function prose(txt){
 
 /* ---------- portada estilo libro ----------
    Tapa vertical con lomo y sombra, no un avatar redondo. Si no hay imagen
-   (o si falla), queda la tapa en blanco con las iniciales de la campaña. */
-/* El marco dorado con florón en las esquinas: solo en la tapa grande del
-   banner, no en las miniaturas de la lista de campañas —a 42px de ancho no
-   entra ningún adorno. Una esquina dibujada una vez y espejada las otras
-   tres con transform, así el trazo es uno solo repetido, no cuatro
-   distintos. Las líneas no cierran el rectángulo a propósito: llegan hasta
-   la mitad de cada lado y ahí paran, como en la referencia. */
-const BOOKFRAME=`<svg class="bookframe" viewBox="0 0 200 300" aria-hidden="true">
-  <g id="bfc">
-    <path class="bf-out" d="M60,6 H22 Q6,6 6,22 V60"/>
-    <path class="bf-hook" d="M6,60 Q6,74 18,76"/>
-    <path class="bf-in" d="M52,22 H34 Q24,22 24,32 V48"/>
-  </g>
-  <use href="#bfc" transform="translate(200,0) scale(-1,1)"/>
-  <use href="#bfc" transform="translate(0,300) scale(1,-1)"/>
-  <use href="#bfc" transform="translate(200,300) scale(-1,-1)"/>
-</svg>`;
+   (o si falla), queda la tapa en blanco con las iniciales de la campaña.
+   El marco dorado va en el banner entero (ver orn() más abajo), no acá. */
 function book(c,extra){
   const cov=c&&c.cover_url;
   const cls='book'+(cov?'':' ph')+(extra?' '+extra:'');
   const img=cov?`<img src="${att(cov)}" alt="" loading="lazy" decoding="async"
     onerror="this.parentNode.classList.add('ph');this.remove()">`:'';
-  const marco=extra?'':BOOKFRAME;
-  return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}${marco}</div>`;
+  return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}</div>`;
 }
+/* El adorno de cada esquina del marco del banner: un solo trazo dibujado
+   una vez (curva gruesa, curva fina, una gema en la punta) y repetido en
+   las cuatro esquinas con clases que lo espejan por CSS (.bfo.tr/.bl/.br
+   en style.css), así el dibujo es uno solo, no cuatro distintos. */
+function orn(cls){
+  return `<svg class="bfo ${cls}" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M2,13 Q2,2 13,2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M5.5,13 Q5.5,5.5 13,5.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".55"/>
+    <rect x="-1.6" y="-1.6" width="3.2" height="3.2" fill="currentColor" transform="rotate(45)"/>
+  </svg>`;
+}
+const BNFRAME=`<div class="bnframe" aria-hidden="true">${orn('tl')}${orn('tr')}${orn('bl')}${orn('br')}</div>`;
 
 /* ================= HOME ================= */
 function vHome(){
@@ -729,7 +725,7 @@ function vIdx(){
               <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>`}
           </div>
         </div>
-      </div></div>`;
+      </div>${BNFRAME}</div>`;
   return `<div class="top"><div class="topin">
       <button class="back" data-act="home">${ic("camp")}Campañas</button>
       <label class="searchw">
@@ -1174,8 +1170,8 @@ function vEd(){
       La tecla de borrar también funciona.</div>`;
 
   return `<div class="top"><div class="topin">
-      <button class="back tag-l" data-act="cancel">Cancelar</button>
-      ${e?`<button class="back pri tag-r push" id="edsave" data-act="save"
+      <button class="back lozenge" data-act="cancel">Cancelar</button>
+      ${e?`<button class="back pri lozenge push" id="edsave" data-act="save"
           ${(st.busy||!dirty)?'disabled':''}>${st.busy?'Guardando…':'Guardar'}</button>`
         :`<span class="tag push">FICHA NUEVA</span>`}</div></div>
   <div class="page">
