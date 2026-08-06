@@ -606,18 +606,19 @@ function book(c,extra){
     onerror="this.parentNode.classList.add('ph');this.remove()">`:'';
   return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}</div>`;
 }
-/* El adorno de cada esquina del marco del banner: un solo trazo dibujado
-   una vez (curva gruesa, curva fina, una gema en la punta) y repetido en
-   las cuatro esquinas con clases que lo espejan por CSS (.bfo.tr/.bl/.br
-   en style.css), así el dibujo es uno solo, no cuatro distintos. */
-function orn(cls){
-  return `<svg class="bfo ${cls}" viewBox="0 0 16 16" aria-hidden="true">
-    <path d="M2,13 Q2,2 13,2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M5.5,13 Q5.5,5.5 13,5.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".55"/>
-    <rect x="-1.6" y="-1.6" width="3.2" height="3.2" fill="currentColor" transform="rotate(45)"/>
-  </svg>`;
-}
-const BNFRAME=`<div class="bnframe" aria-hidden="true">${orn('tl')}${orn('tr')}${orn('bl')}${orn('br')}</div>`;
+/* El marco no cierra el rectángulo: una doble línea que corre por arriba
+   y se curva hacia abajo en las dos esquinas, apagándose a mitad de los
+   costados (nunca llega a la base) —igual que en la carta de referencia.
+   El degradé de "bnfade" hace que el dorado se disuelva según baja. */
+const BNFRAME=`<svg class="bnframe" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+  <defs><linearGradient id="bnfade" gradientUnits="userSpaceOnUse" x1="0" y1="2" x2="0" y2="20">
+    <stop offset="0" stop-color="#E0B25C" stop-opacity="1"/>
+    <stop offset=".5" stop-color="#E0B25C" stop-opacity="1"/>
+    <stop offset="1" stop-color="#E0B25C" stop-opacity="0"/>
+  </linearGradient></defs>
+  <path class="bnf-out" d="M2,20 V8 Q2,2 8,2 H92 Q98,2 98,8 V20"/>
+  <path class="bnf-in" d="M7,20 V11 Q7,7 11,7 H89 Q93,7 93,11 V20"/>
+</svg>`;
 
 /* ================= HOME ================= */
 function vHome(){
@@ -1170,8 +1171,8 @@ function vEd(){
       La tecla de borrar también funciona.</div>`;
 
   return `<div class="top"><div class="topin">
-      <button class="back lozenge" data-act="cancel">Cancelar</button>
-      ${e?`<button class="back pri lozenge push" id="edsave" data-act="save"
+      <button class="back" data-act="cancel">Cancelar</button>
+      ${e?`<button class="back pri ptr push" id="edsave" data-act="save"
           ${(st.busy||!dirty)?'disabled':''}>${st.busy?'Guardando…':'Guardar'}</button>`
         :`<span class="tag push">FICHA NUEVA</span>`}</div></div>
   <div class="page">
