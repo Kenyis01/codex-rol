@@ -606,18 +606,27 @@ function book(c,extra){
     onerror="this.parentNode.classList.add('ph');this.remove()">`:'';
   return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}</div>`;
 }
-/* El marco no cierra el rectángulo: una doble línea que corre por arriba
-   y se curva hacia abajo en las dos esquinas, apagándose a mitad de los
-   costados (nunca llega a la base) —igual que en la carta de referencia.
-   El degradé de "bnfade" hace que el dorado se disuelva según baja. */
+/* El marco no cierra el rectángulo: dos líneas que corren por arriba y se
+   curvan en las esquinas, apagándose (degradé) a mitad de los costados,
+   sin llegar a la base —igual que "Stroke back"/"Stroke front" en la
+   referencia de Figma. Ahí son dos capas distintas: la de atrás va más
+   pegada al borde, dorado más rico, se apaga rápido; la de adelante va
+   un poco más adentro, más pálida, y se apaga mucho más abajo. */
 const BNFRAME=`<svg class="bnframe" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-  <defs><linearGradient id="bnfade" gradientUnits="userSpaceOnUse" x1="0" y1="2" x2="0" y2="20">
-    <stop offset="0" stop-color="#E0B25C" stop-opacity="1"/>
-    <stop offset=".5" stop-color="#E0B25C" stop-opacity="1"/>
-    <stop offset="1" stop-color="#E0B25C" stop-opacity="0"/>
-  </linearGradient></defs>
-  <path class="bnf-out" d="M2,20 V8 Q2,2 8,2 H92 Q98,2 98,8 V20"/>
-  <path class="bnf-in" d="M7,20 V11 Q7,7 11,7 H89 Q93,7 93,11 V20"/>
+  <defs>
+    <linearGradient id="bnfade-out" gradientUnits="userSpaceOnUse" x1="0" y1="1" x2="0" y2="16">
+      <stop offset="0" stop-color="#E0B25C" stop-opacity="1"/>
+      <stop offset=".5" stop-color="#E0B25C" stop-opacity="1"/>
+      <stop offset="1" stop-color="#E0B25C" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bnfade-in" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="26">
+      <stop offset="0" stop-color="#D8C9A3" stop-opacity="1"/>
+      <stop offset=".5" stop-color="#D8C9A3" stop-opacity="1"/>
+      <stop offset="1" stop-color="#D8C9A3" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path class="bnf-out" d="M1,16 V7 Q1,1 7,1 H93 Q99,1 99,7 V16"/>
+  <path class="bnf-in" d="M6,26 V10 Q6,6 10,6 H90 Q94,6 94,10 V26"/>
 </svg>`;
 
 /* ================= HOME ================= */

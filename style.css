@@ -6,7 +6,7 @@
 
 :root{
   /* ---- superficies ---- */
-  --bg:#0D1015; --bg2:#11151C; --surf:#171C25; --surf2:#1E242F; --surf3:#28303E;
+  --bg:#141C20; --bg2:#11151C; --surf:#232B2F; --surf2:#1E242F; --surf3:#28303E;
   --line:#262E3B; --line2:#39445A;
 
   /* ---- tinta (4 niveles, nada más) ---- */
@@ -547,10 +547,10 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    los costados —nunca llega abajo. Va como SVG (ver BNFRAME en app.js)
    estirado a todo el ancho, con degradé de opacidad para el apagado. */
 .bnframe{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-.bnf-out{fill:none;stroke:url(#bnfade);stroke-width:2.4;stroke-linecap:round;
+.bnf-out{fill:none;stroke:url(#bnfade-out);stroke-width:2;stroke-linecap:round;
   vector-effect:non-scaling-stroke}
-.bnf-in{fill:none;stroke:url(#bnfade);stroke-width:1.1;stroke-linecap:round;
-  vector-effect:non-scaling-stroke;opacity:.8}
+.bnf-in{fill:none;stroke:url(#bnfade-in);stroke-width:1.2;stroke-linecap:round;
+  vector-effect:non-scaling-stroke;opacity:.85}
 .bnin{position:relative;z-index:1;display:flex;gap:var(--s5);align-items:flex-end}
 .bntx{min-width:0;flex:1}
 .bntx h1{text-shadow:0 2px 20px rgba(13,16,21,.75)}
