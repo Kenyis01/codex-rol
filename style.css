@@ -942,27 +942,37 @@ canvas.pointing{cursor:pointer}
 .toast.err{background:linear-gradient(160deg,#EE8388,var(--faction));color:#2A0C0E;border-color:transparent}
 
 /* ============ nav inferior ============ */
-/* El fondo opaco es CSS liso: así el contenido que scrollea detrás no asoma
-   por el hundido de la curva. La curva es solo el filo dorado, un <svg>
-   decorativo encima — un borde normal no puede ir "solo arriba" de una forma
-   con lomo. El <svg> estira sin distorsionar porque el trazo lleva
-   vector-effect:non-scaling-stroke. Va al 95%: se nota apenas que hay algo
-   detrás, sin que se lea. */
+/* Una sola pieza: el relleno y el filo dorado son el mismo trazado, así que
+   por definición no puede sobresalir uno del otro. Arriba de la curva no hay
+   nada —ahí abajo se ve lo que scrollea, a propósito— pero nunca por encima
+   del filo, porque el filo ES el borde del relleno. Va al 95%: se nota apenas
+   que hay algo detrás, sin que se lea. */
+/* height fijo + padding-bottom no se llevan bien con box-sizing:border-box
+   (línea 68): el padding le come alto al contenido en vez de sumarse, y en un
+   celular con home indicator la barra quedaba más baja de lo pensado. Con
+   calc(), el padding solo empuja hacia abajo, nunca resta. */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:30;
+  height:calc(72px + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom)}
+/* la franja bajo los 72px —el safe-area— no tiene curva que dibujar, así que
+   va lisa, con el mismo tono */
+.nav::after{content:'';position:absolute;top:72px;left:0;right:0;bottom:0;
+  background:color-mix(in srgb,var(--bg) 95%,transparent)}
+/* left/right no alcanza para estirarlo: un <svg> es un elemento reemplazado
+   y esas dos propiedades solas no le cambian el ancho, como sí harían con un
+   <div>. Hace falta width:100% a mano. El viewBox mide lo mismo que el alto
+   real (72) para que preserveAspectRatio:none solo estire a lo ancho. */
+.navbg{position:absolute;top:0;left:0;width:100%;height:72px;display:block}
+.navbg-fill{fill:color-mix(in srgb,var(--bg) 95%,transparent)}
+.navbg-edge{fill:none;stroke:url(#navGlow);stroke-width:1.5px;stroke-linecap:round;
+  vector-effect:non-scaling-stroke}
 /* La franja de la curva y la fila de íconos son dos bloques apilados, no uno
    solo: si comparten alto, la curva cruza los íconos apenas la barra es
    angosta. Pero la franja mide justo lo que baja la curva, ni un pixel más:
    si sobra alto ahí, los íconos quedan centrados en la mitad de abajo en vez
-   de en toda la barra, y se ven tirados para abajo. */
-.nav{position:fixed;bottom:0;left:0;right:0;z-index:30;height:72px;
-  background:color-mix(in srgb,var(--bg) 95%,transparent);
-  padding-bottom:env(safe-area-inset-bottom)}
-/* left/right no alcanza para estirarlo: un <svg> es un elemento reemplazado
-   y esas dos propiedades solas no le cambian el ancho, como sí harían con un
-   <div>. Hace falta width:100% a mano. */
-.navbg{position:absolute;top:0;left:0;width:100%;height:16px;display:block}
-.navbg-edge{fill:none;stroke:url(#navGlow);stroke-width:1.5px;stroke-linecap:round;
-  vector-effect:non-scaling-stroke}
-.navin{position:absolute;top:16px;left:0;right:0;bottom:0;max-width:var(--appmax);margin:0 auto;
+   de en toda la barra, y se ven tirados para abajo. Alto fijo (no bottom:0)
+   para que no se estire hacia el safe-area. */
+.navin{position:absolute;top:16px;left:0;right:0;height:56px;max-width:var(--appmax);margin:0 auto;
   display:grid;grid-template-columns:repeat(3,1fr)}
 .nb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:var(--s1);height:100%;background:none;border:none;cursor:pointer;
