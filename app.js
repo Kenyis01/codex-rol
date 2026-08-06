@@ -916,6 +916,24 @@ async function saveCamp(){
 }
 
 /* ================= EDITOR ================= */
+/* Instantánea comparable del estado del editor. Guardar (arriba, en una
+   ficha que ya existe) solo se habilita si esto cambió respecto de cuando
+   se abrió: así un chip que se prende y se apaga de nuevo, o abrir y cerrar
+   sin tocar nada, no dejan el botón habilitado por las dudas. */
+function firmaEd(E,e){
+  const name=(E.dn!==undefined?E.dn:(e?e.n:'')).trim();
+  const body=E.db!==undefined?E.db:(e?e.b:'');
+  const notes=E.dc!==undefined?E.dc:(e?e.c:'');
+  const img=E.img!==undefined?E.img:(e?e.img:null);
+  const isPc=E.pc!==undefined?!!E.pc:(e?!!e.pc:false);
+  const isGm=E.gm!==undefined?!!E.gm:(e?!!e.gm:false);
+  const type=E.type!==undefined?E.type:(e?e.t:'character');
+  return JSON.stringify({name,body,notes,img,isPc,isGm,type,
+    at:limpiarAtrs(E.at||{}),
+    tags:(E.tags||[]).slice().sort(),
+    als:(E.als||[]).slice().sort(),
+    rels:(E.rels||[]).map(x=>x.a+'|'+x.l).sort()});
+}
 function edit(slug){
   const e=slug?byS[slug]:null;
   /* objeto nuevo: sin _live, no arrastra borradores. Estado y etiquetas se
@@ -926,6 +944,7 @@ function edit(slug){
     als:((e&&e.a)||[]).slice(),
     rels:e?REL.filter(x=>x.de===e.s).map(x=>({id:x.id,a:x.a,l:x.l})):[],
     base:(e&&e.up)||null};   // versión sobre la que estoy editando
+  st.editing.orig=firmaEd(st.editing,e);
   st.dup=null;
   apilar();st.tab='ed';st.ac=null;st.acPick=null;r();alTope();marcarNav();
 }
@@ -939,6 +958,10 @@ function vEd(){
   const isGm=E.gm!==undefined?!!E.gm:(e?!!e.gm:false);
   const type=E.type!==undefined?E.type:(e?e.t:'character');
   const prev={n:name||'?',t:type,img};
+  /* Guardar solo se habilita si hay algo distinto de cuando se abrió. En una
+     ficha nueva no aplica —no hay "antes" con que comparar— así que sigue
+     con el botón de siempre, abajo del todo. */
+  const dirty=e?firmaEd(E,e)!==E.orig:true;
   /* Tres pestañas y no una página larga: quién es (retrato, nombre, tipo,
      grupo, vínculos), cómo es (atributos, estado, etiquetas) y qué se
      escribió (descripción, comentarios). Guardar queda siempre a la vista,
@@ -1135,14 +1158,16 @@ function vEd(){
 
   return `<div class="top"><div class="topin">
       <button class="back" data-act="cancel">Cancelar</button>
-      <span class="tag push">${e?'EDITANDO':'FICHA NUEVA'}</span></div></div>
+      ${e?`<button class="back pri push" id="edsave" data-act="save"
+          ${(st.busy||!dirty)?'disabled':''}>${st.busy?'Guardando…':'Guardar'}</button>`
+        :`<span class="tag push">FICHA NUEVA</span>`}</div></div>
   <div class="page">
     <div class="segrow"><div class="seg">${
       tabs.map(([k,l])=>`<button class="${T===k?'on':''}"
         data-act="edtab" data-v="${k}">${esc(l)}</button>`).join('')}</div></div>
     ${T==='id'?identidad:T==='det'?detalles:texto}
-    <div class="savebar"><button class="btn pri" data-act="save" ${st.busy?'disabled':''}>
-      ${st.busy?'Guardando…':'Guardar'}</button></div>
+    ${e?'':`<div class="savebar"><button class="btn pri" data-act="save" ${st.busy?'disabled':''}>
+      ${st.busy?'Guardando…':'Guardar'}</button></div>`}
   </div>`;
 }
 
@@ -1330,6 +1355,19 @@ function onNombre(el){
   if(st.editing)st.editing.dn=el.value;
   const box=document.getElementById('dupw');
   if(box)box.innerHTML=avisoParecidas(el.value);
+  syncSave();
+}
+/* Prende o apaga el botón de Guardar de arriba a medida que se escribe, sin
+   redibujar el editor —eso también perdería el cursor, esta vez en la
+   descripción o los comentarios. */
+function syncSave(){
+  if(!st.editing)return;
+  const btn=document.getElementById('edsave');
+  if(!btn)return;
+  keepDraft();
+  const e=st.editing.slug?byS[st.editing.slug]:null;
+  const dirty=e?firmaEd(st.editing,e)!==st.editing.orig:true;
+  btn.disabled=!!st.busy||!dirty;
 }
 /* Solo al crear: si ya existe la ficha, este aviso rápido cambia el borrador
    entero por el de la otra ficha, sin la vista previa que sí tiene "Es la
@@ -1385,6 +1423,7 @@ function atrEscrito(el){
   st.editing.at=st.editing.at||{};
   const v=claveAtr(a.tb,el.value);
   if(v)st.editing.at[k]=v;else delete st.editing.at[k];
+  syncSave();
 }
 function atrKey(ev,k){
   if(ev.key!=='Enter')return;
@@ -1586,6 +1625,7 @@ function onEd(el){
   st.ac=c?{f:el.id,q:c.q,hits:find(c.q)}:null;
   if(!c)st.acPick=null;
   paintAC();
+  syncSave();
 }
 function paintAC(){
   document.querySelectorAll('.ac').forEach(n=>n.remove());

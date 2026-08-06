@@ -160,6 +160,12 @@ body{
 /* con icono el botón arranca antes: el dibujo ya aporta el aire de la izquierda */
 .back:has(.gi){padding-left:var(--s3)}
 @media(hover:hover){.back:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
+/* Guardar de una ficha que ya existe: mismo tamaño que "Cancelar", al lado,
+   pero dorado como el de siempre y apagado hasta que haya algo para guardar. */
+.back.pri{background:linear-gradient(160deg,#F0D9A8,var(--gold));
+  color:#20180A;border-color:transparent;font-weight:600}
+.back.pri:disabled{opacity:.45;cursor:default}
+@media(hover:hover){.back.pri:not(:disabled):hover{filter:brightness(1.07)}}
 .sfield{height:var(--h-md);width:100%;background:var(--surf);border-color:var(--line);
   color:var(--ink);border-radius:var(--r2);padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--body);outline:none}
