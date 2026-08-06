@@ -272,8 +272,17 @@ function score(q,cand){
   if(toks.some(t=>t.startsWith(q)))return .92;
   if(cand.includes(q))return .84;
   let best=0;
+  /* Comparar contra una sola palabra suelta de un nombre compuesto (p. ej.
+     el apellido de un alias con dos palabras) es más débil que comparar
+     contra el nombre entero: si el resto del nombre no se parece en nada,
+     no alcanza con que esa palabra sí. Por eso resta .08, lo mismo que ya
+     restaba el otro camino. Sin la resta, "Lalwen" pasaba el umbral contra
+     "Halden" —la mitad del alias "Nicolás Halden"— por pura coincidencia de
+     letras, aunque no suenan ni remotamente parecidos. */
   [cand,...toks].forEach(t=>{if(Math.abs(t.length-q.length)>3)return;
-    const v=1-dl(q,t)/Math.max(q.length,t.length,1);if(v>best)best=v});
+    const v=1-dl(q,t)/Math.max(q.length,t.length,1);
+    const penal=(t!==cand&&toks.length>1)?.08:0;
+    if(v-penal>best)best=v-penal});
   [cand,...toks].forEach(t=>{if(t.length<=q.length)return;
     const v=1-dl(q,t.slice(0,q.length))/q.length;if(v-.08>best)best=v-.08});
   return best;
@@ -930,10 +939,14 @@ function vEd(){
   const isGm=E.gm!==undefined?!!E.gm:(e?!!e.gm:false);
   const type=E.type!==undefined?E.type:(e?e.t:'character');
   const prev={n:name||'?',t:type,img};
-  return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancel">Cancelar</button>
-      <span class="tag push">${e?'EDITANDO':'FICHA NUEVA'}</span></div></div>
-  <div class="page">
+  /* Tres pestañas y no una página larga: quién es (retrato, nombre, tipo,
+     grupo, vínculos), cómo es (atributos, estado, etiquetas) y qué se
+     escribió (descripción, comentarios). Guardar queda siempre a la vista,
+     no es de ninguna pestaña en particular. */
+  const T=E.edtab||'id';
+  const tabs=[['id','Identidad'],['det','Detalles'],['tx','Texto']];
+
+  const identidad=`
     <div class="eyebrow">Retrato</div>
     <div class="imgrow">
       ${av(prev,AV.hero,isGm?{big:1,gmring:1}:{big:1})}
@@ -946,7 +959,7 @@ function vEd(){
         ${img?'':`<div class="hint">Sin foto se usan las iniciales.</div>`}
       </div></div>
 
-    <div class="eyebrow">Nombre</div>
+    <div class="eyebrow mt">Nombre</div>
     <input class="sfield" id="fn" value="${att(name)}" placeholder="Nombre de la ficha"
       oninput="onNombre(this)">
     <div id="dupw">${avisoParecidas(name)}</div>
@@ -1003,7 +1016,17 @@ function vEd(){
       ${isPc?ic('check'):''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
     <button class="btn sec2 gm ${isGm?'on':''}" data-act="gm">
       ${isGm?ic('check'):''}Es el Máster</button>
+    ${e?`<div class="sec">
+      <button class="btn sec2" data-act="fusion" data-v="${att(e.s)}">
+        Es la misma que otra ficha</button>
+      <div class="hint">Junta las dos: el texto, los otros nombres, los vínculos
+        y las menciones se mudan a la que elijas, y esta se archiva.</div>
+      <button class="btn peligro mt" data-act="borrar" data-v="${att(e.s)}">
+        Borrar ficha</button>
+      <div class="hint">Deja de aparecer en todos lados. No se borra de la base:
+        si te arrepentís, avisame y la traigo de vuelta.</div></div>`:''}`;
 
+  const detalles=`
     ${(()=>{
       /* Solo para personajes de la partida: al resto (NPCs, aliados, rivales)
          no le interesan estos datos. La sección igual aparece si la ficha ya
@@ -1078,9 +1101,10 @@ function vEd(){
     </div>
     <div class="hint">Escribí y presioná Enter. Va donde las de arriba no
       alcanzan: "nos debe plata", "no confiar". Estas van sin dibujo; si alguna
-      se repite mucho, la sumamos a la lista con el suyo.</div>
+      se repite mucho, la sumamos a la lista con el suyo.</div>`;
 
-    <div class="eyebrow mt">Descripción — qué es</div>
+  const texto=`
+    <div class="eyebrow">Descripción — qué es</div>
     <div class="acwrap">
       <div class="ed" id="edB" contenteditable="true"
         data-ph="Escribí acá. Poné @ para enlazar con otra ficha."
@@ -1094,16 +1118,16 @@ function vEd(){
     </div>
     <div class="hint">Escribí @ y las primeras letras. Encuentra igual si le errás.<br>
       Para sacar un nombre ya enlazado, tocalo una vez (queda marcado) y tocalo de nuevo.
-      La tecla de borrar también funciona.</div>
-    ${e?`<div class="sec">
-      <button class="btn sec2" data-act="fusion" data-v="${att(e.s)}">
-        Es la misma que otra ficha</button>
-      <div class="hint">Junta las dos: el texto, los otros nombres, los vínculos
-        y las menciones se mudan a la que elijas, y esta se archiva.</div>
-      <button class="btn peligro mt" data-act="borrar" data-v="${att(e.s)}">
-        Borrar ficha</button>
-      <div class="hint">Deja de aparecer en todos lados. No se borra de la base:
-        si te arrepentís, avisame y la traigo de vuelta.</div></div>`:''}
+      La tecla de borrar también funciona.</div>`;
+
+  return `<div class="top"><div class="topin">
+      <button class="back" data-act="cancel">Cancelar</button>
+      <span class="tag push">${e?'EDITANDO':'FICHA NUEVA'}</span></div></div>
+  <div class="page">
+    <div class="segrow"><div class="seg">${
+      tabs.map(([k,l])=>`<button class="${T===k?'on':''}"
+        data-act="edtab" data-v="${k}">${esc(l)}</button>`).join('')}</div></div>
+    ${T==='id'?identidad:T==='det'?detalles:texto}
     <div class="savebar"><button class="btn pri" data-act="save" ${st.busy?'disabled':''}>
       ${st.busy?'Guardando…':'Guardar'}</button></div>
   </div>`;
@@ -1294,8 +1318,13 @@ function onNombre(el){
   const box=document.getElementById('dupw');
   if(box)box.innerHTML=avisoParecidas(el.value);
 }
+/* Solo al crear: si ya existe la ficha, este aviso rápido cambia el borrador
+   entero por el de la otra ficha, sin la vista previa que sí tiene "Es la
+   misma que otra ficha". Editando una que ya existe, ese atajo queda
+   demasiado brusco —y encima competía con esa otra opción, que hace lo
+   mismo con más cuidado— así que ahí el único camino es ese botón. */
 function avisoParecidas(nombre){
-  const E=st.editing;if(!E)return '';
+  const E=st.editing;if(!E||!E.isNew)return '';
   const c=parecidas(nombre,E.slug);
   if(!c.length)return '';
   return `<div class="warn">
@@ -1608,13 +1637,17 @@ function autoSummary(body){
 }
 async function save(pisar){
   if(st.busy)return;
-  const nameEl=document.getElementById('fn');
-  const name=nameEl?nameEl.value.trim():'';
-  if(!name){toast('Falta el nombre','err');return}
-  const body=fromDOM(document.getElementById('edB'));
-  const notes=fromDOM(document.getElementById('edC'));
+  /* Nombre, cuerpo y comentarios pueden vivir en pestañas que ahora mismo no
+     están en pantalla —Guardar es de afuera de las tres—, así que no hay que
+     leerlos del DOM sino del borrador. keepDraft() rescata primero lo que sí
+     está a la vista. */
+  keepDraft();
   const E=st.editing;
   const e=E.slug?byS[E.slug]:null;
+  const name=(E.dn!==undefined?E.dn:(e?e.n:'')).trim();
+  if(!name){toast('Falta el nombre','err');return}
+  const body=E.db!==undefined?E.db:(e?e.b:'');
+  const notes=E.dc!==undefined?E.dc:(e?e.c:'');
   const type=E.type!==undefined?E.type:(e?e.t:'character');
   const img=E.img!==undefined?E.img:(e?e.img:null);
   const pc=E.pc!==undefined?!!E.pc:(e?!!e.pc:false);
@@ -1625,8 +1658,9 @@ async function save(pisar){
   alsAdd(document.getElementById('alsin')||{value:''});
   const tags=(E.tags||[]).slice();
   /* Antes de crear una ficha nueva: si hay alguna parecida, se pregunta. Solo
-     al crear — renombrar una que ya existe es otra cosa y ahí el aviso de
-     arriba alcanza. E.igual queda marcado si ya dijo que es otra. */
+     al crear — renombrar una que ya existe es otra cosa, y si en verdad es la
+     misma que otra ficha ya cargada, "Es la misma que otra ficha" hace ese
+     trabajo con vista previa. E.igual queda marcado si ya dijo que es otra. */
   if(!e&&!E.igual){
     const c=parecidas(name,null);
     if(c.length){st.dup={name,cands:c};r();return}
@@ -3362,6 +3396,7 @@ const ACT={
   cancel:()=>cerrar(),
   save,
   type:v=>{keepDraft();st.editing.type=v;r()},
+  edtab:v=>{keepDraft();st.editing.edtab=v;r()},
   /* data-v viene como "clase:mago"; sin valor, lo borra */
   atr:v=>{keepDraft();
     const i=v.indexOf(':'), k=v.slice(0,i), x=v.slice(i+1);
