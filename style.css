@@ -166,6 +166,16 @@ body{
   color:#20180A;border-color:transparent;font-weight:600}
 .back.pri:disabled{opacity:.45;cursor:default}
 @media(hover:hover){.back.pri:not(:disabled):hover{filter:brightness(1.07)}}
+/* Botones con punta, como el "select" de una carta de D&D Beyond: en vez de
+   un rectángulo, una banderita que apunta hacia la acción. clip-path corta
+   la punta; el lado sin punta conserva el borde redondeado normal porque
+   ahí el recorte coincide exacto con el borde de la caja. */
+.tag-r{--pt:14px;border-radius:var(--r2) 0 0 var(--r2);
+  padding-right:calc(var(--s4) + var(--pt));
+  clip-path:polygon(0 0,calc(100% - var(--pt)) 0,100% 50%,calc(100% - var(--pt)) 100%,0 100%)}
+.tag-l{--pt:14px;border-radius:0 var(--r2) var(--r2) 0;
+  padding-left:calc(var(--s4) + var(--pt));
+  clip-path:polygon(var(--pt) 0,100% 0,100% 100%,var(--pt) 100%,0 50%)}
 .sfield{height:var(--h-md);width:100%;background:var(--surf);border-color:var(--line);
   color:var(--ink);border-radius:var(--r2);padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--body);outline:none}
@@ -506,6 +516,16 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 /* barniz: un brillo diagonal muy tenue */
 .book::after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
   background:linear-gradient(118deg,rgba(255,255,255,.15),transparent 38%)}
+/* El marco ornamental: una esquina dibujada en el SVG (ver book() en
+   app.js) y espejada tres veces. Va por encima del barniz (z-index 3), y
+   las líneas no llegan a cerrar el rectángulo —terminan a mitad de cada
+   lado, con un rulito en la punta— para que se lea como un adorno y no
+   como un borde común. */
+.bookframe{position:absolute;inset:0;width:100%;height:100%;z-index:4;
+  pointer-events:none}
+.bf-in{fill:none;stroke:var(--gold);stroke-width:1.5;stroke-linecap:round;opacity:.85}
+.bf-out{fill:none;stroke:var(--gold);stroke-width:4.5;stroke-linecap:round;opacity:.9}
+.bf-hook{fill:none;stroke:var(--gold);stroke-width:4.5;stroke-linecap:round;opacity:.9}
 .bkini{font-family:var(--title);font-weight:600;letter-spacing:.08em;
   font-size:calc(var(--bw) * .24);color:rgba(224,178,92,.5);line-height:1}
 /* tapa sin imagen: un recuadro grabado, como una encuadernación lisa */

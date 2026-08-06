@@ -598,12 +598,29 @@ function prose(txt){
 /* ---------- portada estilo libro ----------
    Tapa vertical con lomo y sombra, no un avatar redondo. Si no hay imagen
    (o si falla), queda la tapa en blanco con las iniciales de la campaña. */
+/* El marco dorado con florón en las esquinas: solo en la tapa grande del
+   banner, no en las miniaturas de la lista de campañas —a 42px de ancho no
+   entra ningún adorno. Una esquina dibujada una vez y espejada las otras
+   tres con transform, así el trazo es uno solo repetido, no cuatro
+   distintos. Las líneas no cierran el rectángulo a propósito: llegan hasta
+   la mitad de cada lado y ahí paran, como en la referencia. */
+const BOOKFRAME=`<svg class="bookframe" viewBox="0 0 200 300" aria-hidden="true">
+  <g id="bfc">
+    <path class="bf-out" d="M60,6 H22 Q6,6 6,22 V60"/>
+    <path class="bf-hook" d="M6,60 Q6,74 18,76"/>
+    <path class="bf-in" d="M52,22 H34 Q24,22 24,32 V48"/>
+  </g>
+  <use href="#bfc" transform="translate(200,0) scale(-1,1)"/>
+  <use href="#bfc" transform="translate(0,300) scale(1,-1)"/>
+  <use href="#bfc" transform="translate(200,300) scale(-1,-1)"/>
+</svg>`;
 function book(c,extra){
   const cov=c&&c.cover_url;
   const cls='book'+(cov?'':' ph')+(extra?' '+extra:'');
   const img=cov?`<img src="${att(cov)}" alt="" loading="lazy" decoding="async"
     onerror="this.parentNode.classList.add('ph');this.remove()">`:'';
-  return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}</div>`;
+  const marco=extra?'':BOOKFRAME;
+  return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}${marco}</div>`;
 }
 
 /* ================= HOME ================= */
@@ -1157,8 +1174,8 @@ function vEd(){
       La tecla de borrar también funciona.</div>`;
 
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancel">Cancelar</button>
-      ${e?`<button class="back pri push" id="edsave" data-act="save"
+      <button class="back tag-l" data-act="cancel">Cancelar</button>
+      ${e?`<button class="back pri tag-r push" id="edsave" data-act="save"
           ${(st.busy||!dirty)?'disabled':''}>${st.busy?'Guardando…':'Guardar'}</button>`
         :`<span class="tag push">FICHA NUEVA</span>`}</div></div>
   <div class="page">
