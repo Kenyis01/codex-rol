@@ -764,6 +764,11 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   background:radial-gradient(120% 90% at 50% 0%,rgba(224,178,92,.05),transparent 60%),
              linear-gradient(to bottom,var(--bg2),var(--bg))}
 .gwrap.full{position:fixed;inset:0;z-index:70;border:none;background:var(--bg)}
+/* #app > * (línea 118) le pone max-width:var(--appmax) a todo hijo directo,
+   para centrar el contenido normal — acá hace que el grafo en pantalla
+   completa se quede angosto en vez de ocupar todo. #app le gana en
+   especificidad a .gwrap.full solo, así que hace falta igualarla. */
+#app>.gwrap.full{max-width:none;margin-inline:0}
 /* sin la nav abajo, la tarjeta se apoya en el borde real de la pantalla */
 .gwrap.full .gcard{bottom:calc(var(--s3) + env(safe-area-inset-bottom))}
 canvas{display:block;width:100%;touch-action:none;cursor:grab}
@@ -776,6 +781,7 @@ canvas.pointing{cursor:pointer}
   background:rgba(30,36,47,.85);backdrop-filter:blur(8px);
   border-color:var(--line2);color:var(--muted)}
 @media(hover:hover){.gzoom button:hover{color:var(--ink);background:var(--surf3)}}
+.gzoom button.on{color:var(--gold);border-color:rgba(224,178,92,.55)}
 .gzoom .gi{width:17px;height:17px}
 /* la mira anterior era de trazo fino y necesitaba ir más grande; esta es
    maciza como el resto de la columna, así que va al mismo tamaño */

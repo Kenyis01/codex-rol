@@ -2465,8 +2465,10 @@ function vGrafo(){
   <div class="gwrap" id="gwrap">
     <canvas id="cv"></canvas>
     <div class="gzoom">
-      <button data-act="zoom" data-v="in" aria-label="Acercar">${ic('mas')}</button>
-      <button data-act="zoom" data-v="out" aria-label="Alejar">${ic('menos')}</button>
+      <button id="ggroupsbtn" data-act="ggrupos" class="${G.verGrupos?'on':''}"
+        aria-label="${G.verGrupos?'Ocultar grupos':'Mostrar grupos'}"
+        title="${G.verGrupos?'Ocultar grupos':'Mostrar grupos'}"
+        aria-pressed="${G.verGrupos}">${ic('grupos')}</button>
       <button data-act="fit" aria-label="Encuadrar" title="Encuadrar">${ic('crosshair')}</button>
       <button data-act="reheat" aria-label="Reordenar" title="Reordenar">${ic('cycle')}</button>
       <button data-act="full" aria-label="${G.full?'Salir de pantalla completa':'Pantalla completa'}"
@@ -2517,8 +2519,6 @@ function gControls(){
 /* las acciones van juntas y al final, para que no se confundan con los filtros */
 function gAcciones(){
   return `<div class="gfila acciones">
-    <button class="gbtn ${G.verGrupos?'on':''}" data-act="ggrupos">
-      ${ic('mesh')}Grupos</button>
     <button class="gbtn" data-act="gexport">${ic('scroll')}Guardar imagen</button>
     ${G.pin.size?`<button class="gbtn" data-act="gsoltar">
       Soltar ${G.pin.size} clavada${G.pin.size===1?'':'s'}</button>`:''}
@@ -3522,7 +3522,6 @@ const ACT={
     gRefrescar();gBuild();gCard();
   },
   reheat:()=>{G.pos={};gBuild();},
-  zoom:v=>gZoom(v==='in'?1.3:1/1.3),
   fit:()=>{G.autofit=false;gFit();gDraw()},
   full:gFull,
   gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()},
@@ -3534,6 +3533,11 @@ const ACT={
   ggrupos:()=>{G.verGrupos=!G.verGrupos;
     G.grupos=G.verGrupos?detectarGrupos(G.nodes,G.edges):null;
     gRefrescar();gPaint();
+    /* el botón vive en .gzoom, que gRefrescar() no toca — se prende solo */
+    const gb=document.getElementById('ggroupsbtn');
+    if(gb){gb.classList.toggle('on',G.verGrupos);
+      const t=G.verGrupos?'Ocultar grupos':'Mostrar grupos';
+      gb.title=t;gb.setAttribute('aria-label',t);gb.setAttribute('aria-pressed',G.verGrupos)}
     if(G.verGrupos)toast((G.grupos&&G.grupos.length||0)+' grupos',null);},
   gcentrar:v=>{gCenter(v);r();alTope()},
   center:()=>{},
