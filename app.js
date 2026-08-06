@@ -947,25 +947,7 @@ function vEd(){
   const tabs=[['id','Identidad'],['det','Detalles'],['tx','Texto']];
 
   const identidad=`
-    <div class="eyebrow">Tipo</div>
-    <div class="btnrow">${
-      /* el tipo que tenga esta ficha entra siempre, aunque sea el único que
-         lo use y todavía no esté guardado */
-      tiposTodos().concat(type&&tiposTodos().indexOf(type)<0?[type]:[])
-      .map(t=>`<button class="gbtn ${type===t?'on':''}"
-        style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
-        data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}
-      <button class="gbtn ico" data-act="tiponuevo"
-        aria-label="Crear otro tipo" title="Crear otro tipo">${ic('mas')}</button></div>
-    ${E.tipoNuevo?`<div class="relnew">
-      <input class="sfield" id="tipoN" placeholder="Casa noble, deidad, taberna…"
-        onkeydown="tipoKey(event)" autofocus>
-      <div class="hint">Queda disponible para el resto de las fichas.</div>
-    </div>`:''}
-    <div class="hint">Va primero porque decide qué más te va a pedir: un lugar
-      no es del grupo ni tiene raza o clase, así que directamente no se ofrece.</div>
-
-    <div class="eyebrow mt">Retrato</div>
+    <div class="eyebrow">Retrato</div>
     <div class="imgrow">
       ${av(prev,AV.hero,isGm?{big:1,gmring:1}:{big:1})}
       <div class="grow">
@@ -981,6 +963,24 @@ function vEd(){
     <input class="sfield" id="fn" value="${att(name)}" placeholder="Nombre de la ficha"
       oninput="onNombre(this)">
     <div id="dupw">${avisoParecidas(name)}</div>
+
+    <div class="eyebrow mt">Tipo</div>
+    <div class="btnrow">${
+      /* el tipo que tenga esta ficha entra siempre, aunque sea el único que
+         lo use y todavía no esté guardado */
+      tiposTodos().concat(type&&tiposTodos().indexOf(type)<0?[type]:[])
+      .map(t=>`<button class="gbtn ${type===t?'on':''}"
+        style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
+        data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}
+      <button class="gbtn ico" data-act="tiponuevo"
+        aria-label="Crear otro tipo" title="Crear otro tipo">${ic('mas')}</button></div>
+    ${E.tipoNuevo?`<div class="relnew">
+      <input class="sfield" id="tipoN" placeholder="Casa noble, deidad, taberna…"
+        onkeydown="tipoKey(event)" autofocus>
+      <div class="hint">Queda disponible para el resto de las fichas.</div>
+    </div>`:''}
+    <div class="hint">Decide qué más te va a pedir: un lugar no es del grupo
+      ni tiene raza o clase, así que directamente no se ofrece.</div>
 
     <div class="eyebrow mt">Otros nombres</div>
     <div class="tagbox">
