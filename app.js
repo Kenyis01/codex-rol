@@ -947,7 +947,25 @@ function vEd(){
   const tabs=[['id','Identidad'],['det','Detalles'],['tx','Texto']];
 
   const identidad=`
-    <div class="eyebrow">Retrato</div>
+    <div class="eyebrow">Tipo</div>
+    <div class="btnrow">${
+      /* el tipo que tenga esta ficha entra siempre, aunque sea el único que
+         lo use y todavía no esté guardado */
+      tiposTodos().concat(type&&tiposTodos().indexOf(type)<0?[type]:[])
+      .map(t=>`<button class="gbtn ${type===t?'on':''}"
+        style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
+        data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}
+      <button class="gbtn ico" data-act="tiponuevo"
+        aria-label="Crear otro tipo" title="Crear otro tipo">${ic('mas')}</button></div>
+    ${E.tipoNuevo?`<div class="relnew">
+      <input class="sfield" id="tipoN" placeholder="Casa noble, deidad, taberna…"
+        onkeydown="tipoKey(event)" autofocus>
+      <div class="hint">Queda disponible para el resto de las fichas.</div>
+    </div>`:''}
+    <div class="hint">Va primero porque decide qué más te va a pedir: un lugar
+      no es del grupo ni tiene raza o clase, así que directamente no se ofrece.</div>
+
+    <div class="eyebrow mt">Retrato</div>
     <div class="imgrow">
       ${av(prev,AV.hero,isGm?{big:1,gmring:1}:{big:1})}
       <div class="grow">
@@ -996,26 +1014,15 @@ function vEd(){
     <div class="hint">Van del lado de esta ficha hacia la otra: "Fenwick →
       le debe plata a → Yagra". En el grafo la línea muestra el nombre.</div>
 
-    <div class="eyebrow mt">Tipo</div>
-    <div class="btnrow">${
-      /* el tipo que tenga esta ficha entra siempre, aunque sea el único que
-         lo use y todavía no esté guardado */
-      tiposTodos().concat(type&&tiposTodos().indexOf(type)<0?[type]:[])
-      .map(t=>`<button class="gbtn ${type===t?'on':''}"
-        style="${type===t?'':`color:${TYT(t).c};border-color:${TYT(t).c}55`}"
-        data-act="type" data-v="${t}">${esc(TYT(t).s)}</button>`).join('')}
-      <button class="gbtn ico" data-act="tiponuevo"
-        aria-label="Crear otro tipo" title="Crear otro tipo">${ic('mas')}</button></div>
-    ${E.tipoNuevo?`<div class="relnew">
-      <input class="sfield" id="tipoN" placeholder="Casa noble, deidad, taberna…"
-        onkeydown="tipoKey(event)" autofocus>
-      <div class="hint">Queda disponible para el resto de las fichas.</div>
-    </div>`:''}
-
+    ${/* "es del grupo/Máster" es cosa de personajes. Si una ficha ya tenía
+         algo de esto marcado y le cambiaron el tipo por error, se sigue
+         viendo para poder sacárselo — la misma salida de emergencia que
+         usan los atributos. */
+      (type==='character'||isPc||isGm)?`
     <button class="btn sec2 ${isPc?'on':''}" data-act="pc">
       ${isPc?ic('check'):''}Es de ${esc(cur.party_name||'nuestro grupo')}</button>
     <button class="btn sec2 gm ${isGm?'on':''}" data-act="gm">
-      ${isGm?ic('check'):''}Es el Máster</button>
+      ${isGm?ic('check'):''}Es el Máster</button>`:''}
     ${e?`<div class="sec">
       <button class="btn sec2" data-act="fusion" data-v="${att(e.s)}">
         Es la misma que otra ficha</button>
@@ -1081,15 +1088,21 @@ function vEd(){
       </div>`;
     })()}
 
-    <div class="eyebrow mt">Qué le pasó</div>
-    <div class="btnrow">${(()=>{
+    ${(()=>{
+      /* Personajes y criaturas: a un Lugar o un Objeto no les pasan cosas
+         como "muerto" o "encarcelado". Misma salida de emergencia que el
+         resto: si ya tenía alguna marcada, se sigue viendo. */
+      const yaTiene=ETORDER.some(k=>tieneEtiq({tg:E.tags},k));
+      if(type!=='character'&&type!=='creature'&&!yaTiene)return '';
+      const g=(E.at||{}).genero;
+      return `<div class="eyebrow mt">Qué le pasó</div>
+    <div class="btnrow">${
       /* Varias a la vez: alguien puede estar muerto y revivido, o revivido y
          encarcelado. "Vivo" no está a propósito: si no dice lo contrario, lo
          está. */
-      const g=(E.at||{}).genero;
-      return ETORDER.map(k=>`<button class="gbtn ${tieneEtiq({tg:E.tags},k)?'on':''}"
-        data-act="etiq" data-v="${k}">${ic('etiq-'+k)}${esc(gen(ETIQ[k],g))}</button>`).join('');
-    })()}</div>
+      ETORDER.map(k=>`<button class="gbtn ${tieneEtiq({tg:E.tags},k)?'on':''}"
+        data-act="etiq" data-v="${k}">${ic('etiq-'+k)}${esc(gen(ETIQ[k],g))}</button>`).join('')}</div>`;
+    })()}
 
     <div class="eyebrow mt">Otras etiquetas</div>
     <div class="tagbox">
