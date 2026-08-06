@@ -544,13 +544,18 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 /* El marco dorado, estilo carta de D&D Beyond: no cierra el rectángulo.
    Es una doble línea que corre por arriba de la tapa+nombre+botones y se
    curva hacia abajo en las dos esquinas superiores, apagándose a mitad de
-   los costados —nunca llega abajo. Va como SVG (ver BNFRAME en app.js)
-   estirado a todo el ancho, con degradé de opacidad para el apagado. */
-.bnframe{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-.bnf-out{fill:none;stroke:url(#bnfade-out);stroke-width:2;stroke-linecap:round;
-  vector-effect:non-scaling-stroke}
-.bnf-in{fill:none;stroke:url(#bnfade-in);stroke-width:1.2;stroke-linecap:round;
-  vector-effect:non-scaling-stroke;opacity:.85}
+   los costados —nunca llega abajo. Las esquinas son dos SVG de tamaño FIJO
+   (ver bnfCorner en app.js) para que el radio no se deforme en un banner
+   ancho de escritorio; una línea recta entre las dos esquinas —que no se
+   deforma nunca, sea cual sea el ancho— completa el tramo de arriba. */
+.bnframe{position:absolute;inset:0;z-index:2;pointer-events:none}
+.bnf-corner{position:absolute;top:0}
+.bnf-corner.tl{left:0}
+.bnf-corner.tr{right:0;transform:scaleX(-1)}
+.bnf-out{fill:none;stroke-width:2;stroke-linecap:round}
+.bnf-in{fill:none;stroke-width:1.2;stroke-linecap:round;opacity:.85}
+.bnf-top-out{position:absolute;top:4px;left:24px;right:24px;height:2px;background:#E0B25C}
+.bnf-top-in{position:absolute;top:9px;left:24px;right:24px;height:1.2px;background:#D8C9A3;opacity:.85}
 .bnin{position:relative;z-index:1;display:flex;gap:var(--s5);align-items:flex-end}
 .bntx{min-width:0;flex:1}
 .bntx h1{text-shadow:0 2px 20px rgba(13,16,21,.75)}

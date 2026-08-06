@@ -611,23 +611,35 @@ function book(c,extra){
    sin llegar a la base —igual que "Stroke back"/"Stroke front" en la
    referencia de Figma. Ahí son dos capas distintas: la de atrás va más
    pegada al borde, dorado más rico, se apaga rápido; la de adelante va
-   un poco más adentro, más pálida, y se apaga mucho más abajo. */
-const BNFRAME=`<svg class="bnframe" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-  <defs>
-    <linearGradient id="bnfade-out" gradientUnits="userSpaceOnUse" x1="0" y1="1" x2="0" y2="16">
-      <stop offset="0" stop-color="#E0B25C" stop-opacity="1"/>
-      <stop offset=".5" stop-color="#E0B25C" stop-opacity="1"/>
-      <stop offset="1" stop-color="#E0B25C" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="bnfade-in" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="26">
-      <stop offset="0" stop-color="#D8C9A3" stop-opacity="1"/>
-      <stop offset=".5" stop-color="#D8C9A3" stop-opacity="1"/>
-      <stop offset="1" stop-color="#D8C9A3" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <path class="bnf-out" d="M1,16 V7 Q1,1 7,1 H93 Q99,1 99,7 V16"/>
-  <path class="bnf-in" d="M6,26 V10 Q6,6 10,6 H90 Q94,6 94,10 V26"/>
-</svg>`;
+   un poco más adentro, más pálida, y se apaga mucho más abajo.
+   Las esquinas son SVGs de tamaño fijo (no estiran con el ancho del
+   banner): un banner de escritorio es carísimo de ancho comparado con su
+   alto, y estirar una sola curva a eso la deformaba en un bulto enorme.
+   Con la esquina a tamaño real y una línea recta (que no se deforma
+   nunca) uniendo ambas esquinas, el radio queda igual de chico siempre. */
+function bnfCorner(cls){
+  return `<svg class="bnf-corner ${cls}" width="24" height="56" viewBox="0 0 24 56" aria-hidden="true">
+    <defs>
+      <linearGradient id="bnfo-${cls}" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="40">
+        <stop offset="0" stop-color="#E0B25C" stop-opacity="1"/>
+        <stop offset=".5" stop-color="#E0B25C" stop-opacity="1"/>
+        <stop offset="1" stop-color="#E0B25C" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="bnfi-${cls}" gradientUnits="userSpaceOnUse" x1="0" y1="9" x2="0" y2="50">
+        <stop offset="0" stop-color="#D8C9A3" stop-opacity="1"/>
+        <stop offset=".5" stop-color="#D8C9A3" stop-opacity="1"/>
+        <stop offset="1" stop-color="#D8C9A3" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path class="bnf-out" stroke="url(#bnfo-${cls})" d="M24,4 H10 Q4,4 4,10 V40"/>
+    <path class="bnf-in" stroke="url(#bnfi-${cls})" d="M24,9 H14 Q9,9 9,14 V50"/>
+  </svg>`;
+}
+const BNFRAME=`<div class="bnframe" aria-hidden="true">
+  ${bnfCorner('tl')}${bnfCorner('tr')}
+  <div class="bnf-top-out"></div>
+  <div class="bnf-top-in"></div>
+</div>`;
 
 /* ================= HOME ================= */
 function vHome(){
