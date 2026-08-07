@@ -609,36 +609,28 @@ function book(c,extra){
 /* El marco no cierra el rectángulo: dos líneas que corren por arriba y se
    curvan en las esquinas, apagándose (degradé) a mitad de los costados,
    sin llegar a la base —igual que "Stroke back"/"Stroke front" en la
-   referencia de Figma. Ahí son dos capas distintas: la de atrás va más
-   pegada al borde, dorado más rico, se apaga rápido; la de adelante va
-   un poco más adentro, más pálida, y se apaga mucho más abajo.
-   Las esquinas son SVGs de tamaño fijo (no estiran con el ancho del
-   banner): un banner de escritorio es carísimo de ancho comparado con su
-   alto, y estirar una sola curva a eso la deformaba en un bulto enorme.
-   Con la esquina a tamaño real y una línea recta (que no se deforma
-   nunca) uniendo ambas esquinas, el radio queda igual de chico siempre. */
+   referencia de Figma. Tres piezas, cada una con la geometría que le
+   corresponde para no deformarse:
+   1. La curva de la esquina: un SVG de tamaño FIJO (no estira con el
+      ancho) —un banner de escritorio es carísimo de ancho comparado con
+      su alto, y estirar una curva a eso la deformaba en un bulto enorme.
+   2. La línea de arriba: recta, así que estirarla a lo ancho nunca la
+      deforma.
+   3. La caída de los costados: recta también, pero su LARGO sí tiene que
+      seguir el alto real de la tarjeta (en la referencia baja bastante,
+      no un poquito) —por eso es alto en % y no un tamaño fijo como la
+      curva. Un degradé CSS común hace el apagado, sin SVG de por medio. */
 function bnfCorner(cls){
-  return `<svg class="bnf-corner ${cls}" width="24" height="56" viewBox="0 0 24 56" aria-hidden="true">
-    <defs>
-      <linearGradient id="bnfo-${cls}" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="40">
-        <stop offset="0" stop-color="#E0B25C" stop-opacity="1"/>
-        <stop offset=".5" stop-color="#E0B25C" stop-opacity="1"/>
-        <stop offset="1" stop-color="#E0B25C" stop-opacity="0"/>
-      </linearGradient>
-      <linearGradient id="bnfi-${cls}" gradientUnits="userSpaceOnUse" x1="0" y1="9" x2="0" y2="50">
-        <stop offset="0" stop-color="#D8C9A3" stop-opacity="1"/>
-        <stop offset=".5" stop-color="#D8C9A3" stop-opacity="1"/>
-        <stop offset="1" stop-color="#D8C9A3" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    <path class="bnf-out" stroke="url(#bnfo-${cls})" d="M24,4 H10 Q4,4 4,10 V40"/>
-    <path class="bnf-in" stroke="url(#bnfi-${cls})" d="M24,9 H14 Q9,9 9,14 V50"/>
+  return `<svg class="bnf-corner ${cls}" width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
+    <path class="bnf-out" d="M24,4 H10 Q4,4 4,10"/>
+    <path class="bnf-in" d="M24,9 H14 Q9,9 9,14"/>
   </svg>`;
 }
 const BNFRAME=`<div class="bnframe" aria-hidden="true">
   ${bnfCorner('tl')}${bnfCorner('tr')}
-  <div class="bnf-top-out"></div>
-  <div class="bnf-top-in"></div>
+  <div class="bnf-top-out"></div><div class="bnf-top-in"></div>
+  <div class="bnf-drop-out l"></div><div class="bnf-drop-out r"></div>
+  <div class="bnf-drop-in l"></div><div class="bnf-drop-in r"></div>
 </div>`;
 
 /* ================= HOME ================= */
@@ -728,22 +720,22 @@ function vIdx(){
   })();
   const links=EDGES.length;
   const cov=cur.cover_url;
-  /* la misma portada, desenfocada, hace de fondo del banner */
-  const banner=st.q.trim()?'':`<div class="banner${cov?' has':''}"${
-      cov?` style="--cover:url('${att(cov)}')"`:''}>
+  const banner=st.q.trim()?'':`<div class="banner">
       <div class="bnin">
         ${book(cur)}
         <div class="bntx">
           <div class="eyebrow">Campaña</div>
           <h1>${esc(cur.name)}</h1>
-          <div class="hint">${D.length} ficha${D.length===1?'':'s'} · ${links} vínculo${links===1?'':'s'}</div>
+          <div class="hint">${ic('libro')}${D.length} ficha${D.length===1?'':'s'}
+            <span class="dot"></span>${ic('link')}${links} vínculo${links===1?'':'s'}</div>
           <div class="bnact">
-            ${quienes().length?`<button class="gbtn glass yo" data-act="pickme">${
+            ${quienes().length?`<button class="bnbtn" data-act="pickme">${
               yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>'+esc(yo().n)+'</span>'
                  :'<span>¿Quién sos?</span>'}</button>`:''}
-            <button class="gbtn glass" data-act="edcamp">Editar campaña</button>
-            <button class="gbtn glass" data-act="importar">Importar notas</button>
-            ${cov?'':`<label class="gbtn glass">Agregar portada
+            <button class="bnbtn" data-act="importar">Importar notas</button>
+            <button class="bnbtn ico" data-act="edcamp" title="Editar campaña"
+              aria-label="Editar campaña">${ic('ajustes')}</button>
+            ${cov?'':`<label class="bnbtn">Agregar portada
               <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>`}
           </div>
         </div>

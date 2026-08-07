@@ -138,7 +138,7 @@ body{
    Altura fija + centrado flex + line-height 1.
    Así el alto no depende de las métricas de la fuente y todo
    lo que va en una misma fila mide exactamente lo mismo.      */
-.back,.sfield,.btn,.gbtn,.lgb,.seg button,.gzoom button,.tpb,.gco{
+.back,.sfield,.btn,.gbtn,.lgb,.seg button,.gzoom button,.tpb,.gco,.bnbtn{
   display:inline-flex;align-items:center;justify-content:center;
   line-height:1;font-family:var(--body);cursor:pointer;
   border:1px solid transparent;transition:background .16s,border-color .16s,color .16s,transform .12s;
@@ -528,42 +528,56 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   box-shadow:0 0 0 1px rgba(224,178,92,.22),0 0 0 4px rgba(224,178,92,.07)}
 .book.sm.ph .bkini{box-shadow:0 0 0 1px rgba(224,178,92,.22)}
 
-.banner{position:relative;overflow:hidden;padding:var(--s6) var(--gut);
-  border-bottom:1px solid var(--line);
-  background:linear-gradient(150deg,var(--surf2),var(--surf))}
-/* el fondo es la misma portada, ampliada y desenfocada */
-.banner::before{content:'';position:absolute;inset:-12%;
-  background-image:var(--cover);background-size:cover;background-position:center;
-  filter:blur(30px) saturate(140%);opacity:.5}
-.banner::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(to top,rgba(13,16,21,.9),rgba(13,16,21,.55))}
-/* sin portada: apenas un resplandor, sin degradado que oscurezca de más */
-.banner:not(.has)::before{inset:0;filter:none;opacity:1;
-  background:radial-gradient(120% 100% at 20% 0%,rgba(224,178,92,.13),transparent 65%)}
-.banner:not(.has)::after{background:none}
+/* Banner de campaña: fondo plano (el mismo color de superficie que usás
+   en Figma), no la portada desenfocada de antes. */
+.banner{position:relative;padding:var(--s6) var(--gut);
+  border-bottom:1px solid var(--line);background:var(--surf)}
 /* El marco dorado, estilo carta de D&D Beyond: no cierra el rectángulo.
    Es una doble línea que corre por arriba de la tapa+nombre+botones y se
-   curva hacia abajo en las dos esquinas superiores, apagándose a mitad de
-   los costados —nunca llega abajo. Las esquinas son dos SVG de tamaño FIJO
-   (ver bnfCorner en app.js) para que el radio no se deforme en un banner
-   ancho de escritorio; una línea recta entre las dos esquinas —que no se
-   deforma nunca, sea cual sea el ancho— completa el tramo de arriba. */
+   curva hacia abajo en las dos esquinas superiores, apagándose recién
+   bastante más abajo de los costados —nunca llega a la base. Tres piezas
+   con la geometría que le corresponde a cada una (ver bnfCorner en
+   app.js): la curva de la esquina es de tamaño FIJO —un banner ancho de
+   escritorio deformaba una curva estirada en un bulto enorme—, la línea
+   de arriba y las caídas de los costados son rectas, así que sí pueden
+   seguir el ancho/alto real sin deformarse. Sin overflow:hidden en
+   .banner: la línea de atrás se sale un poco del borde a propósito. */
 .bnframe{position:absolute;inset:0;z-index:2;pointer-events:none}
 .bnf-corner{position:absolute;top:0}
 .bnf-corner.tl{left:0}
 .bnf-corner.tr{right:0;transform:scaleX(-1)}
-.bnf-out{fill:none;stroke-width:2;stroke-linecap:round}
-.bnf-in{fill:none;stroke-width:1.2;stroke-linecap:round;opacity:.85}
+.bnf-out{fill:none;stroke:#E0B25C;stroke-width:2;stroke-linecap:round}
+.bnf-in{fill:none;stroke:#D8C9A3;stroke-width:1.2;stroke-linecap:round;opacity:.85}
 .bnf-top-out{position:absolute;top:4px;left:24px;right:24px;height:2px;background:#E0B25C}
 .bnf-top-in{position:absolute;top:9px;left:24px;right:24px;height:1.2px;background:#D8C9A3;opacity:.85}
+.bnf-drop-out,.bnf-drop-in{position:absolute;top:10px;width:2px;height:65%}
+.bnf-drop-out{background:linear-gradient(to bottom,#E0B25C,transparent)}
+.bnf-drop-out.l{left:4px}.bnf-drop-out.r{right:4px}
+.bnf-drop-in{top:14px;width:1.2px;height:80%;opacity:.85;
+  background:linear-gradient(to bottom,#D8C9A3,transparent)}
+.bnf-drop-in.l{left:9px}.bnf-drop-in.r{right:9px}
 .bnin{position:relative;z-index:1;display:flex;gap:var(--s5);align-items:flex-end}
 .bntx{min-width:0;flex:1}
-.bntx h1{text-shadow:0 2px 20px rgba(13,16,21,.75)}
-.bntx .hint{margin-top:var(--s2)}
+/* tipografía y color del banner, tomados directo de la referencia —solo
+   acá, el resto de la app sigue con su propia escala tipográfica. */
+.bnin .eyebrow{font-family:var(--body);font-size:12px;font-weight:700;
+  letter-spacing:0;color:#C4CBCE}
+.bnin h1{font-family:'Alegreya',var(--disp);font-weight:700;font-size:var(--f-h1);
+  line-height:1.3;color:#D7D2BE;text-shadow:none}
+.bnin .hint{margin-top:var(--s2);display:flex;align-items:center;gap:var(--s1);
+  font-family:var(--body);font-size:14px;color:#C4CBCE;flex-wrap:wrap}
+.bnin .hint .gi{width:18px;height:18px;margin-right:2px}
+.bnin .hint .dot{width:3px;height:3px;border-radius:50%;background:#C4CBCE;margin:0 2px}
 .bnact{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)}
-.gbtn.glass{background:rgba(13,16,21,.62);backdrop-filter:blur(10px);
-  border-color:rgba(237,231,218,.22);color:var(--ink)}
-@media(hover:hover){.gbtn.glass:hover{background:rgba(13,16,21,.82);border-color:rgba(237,231,218,.4)}}
+/* Botón del banner: fondo del color de la página (no de la superficie
+   donde vive), como un recorte —así lo tienen en la referencia. */
+.bnbtn{height:40px;padding:0 var(--s4);background:var(--bg);
+  border:2px solid #D7D2BE;border-radius:var(--r1);
+  color:#fff;font-family:var(--body);font-size:14px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.02em}
+.bnbtn.ico{width:40px;padding:0}
+.bnbtn.ico .gi{width:18px;height:18px}
+@media(hover:hover){.bnbtn:hover{background:var(--surf3)}}
 @media(min-width:680px){.banner .book{--bw:132px}}
 
 /* ============ ficha ============ */
