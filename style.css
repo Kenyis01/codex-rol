@@ -628,6 +628,29 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .bnbtn.ico{width:40px;padding:0}
 .bnbtn .gi{width:18px;height:18px}
 @media(hover:hover){.bnbtn:hover{background:var(--surf3)}}
+/* El mismo look en cualquier botón "de un solo golpe" —Cancelar, Editar,
+   Importar, Borrar la ficha, los de confirmar/cancelar de un diálogo—
+   sin importar si su clase de base es .back, .btn o .gbtn. Es una capa de
+   color arriba de la clase de base, no un reemplazo: cada botón sigue
+   midiendo lo que medía y respetando su lugar (ancho completo en un
+   diálogo, alto de la barra de arriba, etc.), solo cambia fondo, borde,
+   tipografía y el radio de las esquinas.
+   Los compuestos (.back.actbtn, no .actbtn solo) son así de específicos
+   a propósito: una clase sola perdería contra ".btn.sec2", que ya pinta
+   fondo y borde con dos clases.
+   Afuera queda todo lo que hoy usa el color con un significado propio: el
+   botón dorado (.pri), los chips de tipo (.tpb, con el color de cada
+   tipo), los toggles del grafo y de los formularios (algo con .on que
+   cambia de color al elegirlo) y el rojo del botón que de verdad borra,
+   adentro del diálogo de confirmación. */
+.back.actbtn,.btn.sec2.actbtn,.btn.peligro.actbtn,.gbtn.actbtn{
+  background:var(--bg);border:2px solid #D7D2BE;border-radius:8px;
+  color:#fff;font-family:var(--inter);font-weight:700;
+  text-transform:uppercase;letter-spacing:0}
+@media(hover:hover){
+  .back.actbtn:hover,.btn.sec2.actbtn:hover,.btn.peligro.actbtn:hover,.gbtn.actbtn:hover{
+    background:var(--surf3);color:#fff;border-color:#D7D2BE}
+}
 /* La tapa de la maqueta mide 140x182 —más cuadrada que el 2:3 que usa el
    resto de la app—, y de ahí sale el alto exacto de la tarjeta: 182 + 32
    de margen arriba y abajo = 246. La imagen va con object-fit:cover, así

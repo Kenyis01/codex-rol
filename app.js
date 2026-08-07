@@ -396,7 +396,7 @@ function vPick(){
         <span class="rc">${ic("arrow","r")}</span></div>`).join('')}</div>`
     :`<div class="hint">Todavía no hay personajes del grupo ni Máster. Marcá
       alguna ficha como del grupo o como Máster desde su editor.</div>`}
-    <button class="btn sec2" data-act="pickskip">Continuar sin dejar rastro</button>
+    <button class="btn sec2 actbtn" data-act="pickskip">Continuar sin dejar rastro</button>
   </div></div>`;
 }
 
@@ -696,7 +696,7 @@ function vHome(){
     <div class="card">${list}</div>
     <div class="sec"><div class="sech">Empezar otra</div>
       <input class="sfield" id="newc" placeholder="Nombre de la campaña nueva">
-      <button class="btn sec2" data-act="newcamp">Crear campaña</button></div>
+      <button class="btn sec2 actbtn" data-act="newcamp">Crear campaña</button></div>
     <div class="credits">Iconos de <a href="https://game-icons.net/" target="_blank"
       rel="noopener">game-icons.net</a> (Lorc, Delapouite, Felbrigg y sbed), bajo licencia
       <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</div>
@@ -820,8 +820,8 @@ function vFicha(){
   const rel=[...(ADJ[e.s]||[])].map(s=>byS[s]).filter(Boolean)
     .sort((a,b)=>a.n.localeCompare(b.n,'es'));
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">${ic("back")}Atrás</button>
-      <button class="back push" data-act="edit" data-v="${att(e.s)}">${ic('quill')}Editar</button>
+      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button>
+      <button class="back actbtn push" data-act="edit" data-v="${att(e.s)}">${ic('quill')}Editar</button>
     </div></div>
   <div class="page${e.gm?' gmpage':''}">
     ${e.gm?`<div class="gmfx" aria-hidden="true">${
@@ -861,9 +861,9 @@ function vFicha(){
         <div class="grow"><div class="rn">${esc(x.n)}</div>
         <div class="rs">${esc(x.sm)}</div></div>
         <span class="rc">${esc(TY(x).s)}</span></div>`).join('')}</div></div>`:''}
-    <div class="sec"><button class="btn sec2" data-act="graphof" data-v="${att(e.s)}">
+    <div class="sec"><button class="btn sec2 actbtn" data-act="graphof" data-v="${att(e.s)}">
       Ver en el grafo</button>
-      <button class="btn sec2" data-act="hist" data-v="${att(e.s)}">
+      <button class="btn sec2 actbtn" data-act="hist" data-v="${att(e.s)}">
       Historial de cambios</button></div>
   </div>`;
 }
@@ -887,7 +887,7 @@ function vEdCamp(){
   const party=E.dp!==undefined?E.dp:(cur.party_name||'');
   const cov=cur.cover_url;
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancelcamp">Cancelar</button>
+      <button class="back actbtn" data-act="cancelcamp">Cancelar</button>
       <span class="tag push">EDITANDO CAMPAÑA</span></div></div>
   <div class="page">
     <div class="eyebrow">Portada</div>
@@ -895,9 +895,9 @@ function vEdCamp(){
       ${book({name:name||'?',cover_url:cov})}
       <div class="grow">
         <div class="btnrow even">
-          <label class="btn sec2">${cov?'Cambiar':'Elegir tapa'}
+          <label class="btn sec2 actbtn">${cov?'Cambiar':'Elegir tapa'}
             <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>
-          ${cov?`<button class="btn sec2" data-act="nocover">Quitar</button>`:''}
+          ${cov?`<button class="btn sec2 actbtn" data-act="nocover">Quitar</button>`:''}
         </div>
         <div class="hint">Conviene una imagen vertical: se recorta en proporción
           de tapa de libro. La portada se guarda apenas la elegís.</div>
@@ -939,14 +939,14 @@ function vTiposPropios(){
           <span class="dot" style="color:${TYT(t).c};background:currentColor"></span>
           <div class="grow"><div class="rn">${esc(TYT(t).l)}</div>
             <div class="rs">${n} ficha${n===1?'':'s'}</div></div>
-          <button class="gbtn" data-act="tpabrir" data-v="${att(t)}">
+          <button class="gbtn actbtn" data-act="tpabrir" data-v="${att(t)}">
             ${abierto?'Cerrar':'Cambiar'}</button>
         </div>
         ${abierto?`<div class="impdet" style="padding-left:calc(8px + var(--s3))">
           <div class="impcampo"><div class="impcr">Renombrarlo</div>
             <div class="btnrow even" style="margin-top:var(--s2)">
               <input class="sfield" id="tpren" value="${att(TYT(t).l)}">
-              <button class="btn sec2" data-act="tprenombrar" data-v="${att(t)}">Cambiar</button>
+              <button class="btn sec2 actbtn" data-act="tprenombrar" data-v="${att(t)}">Cambiar</button>
             </div></div>
           <div class="impcampo"><div class="impcr">O pasar sus ${n} ficha${n===1?'':'s'} a</div>
             <div class="btnrow" style="margin-top:var(--s2)">${
@@ -1054,9 +1054,9 @@ function vEd(){
       ${av(prev,AV.hero,isGm?{big:1,gmring:1}:{big:1})}
       <div class="grow">
         <div class="btnrow even">
-          <label class="btn sec2">${img?'Cambiar':'Elegir foto'}
+          <label class="btn sec2 actbtn">${img?'Cambiar':'Elegir foto'}
             <input type="file" accept="image/*" style="display:none" onchange="upImg(event)"></label>
-          ${img?`<button class="btn sec2" data-act="noimg">Quitar</button>`:''}
+          ${img?`<button class="btn sec2 actbtn" data-act="noimg">Quitar</button>`:''}
         </div>
         ${img?'':`<div class="hint">Sin foto se usan las iniciales.</div>`}
       </div></div>
@@ -1110,7 +1110,7 @@ function vEd(){
         <select class="sfield" id="relT">${
           D.filter(x=>x.s!==E.slug).sort((a,b)=>a.n.localeCompare(b.n))
            .map(x=>`<option value="${att(x.s)}">${esc(x.n)}</option>`).join('')}</select>
-        <button class="btn sec2" data-act="reladd">Agregar</button>
+        <button class="btn sec2 actbtn" data-act="reladd">Agregar</button>
       </div>
     </div>
     <div class="hint">Van del lado de esta ficha hacia la otra: "Fenwick →
@@ -1126,11 +1126,11 @@ function vEd(){
     <button class="btn sec2 gm ${isGm?'on':''}" data-act="gm">
       ${isGm?ic('check'):''}Es el Máster</button>`:''}
     ${e?`<div class="sec">
-      <button class="btn sec2" data-act="fusion" data-v="${att(e.s)}">
+      <button class="btn sec2 actbtn" data-act="fusion" data-v="${att(e.s)}">
         Es la misma que otra ficha</button>
       <div class="hint">Junta las dos: el texto, los otros nombres, los vínculos
         y las menciones se mudan a la que elijas, y esta se archiva.</div>
-      <button class="btn peligro mt" data-act="borrar" data-v="${att(e.s)}">
+      <button class="btn peligro mt actbtn" data-act="borrar" data-v="${att(e.s)}">
         Borrar ficha</button>
       <div class="hint">Deja de aparecer en todos lados. No se borra de la base:
         si te arrepentís, avisame y la traigo de vuelta.</div></div>`:''}`;
@@ -1236,7 +1236,7 @@ function vEd(){
       La tecla de borrar también funciona.</div>`;
 
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="cancel">Cancelar</button>
+      <button class="back actbtn" data-act="cancel">Cancelar</button>
       ${e?`<button class="back pri ptr push" id="edsave" data-act="save"
           ${(st.busy||!dirty)?'disabled':''}>${st.busy?'Guardando…':'Guardar'}</button>`
         :`<span class="tag push">FICHA NUEVA</span>`}</div></div>
@@ -1371,7 +1371,7 @@ function vFus(){
       <button class="btn pri" data-act="fusok"${st.busy?' disabled':''}>
         ${st.busy?'Fusionando…':'Fusionar con '+esc(byS[F.cand].n)}</button>`
       :'<div class="hint">Elegí una para ver qué se muda.</div>'}
-    <button class="btn sec2" data-act="fusno">Cancelar</button>
+    <button class="btn sec2 actbtn" data-act="fusno">Cancelar</button>
   </div></div>`;
 }
 
@@ -1408,11 +1408,11 @@ function vDel(){
       borrarla: así el texto y las menciones se mudan.</div>`:''}
     ${B.vinculos?`<div class="hint">También se van sus ${B.vinculos} vínculo${
       B.vinculos===1?'':'s'} con nombre.</div>`:''}
-    <button class="btn sec2" data-act="fusion" data-v="${att(B.slug)}"
+    <button class="btn sec2 actbtn" data-act="fusion" data-v="${att(B.slug)}"
       >Mejor fusionarla con otra</button>
     <button class="btn peligro" data-act="delok"${st.busy?' disabled':''}>
       ${st.busy?'Borrando…':'Borrar '+esc(e.n)}</button>
-    <button class="btn sec2" data-act="delno">Dejarla</button>
+    <button class="btn sec2 actbtn" data-act="delno">Dejarla</button>
   </div></div>`;
 }
 async function borrarFicha(slug){
@@ -1462,7 +1462,7 @@ function avisoParecidas(nombre){
     ${c.map(x=>`<div class="warnrow">${av(x.e,AV.sm)}
       <div class="grow"><div class="rn">${esc(x.e.n)}</div>
         <div class="rs">${porqueSeParece(x)}</div></div>
-      <button class="gbtn" data-act="misma" data-v="${att(x.e.s)}">Es esta</button>
+      <button class="gbtn actbtn" data-act="misma" data-v="${att(x.e.s)}">Es esta</button>
     </div>`).join('')}</div>`;
 }
 
@@ -1895,8 +1895,8 @@ function vDup(){
       <div class="grow"><div class="rn">${esc(x.e.n)}</div>
         <div class="rs">${porqueSeParece(x)}</div></div>
       <span class="rc">${ic('arrow','r')}</span></div>`).join('')}</div>
-    <button class="btn sec2" data-act="dupcrear">No, es otra: crearla igual</button>
-    <button class="btn sec2" data-act="dupvolver">Seguir editando</button>
+    <button class="btn sec2 actbtn" data-act="dupcrear">No, es otra: crearla igual</button>
+    <button class="btn sec2 actbtn" data-act="dupvolver">Seguir editando</button>
   </div></div>`;
 }
 
@@ -1933,8 +1933,8 @@ function vConf(){
     <div class="hint">Se guarda la versión anterior igual, así que nada se
       pierde: podés recuperarla desde el historial de la ficha.</div>
     <button class="btn pri" data-act="confpisar">Guardar lo mío igual</button>
-    <button class="btn sec2" data-act="confver">Descartar y ver lo que hay</button>
-    <button class="btn sec2" data-act="confvolver">Seguir editando</button>
+    <button class="btn sec2 actbtn" data-act="confver">Descartar y ver lo que hay</button>
+    <button class="btn sec2 actbtn" data-act="confvolver">Seguir editando</button>
   </div></div>`;
 }
 
@@ -2214,7 +2214,7 @@ async function aplicarImp(){
 function vImp(){
   const I=st.imp;
   const cab='<div class="top"><div class="topin">'+
-    '<button class="back" data-act="impsalir">'+ic('back')+'Salir</button>'+
+    '<button class="back actbtn" data-act="impsalir">'+ic('back')+'Salir</button>'+
     '<span class="tag push">IMPORTAR</span></div></div>';
   if(I.paso==='pegar')return cab+`<div class="page">
     <div class="eyebrow">Paso 1</div>
@@ -2222,7 +2222,7 @@ function vImp(){
     <div class="hint">Copiá el texto de abajo, pasáselo a tu AI junto con tus
       notas, y pegá acá lo que te devuelva. No se escribe nada hasta que
       revises qué va a pasar.</div>
-    <button class="btn sec2" data-act="impprompt">${ic('scroll')}Copiar el texto para la AI</button>
+    <button class="btn sec2 actbtn" data-act="impprompt">${ic('scroll')}Copiar el texto para la AI</button>
     <div class="eyebrow mt">Lo que te devolvió</div>
     <textarea class="ta" id="impta" placeholder="Pegá acá la respuesta">${esc(I.txt||'')}</textarea>
     ${I.err?`<div class="warn"><div class="warnh">No pude leerlo</div>
@@ -2388,7 +2388,7 @@ function vImp(){
       ${dudas?`<br><b class="impwarn">${dudas} sin confirmar:</b> me pareció que ya
         existían pero no estoy seguro. Abrilas y decidí.`:''}
     </div>
-    <button class="btn sec2" data-act="impvolver">Volver a pegar</button>
+    <button class="btn sec2 actbtn" data-act="impvolver">Volver a pegar</button>
     <div class="card mt">${P.map(fila).join('')}</div>
     <div class="savebar"><button class="btn pri" data-act="impaplicar"${st.busy?' disabled':''}>
       ${st.busy?'Guardando…':'Aplicar'}</button></div>
@@ -2441,11 +2441,11 @@ function vHist(){
             ? '<div class="hwhen">estado y etiquetas no registrados</div>'
             : marcas(v.status,v.tags,v.attrs)}
           <div class="hwhen">${esc(cuando(v.replaced_at))}${v.edited_by?' · por '+esc(nombreDe(v.edited_by)):''}</div></div>
-          <button class="gbtn" data-act="restaurar" data-v="${att(v.id)}">Restaurar</button>
+          <button class="gbtn actbtn" data-act="restaurar" data-v="${att(v.id)}">Restaurar</button>
           </div>`).join('')}
       </div>`;
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">${ic("back")}Atrás</button>
+      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button>
       <span class="tag push">HISTORIAL</span></div></div>
     <div class="page">
       <div class="eyebrow">${esc(TY(e).s)}</div>
@@ -2531,14 +2531,14 @@ const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function vGrafo(){
   if(!D.length)return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">${ic("back")}Atrás</button></div></div>
+      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button></div></div>
     <div class="empty"><div class="ei">${ic("mesh")}</div><div class="et">Nada que dibujar</div>
     <div class="es">Creá algunas fichas y enlazalas con @ para ver el grafo.</div></div>`;
   if(!byS[st.ent]){const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s))[0];st.ent=top?top.s:null}
   const opts=D.slice().sort((a,b)=>a.n.localeCompare(b.n))
     .map(x=>`<option value="${att(x.s)}"${x.s===st.ent?' selected':''}>${esc(x.n)}</option>`).join('');
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="back">${ic("back")}Atrás</button>
+      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button>
       <select class="sfield" id="gsel" data-act="center">${opts}</select>
     </div></div>
   <div class="gwrap" id="gwrap">
