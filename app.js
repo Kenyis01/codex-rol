@@ -790,18 +790,12 @@ function vIdx(){
         </div>
         </div>
       </div>${BNFRAME}</div>`;
-  /* El avatar de quién sos vive acá arriba, no en la portada.
-     El buscador queda oculto por ahora —va a reubicarse—, pero sigue
-     armado y en el DOM: st.q ya arranca vacío en cada navegación, así que
-     con el campo escondido la vista se comporta como si no hubiera
-     búsqueda. Para traerlo de vuelta alcanza con sacarle la clase "off". */
+  /* El avatar de quién sos vive acá arriba, no en la portada. El buscador
+     ya no va en la barra de arriba: en la maqueta comparte fila con
+     Lista/Cards, arriba del todo de la lista de fichas. */
   const quien=yo()?yo().n:'¿Quién sos?';
   return `<div class="top"><div class="topin">
       <button class="bnbtn tpbtn" data-act="home">${ic("camp")}Campañas</button>
-      <label class="searchw off">
-        <input class="sfield" id="q" placeholder="Buscar"
-          value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()">
-      </label>
       ${quienes().length?`<button class="tpav" data-act="pickme"
         title="${att(quien)}" aria-label="${att(quien)}">${
         yo()?av(yo(),40,{sq:1}):'<span class="tpav-q">?</span>'}${AVFRAME}</button>`:''}
@@ -809,6 +803,10 @@ function vIdx(){
     ${banner}
     <div class="page">
       ${D.length?`<div class="segrow">
+        <label class="searchw">
+          <input class="sfield" id="q" placeholder="Buscar en el códice…"
+            value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()">
+        </label>
         <div class="seg">
           <button class="${st.view==='list'?'on':''}" data-act="view" data-v="list">Lista</button>
           <button class="${st.view==='cards'?'on':''}" data-act="view" data-v="cards">Cards</button>

@@ -214,8 +214,7 @@ body{
   color:var(--ink);border-radius:8px;padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--inter);font-weight:700;text-transform:uppercase;letter-spacing:0;
   outline:none}
-.searchw{flex:1;display:flex}
-.searchw.off{display:none}
+.searchw{display:flex}
 .tag{flex:none;font-family:var(--mono);font-size:var(--f-xs);letter-spacing:var(--track);
   text-transform:uppercase;color:var(--dim);line-height:1}
 @media(hover:hover){.sfield:hover{box-shadow:var(--hover-w)}}
@@ -816,11 +815,14 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   .gmaura{opacity:.7}}
 
 /* ============ botones ============ */
-/* En el teléfono ocupa todo el ancho y las dos mitades son iguales: apretado
-   contra el borde derecho, cambiar de vista quedaba lejos del pulgar y los
-   dos botones eran chicos. Desde tablet vuelve a ser compacto a la derecha,
-   que ahí sobra lugar y estirarlo se vería raro. */
-.segrow{display:flex;margin-bottom:var(--s5)}
+/* El buscador y Lista/Cards comparten fila, como en la maqueta. En el
+   teléfono no entran los dos anchos completos uno al lado del otro, así
+   que se apilan: buscador arriba, segmentado abajo, las dos mitades del
+   segmentado iguales y contra el borde. Desde tablet pasan a compartir
+   renglón, el buscador con un ancho propio (no estirado a como dé lugar)
+   y el segmentado compacto a la derecha. */
+.segrow{display:flex;flex-direction:column;gap:var(--s3);margin-bottom:var(--s5)}
+.segrow .searchw{flex:1}
 /* El segmentado de la maqueta: fondo propio en el grupo, cada opción a
    40px con las mismas esquinas de 8px que el resto (nada de píldora
    entera), y la elegida se lee por bloque de color, no por un tono apenas
@@ -832,7 +834,8 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   font-family:var(--inter);font-size:14px;font-weight:700;
   text-transform:uppercase;letter-spacing:0}
 @media(min-width:680px){
-  .segrow{justify-content:flex-end}
+  .segrow{flex-direction:row;align-items:center;justify-content:space-between}
+  .segrow .searchw{flex:0 1 384px}
   .seg{flex:0 0 auto}
   .seg button{flex:0 0 auto}
 }
