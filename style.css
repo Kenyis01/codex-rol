@@ -736,6 +736,10 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   left:var(--s4);right:var(--s4);bottom:0;height:1px;background:var(--bg)}
 .frow .rn{display:flex;align-items:center;flex-wrap:wrap;column-gap:var(--s2);
   font-family:var(--inter);font-size:14px;font-weight:700;color:#D7D2BE}
+/* El nombre toma el color del tipo, por ahora solo en el índice agrupado
+   (rowHTML con opts.tycolor). No es una regla de .frow en general para no
+   tocar búsqueda ni Conectado con, que no lo pidieron. */
+.frow .rn.cty{color:var(--c)}
 .frow .rs{font-family:var(--inter);font-size:14px;color:#C4CBCE}
 /* el tipo de ficha, solo en listas que mezclan tipos (Conectado con): un
    "·" del mismo peso que el nombre, el icono con el color del tipo —el

@@ -706,13 +706,18 @@ function vHome(){
 /* ================= ÍNDICE ================= */
 /* opts.badge: agrega el tipo de ficha (icono + nombre) al lado del nombre,
    como en "Conectado con" —ahí hace falta, porque la lista mezcla tipos;
-   en el índice normal no, porque ya vienen agrupadas bajo su encabezado. */
+   en el índice normal no, porque ya vienen agrupadas bajo su encabezado.
+   opts.tycolor: el nombre toma el color del tipo. Por ahora solo lo pide
+   el índice agrupado —group()—, no búsqueda ni Conectado con, así que
+   queda atado a esa llamada y no a rowHTML en general. El Máster no
+   entra: su nombre ya es dorado por reglas propias (.gmrow). */
 function rowHTML(e,via,opts){
   opts=opts||{};
   const badge=opts.badge&&e.t?`<span class="sep">·</span><span class="rty" style="--c:${TYT(e.t).c}">${
     TYT(e.t).ic?ic(TYT(e.t).ic):''}${esc(TYT(e.t).s).toUpperCase()}</span>`:'';
-  return `<div class="row frow${e.gm?' gmrow':''}" data-go="${att(e.s)}">${av(e,40,e.gm?{gmring:1}:{})}
-    <div class="grow"><div class="rn">${esc(e.n)}${badge}</div>
+  const c=opts.tycolor&&!e.gm?TYT(e.t).c:null;
+  return `<div class="row frow${e.gm?' gmrow':''}" data-go="${att(e.s)}"${c?` style="--c:${c}"`:''}>${av(e,40,e.gm?{gmring:1}:{})}
+    <div class="grow"><div class="rn${c?' cty':''}">${esc(e.n)}${badge}</div>
       <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div></div>`;
 }
 /* En la tarjeta solo entra el nombre: sin conteo de menciones, más limpia. */
@@ -723,7 +728,7 @@ function cardHTML(e){
 }
 function group(list,via){
   if(st.view==='cards')return `<div class="cgrid">${list.map(e=>cardHTML(e)).join('')}</div>`;
-  return `<div class="card fcard">${list.map(e=>rowHTML(e,via)).join('')}</div>`;
+  return `<div class="card fcard">${list.map(e=>rowHTML(e,via,{tycolor:true})).join('')}</div>`;
 }
 function vIdx(){
   const hits=find(st.q,40);
