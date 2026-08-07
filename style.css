@@ -36,6 +36,9 @@
   --title:'Cinzel',Georgia,serif;
   --body:'Inter Tight',system-ui,-apple-system,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,monospace;
+  /* La app usa Inter Tight; la maqueta de la portada, Inter a secas, que es
+     más ancha. Donde mandan las medidas del diseño se usa esta. */
+  --inter:'Inter','Inter Tight',system-ui,-apple-system,sans-serif;
   --f-xs:11px;   /* rótulos mono, eyebrows, chips */
   --f-sm:12px;   /* metadatos */
   --f-cap:13px;  /* subtítulos, snippets */
@@ -556,7 +559,11 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    tarjeta, así que acá no puede haber overflow:hidden ni recorte de
    ningún tipo —por eso el fondo desenfocado que había antes se fue: ese
    efecto exigía recortar. */
-.banner{position:relative;margin-top:var(--s4);
+/* 35px hasta la barra de arriba y 32/24 de margen interno salen medidos de
+   la maqueta (barra hasta y=64, tarjeta desde y=99; tapa a 31 del techo y
+   a 24 del canto). No caen en la escala de espaciados de la app, pero acá
+   mandan las medidas del diseño. */
+.banner{position:relative;margin-top:35px;
   padding:var(--s7) var(--s6);background:var(--surf);border-radius:8px}
 /* #app > * (más arriba) centra a todo hijo directo con margin-inline:auto,
    y por ser selector de id le gana a .banner. Cuando la ventana es más
@@ -598,13 +605,13 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .bntx{min-width:0;flex:1 1 200px;align-self:center}
 /* tipografía y color de la portada, tomados de la maqueta —solo acá; el
    resto de la app sigue con su propia escala. */
-.bnin .eyebrow{font-family:var(--body);font-size:12px;font-weight:700;
+.bnin .eyebrow{font-family:var(--inter);font-size:12px;font-weight:700;
   letter-spacing:0;line-height:1.35;color:#C4CBCE;margin-bottom:0}
 .bnin h1{font-family:'Alegreya',var(--disp);font-weight:700;font-size:24px;
   line-height:1.5;letter-spacing:0;color:#D7D2BE;text-shadow:none}
 @media(min-width:680px){.bnin h1{font-size:32px}}
 .bnin .hint{margin-top:var(--s2);display:flex;align-items:center;gap:var(--s2);
-  flex-wrap:wrap;font-family:var(--body);font-size:14px;line-height:20px;color:#C4CBCE}
+  flex-wrap:wrap;font-family:var(--inter);font-size:14px;line-height:20px;color:#C4CBCE}
 .bnin .hint .st{display:inline-flex;align-items:center;gap:var(--s1)}
 .bnin .hint .gi{width:18px;height:18px;color:var(--gold)}
 /* margin-left:auto los manda contra el borde derecho, como en la maqueta.
@@ -614,14 +621,18 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .bnact{display:flex;gap:var(--s2);flex:0 1 auto;flex-wrap:wrap;margin-left:auto}
 /* Botón de la portada: fondo del color de la página, no del de la
    tarjeta donde vive —queda como un recorte, igual que en la maqueta. */
-.bnbtn{height:40px;padding:0 var(--s4);background:var(--bg);
+.bnbtn{height:40px;padding:0 var(--s4);gap:var(--s2);background:var(--bg);
   border:2px solid #D7D2BE;border-radius:8px;
-  color:#fff;font-family:var(--body);font-size:14px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.02em}
+  color:#fff;font-family:var(--inter);font-size:14px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0}
 .bnbtn.ico{width:40px;padding:0}
 .bnbtn .gi{width:18px;height:18px}
 @media(hover:hover){.bnbtn:hover{background:var(--surf3)}}
-@media(min-width:680px){.banner .book{--bw:132px}}
+/* La tapa de la maqueta mide 140x182 —más cuadrada que el 2:3 que usa el
+   resto de la app—, y de ahí sale el alto exacto de la tarjeta: 182 + 32
+   de margen arriba y abajo = 246. La imagen va con object-fit:cover, así
+   que la foto no se deforma. */
+@media(min-width:680px){.banner .book{--bw:140px;aspect-ratio:140/182}}
 /* en el teléfono la tarjeta se achica y la tapa cede ancho: con la tapa a
    96px y 24px de aire a cada lado no entraba un botón por renglón. */
 @media(max-width:679px){
