@@ -663,6 +663,16 @@ const BNF_R=`<svg class="bnf-r" width="40" height="258" viewBox="0 0 40 258" fil
 </defs></svg>`;
 const BNFRAME=`<div class="bnframe" aria-hidden="true">${BNF_L}${BNF_M}${BNF_R}</div>`;
 
+/* Marco del avatar de la barra de arriba, también exportado de Figma: un
+   escudo con una muesca arriba y otra abajo. Mide 46 de alto contra los
+   40 de la foto, así que la desborda 3px por arriba y 3px por abajo —va
+   centrado encima, no adentro. */
+const AVFRAME=`<svg class="avfr" width="40" height="46" viewBox="0 0 40 46" fill="none" aria-hidden="true">
+<path d="M22.291 43.2158C21.5127 43.5137 20.7769 43.9168 20.1074 44.4189L20 44.5L19.8926 44.4189C19.2228 43.9166 18.4866 43.5138 17.708 43.2158L20 40.3506L22.291 43.2158ZM20.2656 1.19922C21.1211 1.84076 22.0964 2.3051 23.1338 2.56445C23.6077 2.68293 24.0915 2.7576 24.5791 2.78809L32.4365 3.2793C36.1258 3.50987 39 6.56918 39 10.2656V35.2344C39 38.9308 36.1258 41.9901 32.4365 42.2207L24.4561 42.7188L21.5615 39.1016C20.7609 38.1007 19.2391 38.1008 18.4385 39.1016L15.543 42.7188L7.56348 42.2207C3.87423 41.9901 1 38.9308 1 35.2344V10.2656C1 6.56918 3.87423 3.50987 7.56348 3.2793L15.4209 2.78809C15.9085 2.7576 16.3923 2.68293 16.8662 2.56445C17.9036 2.3051 18.8789 1.84076 19.7344 1.19922L20 1L20.2656 1.19922Z" stroke="url(#avfg)" stroke-width="2"/>
+<defs><linearGradient id="avfg" x1="20" y1="-0.25" x2="20" y2="45.75" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F0E6C8"/><stop offset="1" stop-color="#C8AA6E"/>
+</linearGradient></defs></svg>`;
+
 /* ================= HOME ================= */
 function vHome(){
   const list = st.err
@@ -764,9 +774,6 @@ function vIdx(){
           </div>
         </div>
         <div class="bnact">
-          ${quienes().length?`<button class="bnbtn" data-act="pickme">${
-            yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>'+esc(yo().n)+'</span>'
-               :'<span>¿Quién sos?</span>'}</button>`:''}
           <button class="bnbtn" data-act="importar">Importar notas</button>
           <button class="bnbtn ico" data-act="edcamp" title="Editar campaña"
             aria-label="Editar campaña">${ic('ajustes')}</button>
@@ -775,12 +782,22 @@ function vIdx(){
         </div>
         </div>
       </div>${BNFRAME}</div>`;
+  /* El avatar de quién sos vive acá arriba, no en la portada.
+     El buscador queda oculto por ahora —va a reubicarse—, pero sigue
+     armado y en el DOM: st.q ya arranca vacío en cada navegación, así que
+     con el campo escondido la vista se comporta como si no hubiera
+     búsqueda. Para traerlo de vuelta alcanza con sacarle la clase "off". */
+  const quien=yo()?yo().n:'¿Quién sos?';
   return `<div class="top"><div class="topin">
-      <button class="back" data-act="home">${ic("camp")}Campañas</button>
-      <label class="searchw">
+      <button class="bnbtn tpbtn" data-act="home">${ic("camp")}Campañas</button>
+      <label class="searchw off">
         <input class="sfield" id="q" placeholder="Buscar"
           value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()">
-      </label></div></div>
+      </label>
+      ${quienes().length?`<button class="tpav" data-act="pickme"
+        title="${att(quien)}" aria-label="${att(quien)}">${
+        yo()?av(yo(),40,{sq:1}):'<span class="tpav-q">?</span>'}${AVFRAME}</button>`:''}
+      </div></div>
     ${banner}
     <div class="page">
       ${D.length?`<div class="segrow">
