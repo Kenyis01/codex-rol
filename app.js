@@ -606,32 +606,62 @@ function book(c,extra){
     onerror="this.parentNode.classList.add('ph');this.remove()">`:'';
   return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}</div>`;
 }
-/* El marco no cierra el rectángulo: dos líneas que corren por arriba y se
-   curvan en las esquinas, apagándose (degradé) a mitad de los costados,
-   sin llegar a la base —igual que "Stroke back"/"Stroke front" en la
-   referencia de Figma. Tres piezas, cada una con la geometría que le
-   corresponde para no deformarse:
-   1. La curva de la esquina: un SVG de tamaño FIJO (no estira con el
-      ancho) —un banner de escritorio es carísimo de ancho comparado con
-      su alto, y estirar una curva a eso la deformaba en un bulto enorme.
-   2. La línea de arriba: recta, así que estirarla a lo ancho nunca la
-      deforma.
-   3. La caída de los costados: recta también, pero su LARGO sí tiene que
-      seguir el alto real de la tarjeta (en la referencia baja bastante,
-      no un poquito) —por eso es alto en % y no un tamaño fijo como la
-      curva. Un degradé CSS común hace el apagado, sin SVG de por medio. */
-function bnfCorner(cls){
-  return `<svg class="bnf-corner ${cls}" width="24" height="20" viewBox="0 0 24 20" aria-hidden="true">
-    <path class="bnf-out" d="M24,4 H10 Q4,4 4,10"/>
-    <path class="bnf-in" d="M24,9 H14 Q9,9 9,14"/>
-  </svg>`;
-}
-const BNFRAME=`<div class="bnframe" aria-hidden="true">
-  ${bnfCorner('tl')}${bnfCorner('tr')}
-  <div class="bnf-top-out"></div><div class="bnf-top-in"></div>
-  <div class="bnf-drop-out l"></div><div class="bnf-drop-out r"></div>
-  <div class="bnf-drop-in l"></div><div class="bnf-drop-in r"></div>
-</div>`;
+/* ---------- marco dorado de la portada ----------
+   Son los tres SVG exportados del Figma, tal cual vinieron: punta
+   izquierda, tramo de arriba y punta derecha. Los tres salen del mismo
+   dibujo original de 1154x258 recortado en ventanas de 40px, por eso
+   los paths tienen coordenadas enormes y fuera de cuadro: lo que se ve
+   lo decide el clipPath, no el path.
+
+   La gracia de partirlo en tres es que cada pieza se escala como puede:
+   las dos puntas van a tamaño FIJO (40x258) porque traen la esquina
+   —que es un arco, y estirarlo lo deforma—, y la del medio, que es
+   nada más que dos líneas rectas horizontales, se estira a lo ancho sin
+   perder nada. Así el marco se adapta a cualquier ancho de pantalla y
+   la esquina mide siempre lo mismo.
+
+   La esquina no cierra: la línea de arriba (y=0..1) arranca en x=27 y
+   la del costado (x=0..1) arranca en y=27, y se enganchan con un arco
+   que sale para afuera. El cuadradito de la punta queda hueco: eso es
+   lo que le da el aire de carta, y es a propósito.
+
+   Los ids de los degradés van renombrados por pieza (bnfL/bnfM/bnfR):
+   los tres archivos traían los mismos ids de Figma y, al convivir en un
+   mismo documento, el último pisaba a los otros dos. */
+const BNF_L=`<svg class="bnf-l" width="40" height="258" viewBox="0 0 40 258" fill="none" aria-hidden="true">
+<g clip-path="url(#bnfLc)">
+<path d="M1153 28H1146V27H1154V258H0V27H8V28H1V257H1153V28ZM1126 8V1H189V0H1127V8C1127 18.4934 1135.51 27 1146 27V28L1145.48 27.9932C1134.85 27.7235 1126.28 19.1519 1126.01 8.5166L1126 8ZM27 8V0H189V1H28V8C28 18.873 19.3235 27.7192 8.5166 27.9932L8 28V27C18.4934 27 27 18.4934 27 8Z" fill="url(#bnfL0)"/>
+<path d="M1145 28C1134.51 28 1126 19.4934 1126 9H189V5H1130V9C1130 17.2843 1136.72 24 1145 24H1149V253H5V24H9C17.2843 24 24 17.2843 24 9V5H189V9H28C28 19.4934 19.4934 28 9 28V249H1145V28Z" fill="url(#bnfL1)"/>
+</g><defs>
+<linearGradient id="bnfL0" x1="189" y1="1" x2="189" y2="257" gradientUnits="userSpaceOnUse">
+<stop stop-color="#9F7E27"/><stop offset="0.75" stop-color="#141C20" stop-opacity="0"/></linearGradient>
+<linearGradient id="bnfL1" x1="189" y1="9" x2="189" y2="249" gradientUnits="userSpaceOnUse">
+<stop stop-color="#C8AA6E"/><stop offset="0.8" stop-color="#141C20" stop-opacity="0"/></linearGradient>
+<clipPath id="bnfLc"><rect width="40" height="258" fill="#fff"/></clipPath>
+</defs></svg>`;
+const BNF_M=`<svg class="bnf-m" viewBox="0 0 40 9" preserveAspectRatio="none" fill="none" aria-hidden="true">
+<g clip-path="url(#bnfMc)">
+<path d="M945 28H938V27H946V258H-208V27H-200V28H-207V257H945V28ZM918 8V1H-19V0H919V8C919 18.4934 927.507 27 938 27V28L937.483 27.9932C926.848 27.7235 918.276 19.1519 918.007 8.5166L918 8ZM-181 8V0H-19V1H-180V8C-180 18.873 -188.676 27.7192 -199.483 27.9932L-200 28V27C-189.507 27 -181 18.4934 -181 8Z" fill="url(#bnfM0)"/>
+<path d="M937 28C926.507 28 918 19.4934 918 9H-19V5H922V9C922 17.2843 928.716 24 937 24H941V253H-203V24H-199C-190.716 24 -184 17.2843 -184 9V5H-19V9H-180C-180 19.4934 -188.507 28 -199 28V249H937V28Z" fill="url(#bnfM1)"/>
+</g><defs>
+<linearGradient id="bnfM0" x1="-19.0003" y1="1" x2="-19.0003" y2="257" gradientUnits="userSpaceOnUse">
+<stop stop-color="#9F7E27"/><stop offset="0.75" stop-color="#141C20" stop-opacity="0"/></linearGradient>
+<linearGradient id="bnfM1" x1="-19.0003" y1="9" x2="-19.0003" y2="249" gradientUnits="userSpaceOnUse">
+<stop stop-color="#C8AA6E"/><stop offset="0.8" stop-color="#141C20" stop-opacity="0"/></linearGradient>
+<clipPath id="bnfMc"><rect width="40" height="9" fill="#fff"/></clipPath>
+</defs></svg>`;
+const BNF_R=`<svg class="bnf-r" width="40" height="258" viewBox="0 0 40 258" fill="none" aria-hidden="true">
+<g clip-path="url(#bnfRc)">
+<path d="M39 28H32V27H40V258H-1114V27H-1106V28H-1113V257H39V28ZM12 8V1H-925V0H13V8C13 18.4934 21.5066 27 32 27V28L31.4834 27.9932C20.8481 27.7235 12.2765 19.1519 12.0068 8.5166L12 8ZM-1087 8V0H-925V1H-1086V8C-1086 18.873 -1094.68 27.7192 -1105.48 27.9932L-1106 28V27C-1095.51 27 -1087 18.4934 -1087 8Z" fill="url(#bnfR0)"/>
+<path d="M31 28C20.5066 28 12 19.4934 12 9H-925V5H16V9C16 17.2843 22.7157 24 31 24H35V253H-1109V24H-1105C-1096.72 24 -1090 17.2843 -1090 9V5H-925V9H-1086C-1086 19.4934 -1094.51 28 -1105 28V249H31V28Z" fill="url(#bnfR1)"/>
+</g><defs>
+<linearGradient id="bnfR0" x1="-925" y1="1" x2="-925" y2="257" gradientUnits="userSpaceOnUse">
+<stop stop-color="#9F7E27"/><stop offset="0.75" stop-color="#141C20" stop-opacity="0"/></linearGradient>
+<linearGradient id="bnfR1" x1="-925" y1="9" x2="-925" y2="249" gradientUnits="userSpaceOnUse">
+<stop stop-color="#C8AA6E"/><stop offset="0.8" stop-color="#141C20" stop-opacity="0"/></linearGradient>
+<clipPath id="bnfRc"><rect width="40" height="258" fill="#fff"/></clipPath>
+</defs></svg>`;
+const BNFRAME=`<div class="bnframe" aria-hidden="true">${BNF_L}${BNF_M}${BNF_R}</div>`;
 
 /* ================= HOME ================= */
 function vHome(){
@@ -723,21 +753,26 @@ function vIdx(){
   const banner=st.q.trim()?'':`<div class="banner">
       <div class="bnin">
         ${book(cur)}
+        <div class="bnbody">
         <div class="bntx">
           <div class="eyebrow">Campaña</div>
           <h1>${esc(cur.name)}</h1>
-          <div class="hint">${ic('libro')}${D.length} ficha${D.length===1?'':'s'}
-            <span class="dot"></span>${ic('link')}${links} vínculo${links===1?'':'s'}</div>
-          <div class="bnact">
-            ${quienes().length?`<button class="bnbtn" data-act="pickme">${
-              yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>'+esc(yo().n)+'</span>'
-                 :'<span>¿Quién sos?</span>'}</button>`:''}
-            <button class="bnbtn" data-act="importar">Importar notas</button>
-            <button class="bnbtn ico" data-act="edcamp" title="Editar campaña"
-              aria-label="Editar campaña">${ic('ajustes')}</button>
-            ${cov?'':`<label class="bnbtn">Agregar portada
-              <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>`}
+          <div class="hint">
+            <span class="st">${ic('libro')}${D.length} ficha${D.length===1?'':'s'}</span>
+            <span class="sep">·</span>
+            <span class="st">${ic('link')}${links} vínculo${links===1?'':'s'}</span>
           </div>
+        </div>
+        <div class="bnact">
+          ${quienes().length?`<button class="bnbtn" data-act="pickme">${
+            yo()?av(yo(),18,yo().gm?{gmring:1}:{})+'<span>'+esc(yo().n)+'</span>'
+               :'<span>¿Quién sos?</span>'}</button>`:''}
+          <button class="bnbtn" data-act="importar">Importar notas</button>
+          <button class="bnbtn ico" data-act="edcamp" title="Editar campaña"
+            aria-label="Editar campaña">${ic('ajustes')}</button>
+          ${cov?'':`<label class="bnbtn">Agregar portada
+            <input type="file" accept="image/*" style="display:none" onchange="upCover(event)"></label>`}
+        </div>
         </div>
       </div>${BNFRAME}</div>`;
   return `<div class="top"><div class="topin">

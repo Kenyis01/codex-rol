@@ -528,57 +528,78 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   box-shadow:0 0 0 1px rgba(224,178,92,.22),0 0 0 4px rgba(224,178,92,.07)}
 .book.sm.ph .bkini{box-shadow:0 0 0 1px rgba(224,178,92,.22)}
 
-/* Banner de campaña: fondo plano (el mismo color de superficie que usás
-   en Figma), no la portada desenfocada de antes. */
-.banner{position:relative;padding:var(--s6) var(--gut);
-  border-bottom:1px solid var(--line);background:var(--surf)}
-/* El marco dorado, estilo carta de D&D Beyond: no cierra el rectángulo.
-   Es una doble línea que corre por arriba de la tapa+nombre+botones y se
-   curva hacia abajo en las dos esquinas superiores, apagándose recién
-   bastante más abajo de los costados —nunca llega a la base. Tres piezas
-   con la geometría que le corresponde a cada una (ver bnfCorner en
-   app.js): la curva de la esquina es de tamaño FIJO —un banner ancho de
-   escritorio deformaba una curva estirada en un bulto enorme—, la línea
-   de arriba y las caídas de los costados son rectas, así que sí pueden
-   seguir el ancho/alto real sin deformarse. Sin overflow:hidden en
-   .banner: la línea de atrás se sale un poco del borde a propósito. */
-.bnframe{position:absolute;inset:0;z-index:2;pointer-events:none}
-.bnf-corner{position:absolute;top:0}
-.bnf-corner.tl{left:0}
-.bnf-corner.tr{right:0;transform:scaleX(-1)}
-.bnf-out{fill:none;stroke:#E0B25C;stroke-width:2;stroke-linecap:round}
-.bnf-in{fill:none;stroke:#D8C9A3;stroke-width:1.2;stroke-linecap:round;opacity:.85}
-.bnf-top-out{position:absolute;top:4px;left:24px;right:24px;height:2px;background:#E0B25C}
-.bnf-top-in{position:absolute;top:9px;left:24px;right:24px;height:1.2px;background:#D8C9A3;opacity:.85}
-.bnf-drop-out,.bnf-drop-in{position:absolute;top:10px;width:2px;height:65%}
-.bnf-drop-out{background:linear-gradient(to bottom,#E0B25C,transparent)}
-.bnf-drop-out.l{left:4px}.bnf-drop-out.r{right:4px}
-.bnf-drop-in{top:14px;width:1.2px;height:80%;opacity:.85;
-  background:linear-gradient(to bottom,#D8C9A3,transparent)}
-.bnf-drop-in.l{left:9px}.bnf-drop-in.r{right:9px}
-.bnin{position:relative;z-index:1;display:flex;gap:var(--s5);align-items:flex-end}
-.bntx{min-width:0;flex:1}
-/* tipografía y color del banner, tomados directo de la referencia —solo
-   acá, el resto de la app sigue con su propia escala tipográfica. */
+/* Portada de campaña: una tarjeta redondeada apoyada sobre el fondo de
+   página, con el marco dorado por encima. El marco SOBRESALE 7px de la
+   tarjeta, así que acá no puede haber overflow:hidden ni recorte de
+   ningún tipo —por eso el fondo desenfocado que había antes se fue: ese
+   efecto exigía recortar. */
+.banner{position:relative;margin-top:var(--s4);
+  padding:var(--s7) var(--s6);background:var(--surf);border-radius:8px}
+/* #app > * (más arriba) centra a todo hijo directo con margin-inline:auto,
+   y por ser selector de id le gana a .banner. Cuando la ventana es más
+   angosta que --appmax eso deja la tarjeta pegada a los bordes y el marco,
+   que sobresale 7px, se saldría de pantalla. Con el ancho descontando el
+   margen lateral la tarjeta siempre deja ese aire. */
+#app>.banner{width:calc(100% - 2*var(--gut));margin-inline:auto}
+/* El marco son los tres SVG de Figma (ver BNF_L/M/R en app.js). Las dos
+   puntas van a tamaño fijo porque traen la esquina —un arco, que
+   estirado se deforma— y la del medio, que es solo líneas rectas
+   horizontales, se estira a lo ancho sin perder nada. La caja del marco
+   es la de la tarjeta agrandada 7px por izquierda, arriba y derecha; el
+   alto es el del dibujo original (258px) y no sigue al de la tarjeta,
+   porque el degradé ya apaga las líneas al 75% y más abajo no hay nada
+   que dibujar. */
+.bnframe{position:absolute;left:-7px;right:-7px;top:-7px;height:258px;
+  z-index:2;pointer-events:none}
+.bnf-l,.bnf-r{position:absolute;top:0;width:40px;height:258px}
+.bnf-l{left:0}
+.bnf-r{right:0}
+/* el ancho va calculado y no con left+right: en un elemento reemplazado
+   —y el <svg> lo es— el ancho automático lo resuelve el tamaño intrínseco
+   del viewBox (40px), no la distancia entre los bordes, así que con
+   right: el tramo del medio quedaba de 40px y la línea de arriba
+   desaparecía. */
+.bnf-m{position:absolute;top:0;left:40px;width:calc(100% - 80px);height:9px}
+/* La tapa queda afuera del wrap y el resto —nombre y botones— adentro de
+   .bnbody: así, cuando la fila no da, los botones bajan justo debajo del
+   nombre en vez de irse al pie de la tarjeta al costado de la tapa. */
+.bnin{position:relative;z-index:1;display:flex;gap:var(--s6);align-items:flex-start}
+.bnbody{flex:1;min-width:0;display:flex;gap:var(--s4);
+  align-items:flex-start;flex-wrap:wrap}
+.bntx{min-width:0;flex:1 1 200px}
+/* tipografía y color de la portada, tomados de la maqueta —solo acá; el
+   resto de la app sigue con su propia escala. */
 .bnin .eyebrow{font-family:var(--body);font-size:12px;font-weight:700;
-  letter-spacing:0;color:#C4CBCE}
-.bnin h1{font-family:'Alegreya',var(--disp);font-weight:700;font-size:var(--f-h1);
-  line-height:1.3;color:#D7D2BE;text-shadow:none}
-.bnin .hint{margin-top:var(--s2);display:flex;align-items:center;gap:var(--s1);
-  font-family:var(--body);font-size:14px;color:#C4CBCE;flex-wrap:wrap}
-.bnin .hint .gi{width:18px;height:18px;margin-right:2px}
-.bnin .hint .dot{width:3px;height:3px;border-radius:50%;background:#C4CBCE;margin:0 2px}
-.bnact{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)}
-/* Botón del banner: fondo del color de la página (no de la superficie
-   donde vive), como un recorte —así lo tienen en la referencia. */
+  letter-spacing:0;line-height:1.35;color:#C4CBCE;margin-bottom:var(--s2)}
+.bnin h1{font-family:'Alegreya',var(--disp);font-weight:700;font-size:24px;
+  line-height:1.5;letter-spacing:0;color:#D7D2BE;text-shadow:none}
+@media(min-width:680px){.bnin h1{font-size:32px}}
+.bnin .hint{margin-top:var(--s2);display:flex;align-items:center;gap:var(--s2);
+  flex-wrap:wrap;font-family:var(--body);font-size:14px;line-height:20px;color:#C4CBCE}
+.bnin .hint .st{display:inline-flex;align-items:center;gap:var(--s1)}
+.bnin .hint .gi{width:18px;height:18px;color:var(--gold)}
+/* margin-left:auto los manda contra el borde derecho, como en la maqueta.
+   flex-shrink en 1 (y no flex:none) es lo que les permite achicarse cuando
+   la fila ya no da: ahí el grupo baja de renglón y sus botones se acomodan
+   entre ellos en vez de irse de la tarjeta. */
+.bnact{display:flex;gap:var(--s2);flex:0 1 auto;flex-wrap:wrap;margin-left:auto}
+/* Botón de la portada: fondo del color de la página, no del de la
+   tarjeta donde vive —queda como un recorte, igual que en la maqueta. */
 .bnbtn{height:40px;padding:0 var(--s4);background:var(--bg);
-  border:2px solid #D7D2BE;border-radius:var(--r1);
+  border:2px solid #D7D2BE;border-radius:8px;
   color:#fff;font-family:var(--body);font-size:14px;font-weight:700;
   text-transform:uppercase;letter-spacing:.02em}
 .bnbtn.ico{width:40px;padding:0}
-.bnbtn.ico .gi{width:18px;height:18px}
+.bnbtn .gi{width:18px;height:18px}
 @media(hover:hover){.bnbtn:hover{background:var(--surf3)}}
 @media(min-width:680px){.banner .book{--bw:132px}}
+/* en el teléfono la tarjeta se achica y la tapa cede ancho: con la tapa a
+   96px y 24px de aire a cada lado no entraba un botón por renglón. */
+@media(max-width:679px){
+  .banner{padding:var(--s5) var(--s4)}
+  .banner .book{--bw:84px}
+  .bnin{gap:var(--s4)}
+}
 
 /* ============ ficha ============ */
 .hero{display:flex;gap:var(--s4);align-items:center;margin-bottom:var(--s4)}
