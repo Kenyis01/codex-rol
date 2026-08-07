@@ -14,6 +14,15 @@ const TYPES={
   creature :{l:'Criaturas' ,s:'Criatura' ,c:'#6F9AD6',ic:'ty-creature'}
 };
 const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3',ic:'ty-otro'};
+/* Los personajes del grupo son, en teoría, del tipo "character" —pero en
+   la práctica son un conjunto aparte: los protagonistas. Por eso no
+   comparten el dorado de "Personaje" (que además se confundía con el
+   dorado que ya usa medio sistema para texto destacado): tienen su
+   propio color, y TY() se lo asigna antes de mirar el tipo real, así
+   que se propaga solo a cada avatar, mención en prosa, tarjeta, fila del
+   grafo y demás lugares que ya llaman a TY(e). El mismo valor está
+   duplicado en --party de style.css, como el resto de estos colores. */
+const PARTYC='#66C0D6';
 /* Los cinco de arriba son los que vienen puestos, pero no alcanzan para todo:
    una casa noble no es una facción. Cualquier ficha puede llevar un tipo
    propio; el nombre se guarda como slug y se le arma un color estable a
@@ -131,7 +140,7 @@ function TYT(t){
   const l=deslug(t);
   return {l,s:l,c:colorDe(t),ic:'ty-otro',propio:true};
 }
-const TY=e=>TYT(e&&e.t);
+const TY=e=>e&&e.pc&&!e.gm?Object.assign({},TYT(e.t),{c:PARTYC}):TYT(e&&e.t);
 /* los tipos propios que de verdad se están usando en esta campaña */
 function tiposPropios(){
   const vistos={};
@@ -713,9 +722,11 @@ function vHome(){
    entra: su nombre ya es dorado por reglas propias (.gmrow). */
 function rowHTML(e,via,opts){
   opts=opts||{};
-  const badge=opts.badge&&e.t?`<span class="sep">·</span><span class="rty" style="--c:${TYT(e.t).c}">${
+  /* TY(e) y no TYT(e.t): así un personaje del grupo trae su color propio
+     en vez del dorado genérico de "Personaje", acá y en todos lados. */
+  const badge=opts.badge&&e.t?`<span class="sep">·</span><span class="rty" style="--c:${TY(e).c}">${
     TYT(e.t).ic?ic(TYT(e.t).ic):''}${esc(TYT(e.t).s).toUpperCase()}</span>`:'';
-  const c=opts.tycolor&&!e.gm?TYT(e.t).c:null;
+  const c=opts.tycolor&&!e.gm?TY(e).c:null;
   return `<div class="row frow${e.gm?' gmrow':''}" data-go="${att(e.s)}"${c?` style="--c:${c}"`:''}>${av(e,40,e.gm?{gmring:1}:{})}
     <div class="grow"><div class="rn${c?' cty':''}">${esc(e.n)}${badge}</div>
       <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div></div>`;
@@ -746,13 +757,12 @@ function vIdx(){
       <div class="grph">Máster<span class="ct">${gms.length}</span></div>
       ${group(gms)}</div>`:'';
     const pcs=D.filter(e=>e.pc&&!e.gm).sort(abc);
-    /* dorado, no --ink: es el mismo color que ya usa el eyebrow de un PJ en
-       su propia ficha (línea ~849), y ahora también el que toma su nombre
-       acá abajo —group() les pinta el nombre con TYT(e.t).c, que para un
-       personaje es el mismo dorado. Sin esto el encabezado quedaba blanco
-       mientras las filas de adentro ya eran doradas. */
+    /* el color del grupo, no --ink: es el mismo que TY() ya les asigna a
+       las filas de acá abajo —group() les pinta el nombre con TY(e).c—
+       y a cada mención suya en el resto de la app. Sin esto el
+       encabezado quedaba de otro color mientras las filas ya cambiaron. */
     out+=pcs.length?`<div class="grp">
-      <div class="grph" style="color:var(--gold)">${esc(cur.party_name||'Nuestro grupo')}
+      <div class="grph" style="color:${PARTYC}">${esc(cur.party_name||'Nuestro grupo')}
         <span class="ct">${pcs.length}</span></div>${group(pcs)}</div>`:'';
     out+=tiposTodos().map(t=>{
       const g=D.filter(e=>e.t===t&&!e.pc&&!e.gm).sort(abc);
@@ -851,7 +861,7 @@ function vFicha(){
       ${e.img?`<button class="avbtn" data-act="img" data-v="${att(e.s)}">${av(e,AV.hero,ho)}</button>`
              :av(e,AV.hero,ho)}
       <div class="grow">
-        <div class="eyebrow" style="color:${e.gm?'var(--gm)':(e.pc?'var(--gold)':c)}">
+        <div class="eyebrow" style="color:${e.gm?'var(--gm)':c}">
           ${e.gm?'Máster de la partida':(e.pc?esc(cur.party_name||'Nuestro grupo'):esc(TY(e).s))}</div>
         <h1>${esc(e.n)}</h1></div></div>
     ${e.a&&e.a.length?`<div class="aka">también: ${e.a.slice()

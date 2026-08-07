@@ -19,6 +19,8 @@
   --character:#E0B25C; --location:#4FB795; --item:#B48BD8;
   --faction:#E0696E;   --creature:#6F9AD6; --gold:#E0B25C;
   --gm:#E8C572;        /* el Máster: dorado más claro que el del sistema */
+  --party:#66C0D6;     /* los personajes del grupo, aparte del dorado de
+                           "Personaje": mismo valor que PARTYC en app.js */
 
   /* ---- espaciado: múltiplos de 4 ---- */
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px;
