@@ -718,7 +718,7 @@ function rowHTML(e,via,opts){
 /* En la tarjeta solo entra el nombre: sin conteo de menciones, más limpia. */
 function cardHTML(e){
   return `<div class="ccard${e.gm?' gmcard':''}" data-go="${att(e.s)}" style="--c:${TY(e).c}">${
-    e.gm?'<span class="gmaura" aria-hidden="true"></span>':''}${av(e,AV.xl,e.gm?{gmring:1}:{})}
+    av(e,AV.xl,e.gm?{gmring:1}:{})}
     <div class="ccn">${esc(e.n)}</div></div>`;
 }
 function group(list,via){
@@ -821,9 +821,21 @@ function vFicha(){
     </div></div>
   <div class="page${e.gm?' gmpage':''}">
     ${e.gm?`<div class="gmfx" aria-hidden="true">${
-      [[6,12,0],[9,28,-2.5],[7,45,-5],[11,62,-1.2],[8,78,-3.8],[10,90,-6.4],
-       [7.5,20,-8],[9.5,70,-9.5]]
-      .map(([d,x,dl])=>`<i style="--d:${d}s;--x:${x}%;--dl:${dl}s"></i>`).join('')
+      /* Cada mota tiene su propia distancia: las de adelante son más
+         grandes, opacas y nítidas; las del fondo, chicas, tenues y
+         desenfocadas. Antes eran ocho divs idénticos y por eso se leían
+         como ruido y no como profundidad. Las columnas son
+         [duración, x%, retardo, tamaño, opacidad, desenfoque, deriva]. */
+      [[ 9,  8,  -1, 3.4, .85, 0,   14],
+       [13, 21,  -6, 1.6, .35, 1.1, -9],
+       [ 8, 34,  -3, 2.8, .70, .2,  11],
+       [15, 47, -10, 1.4, .28, 1.4,  7],
+       [10, 58,  -5, 3.1, .78, 0,  -12],
+       [12, 71,  -8, 1.9, .42, .9,   9],
+       [ 9, 83,  -2, 2.6, .65, .3,  -8],
+       [14, 93,  -7, 1.5, .30, 1.2,  6]]
+      .map(([d,x,dl,w,op,bl,dx])=>`<i style="--d:${d}s;--x:${x}%;--dl:${dl}s;`+
+        `--w:${w}px;--op:${op};--bl:${bl}px;--dx:${dx}px"></i>`).join('')
     }</div>`:''}
     <div class="hero">
       ${e.img?`<button class="avbtn" data-act="img" data-v="${att(e.s)}">${av(e,AV.hero,ho)}</button>`
@@ -3622,6 +3634,29 @@ document.addEventListener('click',ev=>{
   const fn=ACT[t.dataset.act];
   if(fn)fn(t.dataset.v,t,ev);
 });
+/* El destello del Máster sale del punto exacto que tocaste. Va por
+   delegación en document porque r() reescribe el innerHTML entero en cada
+   pintada y un listener puesto sobre el nodo se perdería. Y escucha
+   pointerdown en vez de eventos táctiles, así el dedo, el lápiz y el mouse
+   pasan por el mismo código: es la respuesta que :hover nunca pudo dar en
+   el teléfono. */
+document.addEventListener('pointerdown',ev=>{
+  const t=ev.target.closest&&ev.target.closest('.gmrow,.gmcard');
+  if(!t)return;
+  const caja=t.getBoundingClientRect();
+  const o=document.createElement('span');
+  o.className='onda';
+  o.style.left=(ev.clientX-caja.left)+'px';
+  o.style.top=(ev.clientY-caja.top)+'px';
+  t.appendChild(o);
+  o.addEventListener('animationend',()=>o.remove());
+  t.classList.add('sostenido');
+});
+/* pointerleave no burbujea, así que soltar se resuelve limpiando todo:
+   si el dedo se levanta en cualquier lado, ya no hay nada sostenido */
+['pointerup','pointercancel'].forEach(e=>document.addEventListener(e,()=>{
+  document.querySelectorAll('.sostenido').forEach(n=>n.classList.remove('sostenido'));
+}));
 document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t&&t.id==='gsel')gCenter(t.value);

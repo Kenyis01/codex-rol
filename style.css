@@ -293,16 +293,20 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   background:radial-gradient(130% 100% at 28% 0%,rgba(232,197,114,.17),transparent 68%)}
 .gmfx{position:absolute;left:0;right:0;top:0;height:360px;
   overflow:hidden;pointer-events:none;z-index:0}
+/* El tamaño, la opacidad, el desenfoque y la deriva salen de la distancia
+   a la que está cada mota, no de una medida fija: eso es lo que las hace
+   leer como profundidad y no como ruido. Los valores los pone app.js. */
 .gmfx i{position:absolute;bottom:-8px;left:var(--x,50%);
-  width:3px;height:3px;border-radius:50%;background:var(--gm);
-  box-shadow:0 0 9px 2px rgba(232,197,114,.55);opacity:0;
+  width:var(--w,3px);height:var(--w,3px);border-radius:50%;background:#FFF4D6;
+  box-shadow:0 0 calc(var(--w,3px) * 3) rgba(232,197,114,.6);
+  filter:blur(var(--bl,0px));opacity:0;
   animation:pavesa var(--d,8s) linear infinite;animation-delay:var(--dl,0s)}
 @keyframes pavesa{
-  0%{transform:translate(0,0) scale(.5);opacity:0}
-  12%{opacity:.95}
-  50%{transform:translate(14px,-180px) scale(1)}
-  88%{opacity:.45}
-  100%{transform:translate(-6px,-360px) scale(1.15);opacity:0}}
+  0%{transform:translate(0,0) scale(.45);opacity:0}
+  14%{opacity:var(--op,.9)}
+  55%{transform:translate(var(--dx,14px),-180px) scale(1)}
+  86%{opacity:calc(var(--op,.9) * .38)}
+  100%{transform:translate(calc(var(--dx,14px) * -.4),-360px) scale(1.18);opacity:0}}
 
 /* entrada: el retrato aparece con un pequeño empuje */
 .page.gmpage .hero{animation:invocar .75s cubic-bezier(.2,.85,.25,1) both}
@@ -325,8 +329,8 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
 /* con movimiento reducido queda todo quieto, pero sigue distinguiéndose */
 @media(prefers-reduced-motion:reduce){
   .av.gmring::before,.av.gmring::after,.orb i,
-  .gmfx i,.page.gmpage .hero,.page.gmpage h1{animation:none}
-  .orb,.gmfx{display:none}
+  .gmfx i,.page.gmpage .hero,.page.gmpage h1,.onda{animation:none}
+  .orb,.gmfx,.onda{display:none}
   .page.gmpage h1{background-position:0 0}}
 
 /* ============ menciones y enlaces del editor ============
@@ -762,50 +766,35 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .ccn{font-size:var(--f-cap);font-weight:500;line-height:var(--lh-snug)}
 
 /* ============ el Máster en el índice ============
-   La ficha del Máster se distingue sin gritar: un resplandor que respira
-   detrás y, solo cuando le pasás el puntero, un destello que recorre el
-   borde. Todo sobre transform y opacity, que son las dos que no cuestan. */
-.ccard.gmcard{background:linear-gradient(160deg,#232028,var(--surf))}
-/* el resplandor de fondo, a la deriva */
-.gmaura{position:absolute;inset:-30% -18%;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(38% 32% at 32% 26%,rgba(232,197,114,.22),transparent 70%),
-    radial-gradient(34% 30% at 72% 68%,rgba(201,160,232,.18),transparent 72%);
-  animation:derivar 11s ease-in-out infinite}
-.gmcard > :not(.gmaura){position:relative;z-index:1}
-/* el borde solo se enciende con el puntero */
-.gmcard::after{content:'';position:absolute;inset:-1px;border-radius:inherit;
-  z-index:2;pointer-events:none;opacity:0;transition:opacity .25s;
-  background:conic-gradient(from 0deg,transparent 0deg,
-    color-mix(in srgb,var(--gm) 70%,transparent) 40deg,#FFF4D6 62deg,
-    color-mix(in srgb,var(--gm) 70%,transparent) 84deg,transparent 150deg);
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-          mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;padding:1.5px}
-@media(hover:hover){
-  .gmcard:hover::after{opacity:1;animation:girar 2.8s linear infinite}
-  .gmcard:hover{box-shadow:0 12px 30px rgba(0,0,0,.4),0 0 24px rgba(232,197,114,.16)}
-}
-/* en lista: un filo dorado al costado y un brillo que barre al pasar */
+   Luz, no objetos. Antes acá había un aura a la deriva, un borde cónico
+   que giraba y un filo de 2px al costado: tres formas dibujadas que
+   competían entre sí y que, además, en un teléfono no se veían nunca
+   porque vivían dentro de @media(hover:hover). Ahora la ficha del Máster
+   se distingue porque su retrato ilumina lo que tiene alrededor —una sola
+   idea, sin contorno, y quieta— y porque responde al toque. */
+.ccard.gmcard{background:
+  radial-gradient(78% 52% at 50% 30%,rgba(232,197,114,.17),
+    rgba(232,197,114,.04) 48%,transparent 76%),var(--surf)}
+/* en lista la luz sale del retrato, que está a la izquierda */
 .row.gmrow{position:relative;overflow:hidden;
-  background:linear-gradient(90deg,rgba(232,197,114,.07),transparent 42%)}
-.row.gmrow::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
-  background:linear-gradient(180deg,transparent,var(--gm),transparent)}
+  background:radial-gradient(120% 190% at 8% 50%,rgba(232,197,114,.15),
+    rgba(232,197,114,.04) 42%,transparent 72%)}
 .row.gmrow .rn{color:var(--gm)}
-@media(hover:hover){
-  .row.gmrow::after{content:'';position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(105deg,transparent 30%,
-      rgba(255,244,214,.14) 48%,transparent 66%);
-    transform:translateX(-120%)}
-  .row.gmrow:hover{background:linear-gradient(90deg,rgba(232,197,114,.13),transparent 52%)}
-  .row.gmrow:hover::after{animation:barrer .85s ease-out}
-}
-@keyframes derivar{0%,100%{transform:translate3d(0,0,0) scale(1)}
-                   50%{transform:translate3d(4%,-3%,0) scale(1.09)}}
-@keyframes barrer{to{transform:translateX(120%)}}
-@media(prefers-reduced-motion:reduce){
-  .gmaura,.gmcard::after,.row.gmrow::after{animation:none}
-  .gmaura{opacity:.7}}
+
+/* ---- respuesta al toque ----
+   Una onda que sale de la coordenada exacta donde apretaste. Va sobre
+   pointerdown y no sobre eventos táctiles, así el dedo y el mouse pasan
+   por el mismo código: es lo que el hover nunca pudo dar en el teléfono.
+   La capa se posiciona sola desde JS; acá solo vive la animación. */
+.onda{position:absolute;border-radius:50%;pointer-events:none;z-index:5;
+  width:14px;height:14px;margin:-7px 0 0 -7px;
+  background:radial-gradient(closest-side,rgba(255,244,214,.8),
+    rgba(232,197,114,.32) 60%,transparent);
+  animation:expandir .6s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes expandir{to{transform:scale(26);opacity:0}}
+/* mientras sostenés, el dorado sube */
+.row.gmrow.sostenido,.ccard.gmcard.sostenido{
+  box-shadow:inset 0 0 0 999px rgba(232,197,114,.09)}
 
 /* ============ botones ============ */
 /* El buscador y Lista/Cards comparten fila, como en la maqueta. En el
