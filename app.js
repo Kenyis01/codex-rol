@@ -746,8 +746,13 @@ function vIdx(){
       <div class="grph">Máster<span class="ct">${gms.length}</span></div>
       ${group(gms)}</div>`:'';
     const pcs=D.filter(e=>e.pc&&!e.gm).sort(abc);
+    /* dorado, no --ink: es el mismo color que ya usa el eyebrow de un PJ en
+       su propia ficha (línea ~849), y ahora también el que toma su nombre
+       acá abajo —group() les pinta el nombre con TYT(e.t).c, que para un
+       personaje es el mismo dorado. Sin esto el encabezado quedaba blanco
+       mientras las filas de adentro ya eran doradas. */
     out+=pcs.length?`<div class="grp">
-      <div class="grph" style="color:var(--ink)">${esc(cur.party_name||'Nuestro grupo')}
+      <div class="grph" style="color:var(--gold)">${esc(cur.party_name||'Nuestro grupo')}
         <span class="ct">${pcs.length}</span></div>${group(pcs)}</div>`:'';
     out+=tiposTodos().map(t=>{
       const g=D.filter(e=>e.t===t&&!e.pc&&!e.gm).sort(abc);
