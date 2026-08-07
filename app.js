@@ -7,11 +7,11 @@ const SB = window.supabase.createClient(
 );
 
 const TYPES={
-  character:{l:'Personajes',s:'Personaje',c:'#E0B25C'},
-  location :{l:'Lugares'   ,s:'Lugar'    ,c:'#4FB795'},
-  item     :{l:'Objetos'   ,s:'Objeto'   ,c:'#B48BD8'},
-  faction  :{l:'Facciones' ,s:'Facción'  ,c:'#E0696E'},
-  creature :{l:'Criaturas' ,s:'Criatura' ,c:'#6F9AD6'}
+  character:{l:'Personajes',s:'Personaje',c:'#E0B25C',ic:'ty-character'},
+  location :{l:'Lugares'   ,s:'Lugar'    ,c:'#4FB795',ic:'ty-location'},
+  item     :{l:'Objetos'   ,s:'Objeto'   ,c:'#B48BD8',ic:'ty-item'},
+  faction  :{l:'Facciones' ,s:'Facción'  ,c:'#E0696E',ic:'ty-faction'},
+  creature :{l:'Criaturas' ,s:'Criatura' ,c:'#6F9AD6',ic:'ty-creature'}
 };
 const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3'};
 /* Los cinco de arriba son los que vienen puestos, pero no alcanzan para todo:
@@ -704,11 +704,19 @@ function vHome(){
 }
 
 /* ================= ÍNDICE ================= */
-function rowHTML(e,via){
-  return `<div class="row${e.gm?' gmrow':''}" data-go="${att(e.s)}">${av(e,AV.md,e.gm?{gmring:1}:{})}
-    <div class="grow"><div class="rn">${esc(e.n)}</div>
+/* opts.badge: agrega el tipo de ficha (icono + nombre) al lado del nombre,
+   como en "Conectado con" —ahí hace falta, porque la lista mezcla tipos;
+   en el índice normal no, porque ya vienen agrupadas bajo su encabezado.
+   opts.rc: el contador de menciones a la derecha; se apaga junto con el
+   badge porque Figma no le deja lugar a las dos cosas en la misma fila. */
+function rowHTML(e,via,opts){
+  opts=opts||{};
+  const badge=opts.badge&&e.t?`<span class="sep">·</span><span class="rty" style="--c:${TYT(e.t).c}">${
+    TYT(e.t).ic?ic(TYT(e.t).ic):''}${esc(TYT(e.t).s).toUpperCase()}</span>`:'';
+  return `<div class="row frow${e.gm?' gmrow':''}" data-go="${att(e.s)}">${av(e,40,e.gm?{gmring:1}:{})}
+    <div class="grow"><div class="rn">${esc(e.n)}${badge}</div>
       <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div>
-    <span class="rc">${b3(e)}</span></div>`;
+    ${opts.rc===false?'':`<span class="rc">${b3(e)}</span>`}</div>`;
 }
 function cardHTML(e){
   return `<div class="ccard${e.gm?' gmcard':''}" data-go="${att(e.s)}" style="--c:${TY(e).c}">${
@@ -725,13 +733,13 @@ function cardHTML(e){
 }
 function group(list,via){
   if(st.view==='cards')return `<div class="cgrid">${list.map(e=>cardHTML(e)).join('')}</div>`;
-  return `<div class="card">${list.map(e=>rowHTML(e,via)).join('')}</div>`;
+  return `<div class="card fcard">${list.map(e=>rowHTML(e,via)).join('')}</div>`;
 }
 function vIdx(){
   const hits=find(st.q,40);
   const hitsBody = hits.length
     ? (st.view==='cards' ? `<div class="cgrid">${hits.map(({e})=>cardHTML(e)).join('')}</div>`
-       : `<div class="card">${hits.map(({e,via})=>rowHTML(e,via)).join('')}</div>`)
+       : `<div class="card fcard">${hits.map(({e,via})=>rowHTML(e,via)).join('')}</div>`)
     : `<div class="empty"><div class="ei">${ic("search")}</div><div class="et">Nada parecido</div>
        <div class="es">No encontré nada como "${esc(st.q)}". Probá con menos letras.</div></div>`;
   const body = st.q.trim() ? hitsBody : (()=>{
@@ -857,10 +865,7 @@ function vFicha(){
           <div class="blsnip">${esc(b.snip).replace(/§(.*?)§/g,'<em>$1</em>')}</div></div>`}).join('')}
       </div></div>`:''}
     ${rel.length?`<div class="sec"><div class="sech">Conectado con</div>
-      <div class="card">${rel.map(x=>`<div class="row" data-go="${att(x.s)}">${av(x,AV.sm)}
-        <div class="grow"><div class="rn">${esc(x.n)}</div>
-        <div class="rs">${esc(x.sm)}</div></div>
-        <span class="rc">${esc(TY(x).s)}</span></div>`).join('')}</div></div>`:''}
+      <div class="card fcard">${rel.map(x=>rowHTML(x,null,{badge:true,rc:false})).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2 actbtn" data-act="graphof" data-v="${att(e.s)}">
       Ver en el grafo</button>
       <button class="btn sec2 actbtn" data-act="hist" data-v="${att(e.s)}">

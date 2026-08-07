@@ -713,6 +713,26 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .rc{font-family:var(--mono);font-size:var(--f-sm);color:var(--dim);flex:none}
 .rc .gi{width:11px;height:11px;opacity:.75}
+/* La fila de ficha, rediseñada en Figma: sin el borde general de .card, el
+   separador entre filas del color de la página en vez de --line, nombre
+   en negrita y avatar más grande. Va como modificador (.fcard/.frow) y no
+   reescribiendo .card/.row/.rn/.rs directo, porque esas clases las usan
+   un montón de diálogos que la maqueta no tocó (fusionar, borrar, tipos,
+   historial): tocarlas de raíz les cambiaba el look sin que nadie lo
+   pidiera. */
+.fcard{border:none}
+.frow{border-bottom-color:var(--bg)}
+.frow .rn{display:flex;align-items:center;flex-wrap:wrap;column-gap:var(--s2);
+  font-family:var(--inter);font-size:14px;font-weight:700;color:#D7D2BE}
+.frow .rs{font-family:var(--inter);font-size:14px;color:#C4CBCE}
+/* el tipo de ficha, solo en listas que mezclan tipos (Conectado con): un
+   "·" del mismo peso que el nombre, el icono con el color del tipo —el
+   mismo --c que ya usa el resto de la app— y la etiqueta en versalitas. */
+.rn .sep{color:#D7D2BE}
+.rty{display:inline-flex;align-items:center;gap:var(--s1);
+  font-family:var(--inter);font-size:12px;font-weight:400;
+  text-transform:uppercase;letter-spacing:0;color:#C4CBCE}
+.rty .gi{width:18px;height:18px;color:var(--c)}
 /* el crédito de los iconos: obligatorio por la licencia, pero al fondo */
 .credits{margin-top:var(--s8);padding-top:var(--s5);border-top:1px solid var(--line);
   font-size:var(--f-sm);line-height:var(--lh-snug);color:var(--dim);text-align:center}
