@@ -163,16 +163,17 @@ body{
 
 /* ============ barra superior ============ */
 /* El fondo tapa todo el ancho de la ventana, pero el contenido se alinea
-   con el de la portada: misma caja y mismo margen interno que .banner,
-   así el botón de Campañas cae justo sobre la tapa y el avatar sobre los
-   botones de la tarjeta. Por eso .topin repite el ancho de .banner en vez
-   de heredar el de #app > *, que es de id y le gana por especificidad. */
+   con el resto de la página: mismo max-width y el mismo --gut de margen
+   interno que .page, para que Atrás/Editar/Campañas queden en la misma
+   columna que el cuerpo de cualquier pantalla, no solo la de la portada.
+   Por eso .topin arma su propio max-width en vez de heredar el de
+   #app > *, que es de id y le gana por especificidad. */
 .top{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.95);
   backdrop-filter:blur(16px) saturate(140%)}
 #app>.top{max-width:none;margin-inline:0}
-.topin{width:min(var(--appmax),100% - 2*var(--gut));margin-inline:auto;
+.topin{max-width:var(--appmax);margin-inline:auto;
   display:flex;gap:var(--s2);align-items:center;justify-content:space-between;
-  padding:var(--s3) var(--s6);padding-top:calc(var(--s3) + env(safe-area-inset-top))}
+  padding:var(--s3) var(--gut);padding-top:calc(var(--s3) + env(safe-area-inset-top))}
 .tpbtn{background:#12181C}
 /* El marco va por encima de la foto y la desborda arriba y abajo, así que
    el botón no puede recortar ni empujar: el marco se posiciona centrado
@@ -759,7 +760,6 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   box-shadow:var(--hover-w),0 12px 28px rgba(0,0,0,.35)}}
 .ccard:active{transform:translateY(0)}
 .ccn{font-size:var(--f-cap);font-weight:500;line-height:var(--lh-snug)}
-.ccc{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);line-height:1}
 
 /* ============ el Máster en el índice ============
    La ficha del Máster se distingue sin gritar: un resplandor que respira

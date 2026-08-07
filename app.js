@@ -706,23 +706,20 @@ function vHome(){
 /* ================= ÍNDICE ================= */
 /* opts.badge: agrega el tipo de ficha (icono + nombre) al lado del nombre,
    como en "Conectado con" —ahí hace falta, porque la lista mezcla tipos;
-   en el índice normal no, porque ya vienen agrupadas bajo su encabezado.
-   opts.rc: el contador de menciones a la derecha; se apaga junto con el
-   badge porque Figma no le deja lugar a las dos cosas en la misma fila. */
+   en el índice normal no, porque ya vienen agrupadas bajo su encabezado. */
 function rowHTML(e,via,opts){
   opts=opts||{};
   const badge=opts.badge&&e.t?`<span class="sep">·</span><span class="rty" style="--c:${TYT(e.t).c}">${
     TYT(e.t).ic?ic(TYT(e.t).ic):''}${esc(TYT(e.t).s).toUpperCase()}</span>`:'';
   return `<div class="row frow${e.gm?' gmrow':''}" data-go="${att(e.s)}">${av(e,40,e.gm?{gmring:1}:{})}
     <div class="grow"><div class="rn">${esc(e.n)}${badge}</div>
-      <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div>
-    ${opts.rc===false?'':`<span class="rc">${b3(e)}</span>`}</div>`;
+      <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div></div>`;
 }
+/* En la tarjeta solo entra el nombre: sin conteo de menciones, más limpia. */
 function cardHTML(e){
   return `<div class="ccard${e.gm?' gmcard':''}" data-go="${att(e.s)}" style="--c:${TY(e).c}">${
     e.gm?'<span class="gmaura" aria-hidden="true"></span>':''}${av(e,AV.xl,e.gm?{gmring:1}:{})}
-    <div class="ccn">${esc(e.n)}</div>
-    <div class="ccc">${b3(e)} menc.</div></div>`;
+    <div class="ccn">${esc(e.n)}</div></div>`;
 }
 function group(list,via){
   if(st.view==='cards')return `<div class="cgrid">${list.map(e=>cardHTML(e)).join('')}</div>`;
@@ -856,7 +853,7 @@ function vFicha(){
           <div class="blsnip">${esc(b.snip).replace(/§(.*?)§/g,'<em>$1</em>')}</div></div>`}).join('')}
       </div></div>`:''}
     ${rel.length?`<div class="sec"><div class="sech">Conectado con</div>
-      <div class="card fcard">${rel.map(x=>rowHTML(x,null,{badge:true,rc:false})).join('')}</div></div>`:''}
+      <div class="card fcard">${rel.map(x=>rowHTML(x,null,{badge:true})).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2 actbtn" data-act="graphof" data-v="${att(e.s)}">
       Ver en el grafo</button>
       <button class="btn sec2 actbtn" data-act="hist" data-v="${att(e.s)}">
