@@ -628,12 +628,15 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    entre ellos en vez de irse de la tarjeta. */
 .bnact{display:flex;gap:var(--s2);flex:0 1 auto;flex-wrap:wrap;margin-left:auto}
 /* Botón de la portada: fondo del color de la página, no del de la
-   tarjeta donde vive —queda como un recorte, igual que en la maqueta. */
-.bnbtn{height:40px;padding:0 var(--s4);gap:var(--s2);background:var(--bg);
+   tarjeta donde vive —queda como un recorte, igual que en la maqueta.
+   Altura var(--h-md), la misma que Atrás/Editar: eran 40px fijos, así
+   que Campañas medía distinto que el resto de la barra de arriba, y la
+   barra entera saltaba 4px al pasar del índice a una ficha. */
+.bnbtn{height:var(--h-md);padding:0 var(--s4);gap:var(--s2);background:var(--bg);
   border:2px solid #D7D2BE;border-radius:8px;
   color:#fff;font-family:var(--inter);font-size:14px;font-weight:700;
   text-transform:uppercase;letter-spacing:0}
-.bnbtn.ico{width:40px;padding:0}
+.bnbtn.ico{width:var(--h-md);padding:0}
 .bnbtn .gi{width:18px;height:18px}
 @media(hover:hover){.bnbtn:hover{box-shadow:var(--hover-w)}}
 /* El mismo look en cualquier botón "de un solo golpe" —Cancelar, Editar,
@@ -738,19 +741,12 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   left:var(--s4);right:var(--s4);bottom:0;height:1px;background:var(--bg)}
 .frow .rn{display:flex;align-items:center;flex-wrap:wrap;column-gap:var(--s2);
   font-family:var(--inter);font-size:14px;font-weight:700;color:#D7D2BE}
-/* El nombre toma el color del tipo, por ahora solo en el índice agrupado
-   (rowHTML con opts.tycolor). No es una regla de .frow en general para no
-   tocar búsqueda ni Conectado con, que no lo pidieron. */
+/* El nombre toma el color del tipo (rowHTML con opts.tycolor): el índice
+   agrupado y "Conectado con", que mezcla tipos y antes distinguía con un
+   tag de ícono al lado del nombre —ver el commit que lo sacó. No es una
+   regla de .frow en general porque búsqueda no lo pidió. */
 .frow .rn.cty{color:var(--c)}
 .frow .rs{font-family:var(--inter);font-size:14px;color:#C4CBCE}
-/* el tipo de ficha, solo en listas que mezclan tipos (Conectado con): un
-   "·" del mismo peso que el nombre, el icono con el color del tipo —el
-   mismo --c que ya usa el resto de la app— y la etiqueta en versalitas. */
-.rn .sep{color:#D7D2BE}
-.rty{display:inline-flex;align-items:center;gap:var(--s1);
-  font-family:var(--inter);font-size:12px;font-weight:400;
-  text-transform:uppercase;letter-spacing:0;color:#C4CBCE}
-.rty .gi{width:18px;height:18px;color:var(--c)}
 /* el crédito de los iconos: obligatorio por la licencia, pero al fondo */
 .credits{margin-top:var(--s8);padding-top:var(--s5);border-top:1px solid var(--line);
   font-size:var(--f-sm);line-height:var(--lh-snug);color:var(--dim);text-align:center}

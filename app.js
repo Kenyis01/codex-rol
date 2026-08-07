@@ -713,22 +713,16 @@ function vHome(){
 }
 
 /* ================= ÍNDICE ================= */
-/* opts.badge: agrega el tipo de ficha (icono + nombre) al lado del nombre,
-   como en "Conectado con" —ahí hace falta, porque la lista mezcla tipos;
-   en el índice normal no, porque ya vienen agrupadas bajo su encabezado.
-   opts.tycolor: el nombre toma el color del tipo. Por ahora solo lo pide
-   el índice agrupado —group()—, no búsqueda ni Conectado con, así que
-   queda atado a esa llamada y no a rowHTML en general. El Máster no
-   entra: su nombre ya es dorado por reglas propias (.gmrow). */
+/* opts.tycolor: el nombre toma el color del tipo (o el del grupo, si la
+   ficha es del grupo —ver TY()). Antes "Conectado con" no lo pedía y en
+   cambio mostraba un tag de ícono+tipo al lado del nombre, para poder
+   distinguir tipos en una lista que los mezcla; el tag se sacó y ahora
+   el color cumple ese mismo papel, sin ocupar renglón aparte. */
 function rowHTML(e,via,opts){
   opts=opts||{};
-  /* TY(e) y no TYT(e.t): así un personaje del grupo trae su color propio
-     en vez del dorado genérico de "Personaje", acá y en todos lados. */
-  const badge=opts.badge&&e.t?`<span class="sep">·</span><span class="rty" style="--c:${TY(e).c}">${
-    TYT(e.t).ic?ic(TYT(e.t).ic):''}${esc(TYT(e.t).s).toUpperCase()}</span>`:'';
   const c=opts.tycolor&&!e.gm?TY(e).c:null;
   return `<div class="row frow${e.gm?' gmrow':''}" data-go="${att(e.s)}"${c?` style="--c:${c}"`:''}>${av(e,40,e.gm?{gmring:1}:{})}
-    <div class="grow"><div class="rn${c?' cty':''}">${esc(e.n)}${badge}</div>
+    <div class="grow"><div class="rn${c?' cty':''}">${esc(e.n)}</div>
       <div class="rs">${esc(e.sm)}${via?` · coincide con "${esc(via)}"`:''}</div></div></div>`;
 }
 /* En la tarjeta solo entra el nombre: sin conteo de menciones, más limpia. */
@@ -885,7 +879,7 @@ function vFicha(){
           <div class="blsnip">${esc(b.snip).replace(/§(.*?)§/g,'<em>$1</em>')}</div></div>`}).join('')}
       </div></div>`:''}
     ${rel.length?`<div class="sec"><div class="sech">Conectado con</div>
-      <div class="card fcard">${rel.map(x=>rowHTML(x,null,{badge:true})).join('')}</div></div>`:''}
+      <div class="card fcard">${rel.map(x=>rowHTML(x,null,{tycolor:true})).join('')}</div></div>`:''}
     <div class="sec"><button class="btn sec2 actbtn" data-act="graphof" data-v="${att(e.s)}">
       Ver en el grafo</button>
       <button class="btn sec2 actbtn" data-act="hist" data-v="${att(e.s)}">
