@@ -191,9 +191,6 @@ body{
 .back{height:var(--h-md);flex:none;background:var(--surf);border-color:var(--line);
   color:var(--muted);border-radius:var(--r2);padding:0 var(--s4);gap:var(--s2);
   font-size:var(--f-md);font-weight:500}
-.back .gi{width:15px;height:15px}
-/* con icono el botón arranca antes: el dibujo ya aporta el aire de la izquierda */
-.back:has(.gi){padding-left:var(--s3)}
 /* Guardar de una ficha que ya existe: mismo tamaño que "Cancelar", al lado,
    pero dorado como el de siempre y apagado hasta que haya algo para guardar. */
 .back.pri{background:linear-gradient(160deg,#F0D9A8,var(--gold));
@@ -756,12 +753,10 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .ccard{position:relative;display:flex;flex-direction:column;align-items:center;
   text-align:center;gap:var(--s3);cursor:pointer;overflow:hidden;
   padding:var(--s5) var(--s3) var(--s4);
-  background:linear-gradient(160deg,var(--surf2),var(--surf));
-  border:1px solid var(--line);border-radius:var(--r3);
-  transition:transform .16s,border-color .16s,box-shadow .16s}
+  background:var(--surf);border:none;border-radius:var(--r3);
+  transition:transform .16s,box-shadow .16s}
 @media(hover:hover){.ccard:hover{transform:translateY(-2px);
-  border-color:color-mix(in srgb,var(--c) 40%,transparent);
-  box-shadow:0 12px 28px rgba(0,0,0,.35)}}
+  box-shadow:var(--hover-w),0 12px 28px rgba(0,0,0,.35)}}
 .ccard:active{transform:translateY(0)}
 .ccn{font-size:var(--f-cap);font-weight:500;line-height:var(--lh-snug)}
 .ccc{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);line-height:1}
@@ -770,8 +765,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    La ficha del Máster se distingue sin gritar: un resplandor que respira
    detrás y, solo cuando le pasás el puntero, un destello que recorre el
    borde. Todo sobre transform y opacity, que son las dos que no cuestan. */
-.ccard.gmcard{border-color:color-mix(in srgb,var(--gm) 32%,transparent);
-  background:linear-gradient(160deg,#232028,var(--surf))}
+.ccard.gmcard{background:linear-gradient(160deg,#232028,var(--surf))}
 /* el resplandor de fondo, a la deriva */
 .gmaura{position:absolute;inset:-30% -18%;z-index:0;pointer-events:none;
   background:
@@ -790,8 +784,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   -webkit-mask-composite:xor;mask-composite:exclude;padding:1.5px}
 @media(hover:hover){
   .gmcard:hover::after{opacity:1;animation:girar 2.8s linear infinite}
-  .gmcard:hover{border-color:transparent;
-    box-shadow:0 12px 30px rgba(0,0,0,.4),0 0 24px rgba(232,197,114,.16)}
+  .gmcard:hover{box-shadow:0 12px 30px rgba(0,0,0,.4),0 0 24px rgba(232,197,114,.16)}
 }
 /* en lista: un filo dorado al costado y un brillo que barre al pasar */
 .row.gmrow{position:relative;overflow:hidden;

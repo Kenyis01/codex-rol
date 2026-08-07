@@ -13,7 +13,7 @@ const TYPES={
   faction  :{l:'Facciones' ,s:'Facción'  ,c:'#E0696E',ic:'ty-faction'},
   creature :{l:'Criaturas' ,s:'Criatura' ,c:'#6F9AD6',ic:'ty-creature'}
 };
-const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3'};
+const FALLBACK={l:'Otros',s:'Ficha',c:'#94A0B3',ic:'ty-otro'};
 /* Los cinco de arriba son los que vienen puestos, pero no alcanzan para todo:
    una casa noble no es una facción. Cualquier ficha puede llevar un tipo
    propio; el nombre se guarda como slug y se le arma un color estable a
@@ -129,7 +129,7 @@ function TYT(t){
   if(TYPES[t])return TYPES[t];
   if(!t)return FALLBACK;
   const l=deslug(t);
-  return {l,s:l,c:colorDe(t),propio:true};
+  return {l,s:l,c:colorDe(t),ic:'ty-otro',propio:true};
 }
 const TY=e=>TYT(e&&e.t);
 /* los tipos propios que de verdad se están usando en esta campaña */
@@ -722,14 +722,7 @@ function cardHTML(e){
   return `<div class="ccard${e.gm?' gmcard':''}" data-go="${att(e.s)}" style="--c:${TY(e).c}">${
     e.gm?'<span class="gmaura" aria-hidden="true"></span>':''}${av(e,AV.xl,e.gm?{gmring:1}:{})}
     <div class="ccn">${esc(e.n)}</div>
-    <div class="ccc">${(()=>{
-      /* En la tarjeta pesa más saber qué es el personaje que cuántas veces se
-         lo nombra; si no tiene atributos cargados sigue yendo el conteo. */
-      const A=atrsDe(e).filter(a=>a.k==='raza'||a.k==='clase');
-      const g=e.at&&e.at.genero;
-      return A.length?A.map(a=>esc(etiqAtr(a.tb,e.at[a.k],g))).join(' · ')
-                     :b3(e)+' menc.';
-    })()}</div></div>`;
+    <div class="ccc">${b3(e)} menc.</div></div>`;
 }
 function group(list,via){
   if(st.view==='cards')return `<div class="cgrid">${list.map(e=>cardHTML(e)).join('')}</div>`;
@@ -826,8 +819,8 @@ function vFicha(){
   const rel=[...(ADJ[e.s]||[])].map(s=>byS[s]).filter(Boolean)
     .sort((a,b)=>a.n.localeCompare(b.n,'es'));
   return `<div class="top"><div class="topin">
-      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button>
-      <button class="back actbtn push" data-act="edit" data-v="${att(e.s)}">${ic('quill')}Editar</button>
+      <button class="back actbtn" data-act="back">Atrás</button>
+      <button class="back actbtn push" data-act="edit" data-v="${att(e.s)}">Editar</button>
     </div></div>
   <div class="page${e.gm?' gmpage':''}">
     ${e.gm?`<div class="gmfx" aria-hidden="true">${
@@ -2217,7 +2210,7 @@ async function aplicarImp(){
 function vImp(){
   const I=st.imp;
   const cab='<div class="top"><div class="topin">'+
-    '<button class="back actbtn" data-act="impsalir">'+ic('back')+'Salir</button>'+
+    '<button class="back actbtn" data-act="impsalir">Salir</button>'+
     '<span class="tag push">IMPORTAR</span></div></div>';
   if(I.paso==='pegar')return cab+`<div class="page">
     <div class="eyebrow">Paso 1</div>
@@ -2225,7 +2218,7 @@ function vImp(){
     <div class="hint">Copiá el texto de abajo, pasáselo a tu AI junto con tus
       notas, y pegá acá lo que te devuelva. No se escribe nada hasta que
       revises qué va a pasar.</div>
-    <button class="btn sec2 actbtn" data-act="impprompt">${ic('scroll')}Copiar el texto para la AI</button>
+    <button class="btn sec2 actbtn" data-act="impprompt">Copiar el texto para la AI</button>
     <div class="eyebrow mt">Lo que te devolvió</div>
     <textarea class="ta" id="impta" placeholder="Pegá acá la respuesta">${esc(I.txt||'')}</textarea>
     ${I.err?`<div class="warn"><div class="warnh">No pude leerlo</div>
@@ -2448,7 +2441,7 @@ function vHist(){
           </div>`).join('')}
       </div>`;
   return `<div class="top"><div class="topin">
-      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button>
+      <button class="back actbtn" data-act="back">Atrás</button>
       <span class="tag push">HISTORIAL</span></div></div>
     <div class="page">
       <div class="eyebrow">${esc(TY(e).s)}</div>
@@ -2534,14 +2527,14 @@ const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function vGrafo(){
   if(!D.length)return `<div class="top"><div class="topin">
-      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button></div></div>
+      <button class="back actbtn" data-act="back">Atrás</button></div></div>
     <div class="empty"><div class="ei">${ic("mesh")}</div><div class="et">Nada que dibujar</div>
     <div class="es">Creá algunas fichas y enlazalas con @ para ver el grafo.</div></div>`;
   if(!byS[st.ent]){const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s))[0];st.ent=top?top.s:null}
   const opts=D.slice().sort((a,b)=>a.n.localeCompare(b.n))
     .map(x=>`<option value="${att(x.s)}"${x.s===st.ent?' selected':''}>${esc(x.n)}</option>`).join('');
   return `<div class="top"><div class="topin">
-      <button class="back actbtn" data-act="back">${ic("back")}Atrás</button>
+      <button class="back actbtn" data-act="back">Atrás</button>
       <select class="sfield" id="gsel" data-act="center">${opts}</select>
     </div></div>
   <div class="gwrap" id="gwrap">
@@ -2601,7 +2594,7 @@ function gControls(){
 /* las acciones van juntas y al final, para que no se confundan con los filtros */
 function gAcciones(){
   return `<div class="gfila acciones">
-    <button class="gbtn" data-act="gexport">${ic('scroll')}Guardar imagen</button>
+    <button class="gbtn" data-act="gexport">Guardar imagen</button>
     ${G.pin.size?`<button class="gbtn" data-act="gsoltar">
       Soltar ${G.pin.size} clavada${G.pin.size===1?'':'s'}</button>`:''}
   </div>`;
