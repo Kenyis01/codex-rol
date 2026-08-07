@@ -55,6 +55,11 @@
   /* ---- otros ---- */
   --appmax:560px;
   --shadow:0 18px 44px rgba(0,0,0,.45);
+  /* el hover parejo de toda la app: un velo blanco al 10%, no un gris de
+     otro tono —eso es lo que se veía mal contra la paleta nueva. Va como
+     box-shadow inset y no como background porque así se suma arriba del
+     color que ya tenga cada cosa, en vez de reemplazarlo por otro. */
+  --hover-w:inset 0 0 0 999px rgba(255,255,255,.1);
   /* onda de los rótulos de sección: un período de 18px que se repite en x.
      Va como máscara, así toma el color del rótulo (gris o el del tipo). */
   --wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='9' viewBox='0 0 18 9'%3E%3Cpath d='M0 4.5q4.5-5 9 0t9 0' fill='none' stroke='%23000' stroke-width='1.35' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -189,7 +194,6 @@ body{
 .back .gi{width:15px;height:15px}
 /* con icono el botón arranca antes: el dibujo ya aporta el aire de la izquierda */
 .back:has(.gi){padding-left:var(--s3)}
-@media(hover:hover){.back:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
 /* Guardar de una ficha que ya existe: mismo tamaño que "Cancelar", al lado,
    pero dorado como el de siempre y apagado hasta que haya algo para guardar. */
 .back.pri{background:linear-gradient(160deg,#F0D9A8,var(--gold));
@@ -203,19 +207,20 @@ body{
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   -webkit-mask-size:100% 100%;mask-size:100% 100%;
   -webkit-mask-image:var(--cap-r);mask-image:var(--cap-r)}
-.sfield{height:var(--h-md);width:100%;background:var(--surf);border-color:var(--line);
-  color:var(--ink);border-radius:var(--r2);padding:0 var(--s4);font-size:var(--f-base);
-  font-family:var(--body);outline:none}
-/* el campo iguala el alto de los botones de 40 de la maqueta, no el de 44
-   que usa el resto de la app */
-.topin .sfield{flex:1;height:40px}
+/* El campo de la maqueta: borde de 2px, versalitas en negrita como el
+   resto de los controles nuevos, y 40px de alto —el mismo que ya
+   comparten los botones y el segmentado—, no el 44 que tenía antes. */
+.sfield{height:40px;width:100%;background:var(--surf);border:2px solid #A2ACB2;
+  color:var(--ink);border-radius:8px;padding:0 var(--s4);font-size:var(--f-base);
+  font-family:var(--inter);font-weight:700;text-transform:uppercase;letter-spacing:0;
+  outline:none}
 .searchw{flex:1;display:flex}
 .searchw.off{display:none}
 .tag{flex:none;font-family:var(--mono);font-size:var(--f-xs);letter-spacing:var(--track);
   text-transform:uppercase;color:var(--dim);line-height:1}
-@media(hover:hover){.sfield:hover{border-color:var(--line2)}}
+@media(hover:hover){.sfield:hover{box-shadow:var(--hover-w)}}
 .sfield:focus{border-color:rgba(224,178,92,.55);box-shadow:0 0 0 3px rgba(224,178,92,.10)}
-.sfield::placeholder{color:var(--dim)}
+.sfield::placeholder{color:rgba(255,255,255,.6);opacity:1}
 /* La flechita del desplegable es el mismo icono que el resto de las flechas.
    Va como fondo y no como <svg> porque un <select> nativo no admite hijos, así
    que el color va escrito: currentColor no llega hasta acá. */
@@ -413,7 +418,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   color:var(--dim);cursor:pointer;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .tagch button .gi{width:9px;height:9px}
-@media(hover:hover){.tagch button:hover{color:var(--ink);background:rgba(237,231,218,.12)}}
+@media(hover:hover){.tagch button:hover{color:var(--ink);box-shadow:var(--hover-w)}}
 .taginput{flex:1;min-width:120px;height:var(--h-chip);border:none;background:none;
   color:var(--ink);font-family:var(--body);font-size:var(--f-md);outline:none;padding:0 var(--s2)}
 .taginput::placeholder{color:var(--dim)}
@@ -466,7 +471,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .accch.crear{color:var(--location)}
 .accch.sumar{color:var(--gold)}
 .accch.nada{color:var(--dim)}
-@media(hover:hover){.accch:hover{background:rgba(237,231,218,.08)}}
+@media(hover:hover){.accch:hover{box-shadow:var(--hover-w)}}
 .card.mt{margin-top:var(--s4)}
 /* el estado, dicho en palabras y no solo en color */
 .impest{font-weight:600}
@@ -627,7 +632,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   text-transform:uppercase;letter-spacing:0}
 .bnbtn.ico{width:40px;padding:0}
 .bnbtn .gi{width:18px;height:18px}
-@media(hover:hover){.bnbtn:hover{background:var(--surf3)}}
+@media(hover:hover){.bnbtn:hover{box-shadow:var(--hover-w)}}
 /* El mismo look en cualquier botón "de un solo golpe" —Cancelar, Editar,
    Importar, Borrar la ficha, los de confirmar/cancelar de un diálogo—
    sin importar si su clase de base es .back, .btn o .gbtn. Es una capa de
@@ -649,7 +654,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   text-transform:uppercase;letter-spacing:0}
 @media(hover:hover){
   .back.actbtn:hover,.btn.sec2.actbtn:hover,.btn.peligro.actbtn:hover,.gbtn.actbtn:hover{
-    background:var(--surf3);color:#fff;border-color:#D7D2BE}
+    box-shadow:var(--hover-w);color:#fff;border-color:#D7D2BE}
 }
 /* La tapa de la maqueta mide 140x182 —más cuadrada que el 2:3 que usa el
    resto de la app—, y de ahí sale el alto exacto de la tarjeta: 182 + 32
@@ -706,7 +711,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .row{display:flex;gap:var(--s3);align-items:center;cursor:pointer;
   padding:var(--s3) var(--s4);border-bottom:1px solid var(--line);transition:background .14s}
 .row:last-child{border-bottom:none}
-@media(hover:hover){.row:hover{background:var(--surf2)}}
+@media(hover:hover){.row:hover{box-shadow:var(--hover-w)}}
 .row:active{background:var(--surf3)}
 .rn{font-size:var(--f-md);font-weight:500;line-height:var(--lh-snug)}
 .rs{font-size:var(--f-cap);color:var(--muted);line-height:var(--lh-snug);margin-top:2px;
@@ -721,7 +726,13 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    historial): tocarlas de raíz les cambiaba el look sin que nadie lo
    pidiera. */
 .fcard{border:none}
-.frow{border-bottom-color:var(--bg)}
+/* El separador no llega al borde de la tarjeta: en vez del border-bottom de
+   .row —que corre de punta a punta porque el padding horizontal de la fila
+   queda POR DENTRO de su propio borde— es una línea aparte, inset el mismo
+   var(--s4) que ya separa el contenido del canto. */
+.frow{border-bottom:none;position:relative}
+.frow:not(:last-child)::after{content:'';position:absolute;
+  left:var(--s4);right:var(--s4);bottom:0;height:1px;background:var(--bg)}
 .frow .rn{display:flex;align-items:center;flex-wrap:wrap;column-gap:var(--s2);
   font-family:var(--inter);font-size:14px;font-weight:700;color:#D7D2BE}
 .frow .rs{font-family:var(--inter);font-size:14px;color:#C4CBCE}
@@ -810,18 +821,23 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    dos botones eran chicos. Desde tablet vuelve a ser compacto a la derecha,
    que ahí sobra lugar y estirarlo se vería raro. */
 .segrow{display:flex;margin-bottom:var(--s5)}
-.seg{display:flex;flex:1;gap:var(--s1);padding:var(--s1);
-  background:var(--surf);border:1px solid var(--line);border-radius:var(--rf)}
-.seg button{flex:1;height:var(--h-sm);padding:0 var(--s4);border-radius:var(--rf);
-  background:none;color:var(--dim);white-space:nowrap;
-  font-family:var(--mono);font-size:var(--f-xs);text-transform:uppercase;letter-spacing:.06em}
+/* El segmentado de la maqueta: fondo propio en el grupo, cada opción a
+   40px con las mismas esquinas de 8px que el resto (nada de píldora
+   entera), y la elegida se lee por bloque de color, no por un tono apenas
+   más claro. */
+.seg{display:flex;flex:1;gap:4px;padding:4px;
+  background:#374046;border:none;border-radius:8px}
+.seg button{flex:1;height:40px;padding:0 var(--s4);border-radius:8px;
+  border:2px solid transparent;background:none;color:#C4CBCE;white-space:nowrap;
+  font-family:var(--inter);font-size:14px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0}
 @media(min-width:680px){
   .segrow{justify-content:flex-end}
   .seg{flex:0 0 auto}
   .seg button{flex:0 0 auto}
 }
-@media(hover:hover){.seg button:hover{color:var(--ink)}}
-.seg button.on{background:var(--surf3);color:var(--ink)}
+.seg button.on{background:#D7D2BE;border-color:#fff;color:#121812}
+@media(hover:hover){.seg button:not(.on):hover{color:#fff;box-shadow:var(--hover-w)}}
 
 .btn{width:100%;height:var(--h-lg);padding:0 var(--s5);border-radius:var(--r2);
   font-size:var(--f-md);font-weight:600;white-space:nowrap;gap:var(--s2)}
@@ -834,7 +850,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   box-shadow:0 8px 22px rgba(224,178,92,.20)}
 @media(hover:hover){.btn.pri:hover{filter:brightness(1.07)}}
 .btn.sec2{background:var(--surf);border-color:var(--line);color:var(--muted)}
-@media(hover:hover){.btn.sec2:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
+@media(hover:hover){.btn.sec2:hover{color:var(--ink);border-color:var(--line2);box-shadow:var(--hover-w)}}
 .btn.sec2.on{border-color:var(--gold);color:var(--gold)}
 /* Borrar. Se lee distinto pero no grita: es una acción que existe y que a
    veces hace falta, no una trampa. El relleno rojo se guarda para el botón
@@ -870,7 +886,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   font-family:var(--mono);font-size:var(--f-xs);text-transform:uppercase;letter-spacing:.06em;
   white-space:nowrap}
 .gbtn{padding:0 var(--s4);background:var(--surf);border-color:var(--line);color:var(--muted)}
-@media(hover:hover){.gbtn:hover{color:var(--ink);border-color:var(--line2);background:var(--surf2)}}
+@media(hover:hover){.gbtn:hover{color:var(--ink);border-color:var(--line2);box-shadow:var(--hover-w)}}
 .gbtn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .tpb{padding:0 var(--s3);border-color:color-mix(in srgb,var(--c) 45%,transparent);
   color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}
@@ -895,7 +911,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .acr{display:flex;gap:var(--s3);align-items:center;cursor:pointer;
   padding:var(--s3) var(--s4);border-bottom:1px solid var(--line)}
 .acr:last-child{border-bottom:none}
-@media(hover:hover){.acr:hover{background:var(--surf3)}}
+@media(hover:hover){.acr:hover{box-shadow:var(--hover-w)}}
 .acn{font-size:var(--f-md);font-weight:500;line-height:var(--lh-snug)}
 .acs{font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
   letter-spacing:.05em;margin-top:2px;line-height:1}
@@ -927,7 +943,7 @@ canvas.pointing{cursor:pointer}
 .gzoom button{width:var(--h-ic);height:var(--h-ic);padding:0;border-radius:var(--r2);
   background:rgba(30,36,47,.85);backdrop-filter:blur(8px);
   border-color:var(--line2);color:var(--muted)}
-@media(hover:hover){.gzoom button:hover{color:var(--ink);background:var(--surf3)}}
+@media(hover:hover){.gzoom button:hover{color:var(--ink);box-shadow:var(--hover-w)}}
 .gzoom button.on{color:var(--gold);border-color:rgba(224,178,92,.55)}
 .gzoom .gi{width:17px;height:17px}
 /* la mira anterior era de trazo fino y necesitaba ir más grande; esta es
@@ -1039,7 +1055,7 @@ canvas.pointing{cursor:pointer}
 /* filtro por etiqueta: mismo idioma de prendido/apagado que los tipos, en dorado */
 .lgb.tag{font-family:var(--mono);font-size:var(--f-xs);padding:0 var(--s3)}
 .lgb.tag.on{--c:var(--gold);color:var(--gold)}
-@media(hover:hover){.gcx:hover{color:var(--ink);background:var(--surf3)}}
+@media(hover:hover){.gcx:hover{color:var(--ink);box-shadow:var(--hover-w)}}
 
 /* ============ diálogo ============ */
 .dlgwrap{position:fixed;inset:0;z-index:85;display:flex;align-items:center;
