@@ -3528,6 +3528,47 @@ function volarThumb(sel,antes){
   thumb.style.transition='transform .22s cubic-bezier(.2,.85,.25,1)';
   requestAnimationFrame(()=>{thumb.style.transform='none'});
 }
+/* el brillo dorado de la curva de navegación: la línea de fondo (navGlow) ya
+   queda siempre visible a baja opacidad —así lo pidió el usuario, que no
+   desaparezca del todo hacia los bordes— y estos tres stops se corren para
+   que el punto más brillante quede centrado bajo la pestaña activa. .navbg
+   ocupa el ancho completo de la pantalla pero .navin (los íconos) vive
+   encerrado en --appmax y centrado, así que la fracción se mide de verdad
+   contra el ícono, no contra un tercio parejo de la barra. */
+function fraccionNav(btn){
+  const svg=document.querySelector('.navbg');
+  if(!svg||!btn)return .5;
+  const bs=svg.getBoundingClientRect(), bb=btn.getBoundingClientRect();
+  if(!bs.width)return .5;
+  return Math.max(0,Math.min(1,(bb.left+bb.width/2-bs.left)/bs.width));
+}
+function pintarBrilloNav(c){
+  const g=document.getElementById('navGlow');
+  if(!g||g.children.length<3)return;
+  const a=Math.max(0,c-.18)*100, m=c*100, d=Math.min(1,c+.18)*100;
+  g.children[0].setAttribute('offset',a+'%');
+  g.children[1].setAttribute('offset',m+'%');
+  g.children[2].setAttribute('offset',d+'%');
+}
+let navGlowC=null, navGlowRaf=null;
+function colocarBrilloNav(){
+  navGlowC=fraccionNav(document.querySelector('.nb.on'));
+  pintarBrilloNav(navGlowC);
+}
+function moverBrilloNav(){
+  const destino=fraccionNav(document.querySelector('.nb.on'));
+  if(navGlowC===null||REDUCED){navGlowC=destino;pintarBrilloNav(navGlowC);return}
+  if(Math.abs(navGlowC-destino)<.001)return;
+  if(navGlowRaf)cancelAnimationFrame(navGlowRaf);
+  const desde=navGlowC, t0=performance.now(), dur=220;
+  const paso=now=>{
+    const t=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-t,3);
+    navGlowC=desde+(destino-desde)*e;
+    pintarBrilloNav(navGlowC);
+    if(t<1)navGlowRaf=requestAnimationFrame(paso);
+  };
+  navGlowRaf=requestAnimationFrame(paso);
+}
 /* r() reemplaza la página entera en cada redibujado, así que un cambio de
    contenido (vista, pestaña) no tiene con qué fundirse solo: el nodo viejo no
    sobrevive al cambio de estado. Este puente desvanece lo que había, recién
@@ -3618,7 +3659,7 @@ function r(){
   RENDERED=st.tab;
   if(st.tab==='ed'){wireEd();st.editing._live=true}
   if(st.tab==='grafo')requestAnimationFrame(gMount);
-  restFocus(f);syncNavH();colocarThumbs();
+  restFocus(f);syncNavH();colocarThumbs();moverBrilloNav();
 }
 /* La navegación no siempre mide lo mismo (safe-area del teléfono, tamaño de
    fuente del sistema), y de ese alto dependen el relleno de la página y dónde
@@ -3818,7 +3859,7 @@ document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t&&t.id==='gsel')gCenter(t.value);
 });
-addEventListener('resize',()=>{syncNavH();colocarThumbs();
+addEventListener('resize',()=>{syncNavH();colocarThumbs();colocarBrilloNav();
   if(st.tab==='grafo'&&G.cv){gSize();if(G.autofit)gFit();gDraw()}});
 addEventListener('keydown',ev=>{
   if(st.tab!=='grafo')return;
