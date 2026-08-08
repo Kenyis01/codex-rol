@@ -3832,14 +3832,14 @@ document.addEventListener('click',ev=>{
   const fn=ACT[t.dataset.act];
   if(fn)fn(t.dataset.v,t,ev);
 });
-/* El destello del Máster sale del punto exacto que tocaste. Va por
-   delegación en document porque r() reescribe el innerHTML entero en cada
-   pintada y un listener puesto sobre el nodo se perdería. Y escucha
-   pointerdown en vez de eventos táctiles, así el dedo, el lápiz y el mouse
-   pasan por el mismo código: es la respuesta que :hover nunca pudo dar en
-   el teléfono. */
+/* El destello sale del punto exacto que tocaste — nació en las filas del
+   Máster y ahora también vive en los botones de la nav. Va por delegación en
+   document porque r() reescribe el innerHTML entero en cada pintada y un
+   listener puesto sobre el nodo se perdería. Y escucha pointerdown en vez de
+   eventos táctiles, así el dedo, el lápiz y el mouse pasan por el mismo
+   código: es la respuesta que :hover nunca pudo dar en el teléfono. */
 document.addEventListener('pointerdown',ev=>{
-  const t=ev.target.closest&&ev.target.closest('.gmrow,.gmcard');
+  const t=ev.target.closest&&ev.target.closest('.gmrow,.gmcard,.nb');
   if(!t)return;
   const caja=t.getBoundingClientRect();
   const o=document.createElement('span');

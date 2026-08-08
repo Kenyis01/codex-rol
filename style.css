@@ -805,7 +805,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   animation:expandir .6s cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes expandir{to{transform:scale(26);opacity:0}}
 /* mientras sostenés, el dorado sube */
-.row.gmrow.sostenido,.ccard.gmcard.sostenido{
+.row.gmrow.sostenido,.ccard.gmcard.sostenido,.nb.sostenido{
   box-shadow:inset 0 0 0 999px rgba(232,197,114,.09)}
 
 /* ============ botones ============ */
@@ -1169,13 +1169,21 @@ canvas.pointing{cursor:pointer}
    para que no se estire hacia el safe-area. */
 .navin{position:absolute;top:16px;left:0;right:0;height:56px;max-width:var(--appmax);margin:0 auto;
   display:grid;grid-template-columns:repeat(3,1fr)}
-.nb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+.nb{position:relative;overflow:hidden;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
   gap:var(--s1);height:100%;background:none;border:none;cursor:pointer;
   color:var(--muted);font-family:var(--body);font-weight:500;font-size:12px;
   line-height:16px;transition:color .15s}
 .nb .gi{width:24px;height:24px}
 @media(hover:hover){.nb:hover{color:var(--ink2)}}
 .nb.on{color:var(--ink2)}
+/* el mismo resplandor que sale del retrato en las filas del Máster, acá
+   detrás del ícono activo: no es un halo que respira ni gira, solo se
+   enciende con la pestaña — la ceremonia del Máster es para algo que se
+   toca poco, esto se toca todo el rato */
+.nb.on::before{content:'';position:absolute;top:2px;left:50%;translate:-50% 0;
+  width:44px;height:44px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(232,178,92,.3),transparent 74%)}
 
 /* ============ estados vacíos y carga ============ */
 .skel{border-radius:var(--r1);
