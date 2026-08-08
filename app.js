@@ -3872,14 +3872,16 @@ document.addEventListener('click',ev=>{
    nada, solo destraba :active en todos lados (el fundido de las menciones,
    el fondo al tocar una fila, el scale(.97) de los botones...) de una vez. */
 document.addEventListener('touchstart',()=>{},{passive:true});
-/* El destello sale del punto exacto que tocaste — nació en las filas del
-   Máster y ahora también vive en los botones de la nav. Va por delegación en
+/* El destello sale del punto exacto que tocaste — nació en la fila del
+   Máster y ahora es de cualquier ficha (fila o card) y de los botones de la
+   nav. .frow/.ccard ya cubren las del Máster también (gmrow/gmcard son
+   compuestas), así que no hace falta nombrarlas aparte. Va por delegación en
    document porque r() reescribe el innerHTML entero en cada pintada y un
    listener puesto sobre el nodo se perdería. Y escucha pointerdown en vez de
    eventos táctiles, así el dedo, el lápiz y el mouse pasan por el mismo
    código: es la respuesta que :hover nunca pudo dar en el teléfono. */
 document.addEventListener('pointerdown',ev=>{
-  const t=ev.target.closest&&ev.target.closest('.gmrow,.gmcard,.nb');
+  const t=ev.target.closest&&ev.target.closest('.frow,.ccard,.nb');
   if(!t)return;
   /* en la nav la onda no vive dentro del botón: un .nb es un rectángulo
      angosto y encerrarla ahí le dibujaba un cuadrado marcado del tamaño del

@@ -758,7 +758,10 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    .row —que corre de punta a punta porque el padding horizontal de la fila
    queda POR DENTRO de su propio borde— es una línea aparte, inset el mismo
    var(--s4) que ya separa el contenido del canto. */
-.frow{border-bottom:none;position:relative}
+.frow{border-bottom:none;position:relative;overflow:hidden}
+/* el tap de acá abajo (.onda/.sostenido) reemplaza este cambio de fondo
+   plano e instantáneo — nació en la fila del Máster y ahora es de todas */
+.row.frow:active{background:none}
 .frow:not(:last-child)::after{content:'';position:absolute;
   left:var(--s4);right:var(--s4);bottom:0;height:1px;background:var(--bg)}
 .frow .rn{display:flex;align-items:center;flex-wrap:wrap;column-gap:var(--s2);
@@ -816,11 +819,14 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
     rgba(232,197,114,.32) 60%,transparent);
   animation:expandir .6s cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes expandir{to{transform:scale(26);opacity:0}}
-/* mientras sostenés, el dorado sube. Los botones de la nav quedan afuera a
-   propósito: son rectángulos angostos y el inset les dibujaba un cuadrado
-   marcado en vez de teñir una superficie. Ahí el acuse es la onda, que se
-   expande por toda la barra. */
-.row.gmrow.sostenido,.ccard.gmcard.sostenido{
+/* mientras sostenés, el dorado sube. Nació acá, con la ficha del Máster,
+   pero el toque en sí (esto y la onda de arriba) es de cualquier ficha, no
+   solo la suya — lo que sigue siendo exclusivo del Máster es el fondo que
+   ilumina desde el retrato, dos reglas más arriba.
+   Los botones de la nav quedan afuera a propósito: son rectángulos angostos
+   y el inset les dibujaba un cuadrado marcado en vez de teñir una
+   superficie. Ahí el acuse es la onda, que se expande por toda la barra. */
+.row.frow.sostenido,.ccard.sostenido{
   box-shadow:inset 0 0 0 999px rgba(232,197,114,.09)}
 
 /* ============ botones ============ */
