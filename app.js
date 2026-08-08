@@ -192,8 +192,14 @@ function av(e,size,o){
   const ini=initials(e.n,one);
   const cls='av'+(o.sq?' sq':'')+(o.ring?' ring':'')+(o.big?' big':'')+(o.gmring?' gmring':'');
   const fs=Math.max(9,Math.round(size*(one?.46:.38)));
+  /* sin lazy/async: r() destruye y reconstruye estos <img> en cada
+     redibujado (cambiar de vista, buscar, tocar una pestaña...), así que
+     "lazy" nunca llega a ahorrar nada —la imagen ya estaba en pantalla,
+     solo cambió de nodo— y de paso hace que el navegador tarde un cuadro en
+     empezar a pintarla: un parpadeo con la inicial sola antes de que
+     aparezca la foto. */
   const img=e.img
-    ? `<img src="${att(e.img)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
+    ? `<img src="${att(e.img)}" alt="" onerror="this.remove()">`
     : '';
   /* decoración del Máster: chispas en órbita. --o es el radio, expresado como
      porcentaje del alto de la propia chispa, que es como CSS mide el origen
@@ -611,7 +617,7 @@ function prose(txt){
 function book(c,extra){
   const cov=c&&c.cover_url;
   const cls='book'+(cov?'':' ph')+(extra?' '+extra:'');
-  const img=cov?`<img src="${att(cov)}" alt="" loading="lazy" decoding="async"
+  const img=cov?`<img src="${att(cov)}" alt=""
     onerror="this.parentNode.classList.add('ph');this.remove()">`:'';
   return `<div class="${cls}"><span class="bkini">${esc(initials(c?c.n||c.name:'?'))}</span>${img}</div>`;
 }
