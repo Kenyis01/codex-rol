@@ -208,9 +208,11 @@ body{
   -webkit-mask-size:100% 100%;mask-size:100% 100%;
   -webkit-mask-image:var(--cap-r);mask-image:var(--cap-r)}
 /* El campo de la maqueta: borde de 2px, versalitas en negrita como el
-   resto de los controles nuevos, y 40px de alto —el mismo que ya
-   comparten los botones y el segmentado—, no el 44 que tenía antes. */
-.sfield{height:40px;width:100%;background:var(--surf);border:2px solid #A2ACB2;
+   resto de los controles nuevos, y var(--h-md) de alto —el mismo que
+   comparten Atrás/Editar/Campañas y el segmentado de al lado. Antes eran
+   40px fijos, parejo a como medían esos botones en su momento; cuando
+   subieron a 44 este campo se quedó atrás y quedó desparejo. */
+.sfield{height:var(--h-md);width:100%;background:var(--surf);border:2px solid #A2ACB2;
   color:var(--ink);border-radius:8px;padding:0 var(--s4);font-size:var(--f-base);
   font-family:var(--inter);font-weight:700;text-transform:uppercase;letter-spacing:0;
   outline:none}
@@ -808,12 +810,13 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .segrow{display:flex;flex-direction:column;gap:var(--s3);margin-bottom:var(--s5)}
 .segrow .searchw{flex:1}
 /* El segmentado de la maqueta: fondo propio en el grupo, cada opción a
-   40px con las mismas esquinas de 8px que el resto (nada de píldora
+   var(--h-md) —igual que el buscador de al lado y el resto de los
+   botones— con las mismas esquinas de 8px que el resto (nada de píldora
    entera), y la elegida se lee por bloque de color, no por un tono apenas
    más claro. */
 .seg{display:flex;flex:1;gap:4px;padding:4px;
   background:#374046;border:none;border-radius:8px}
-.seg button{flex:1;height:40px;padding:0 var(--s4);border-radius:8px;
+.seg button{flex:1;height:var(--h-md);padding:0 var(--s4);border-radius:8px;
   border:2px solid transparent;background:none;color:#C4CBCE;white-space:nowrap;
   font-family:var(--inter);font-size:14px;font-weight:700;
   text-transform:uppercase;letter-spacing:0}
