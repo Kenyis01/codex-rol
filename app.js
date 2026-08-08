@@ -3863,6 +3863,15 @@ document.addEventListener('click',ev=>{
   const fn=ACT[t.dataset.act];
   if(fn)fn(t.dataset.v,t,ev);
 });
+/* Bug viejo de Safari en iOS: :active de CSS no se activa con el dedo a
+   menos que haya algún listener de touchstart en la página, aunque sea uno
+   que no hace nada. Como acá todo pasa por Pointer Events (pointerdown, más
+   abajo) y no por eventos táctiles, ese gatillo nunca se tocaba — el mouse
+   en desktop dispara :active sin este truco, así que ahí siempre se vio
+   bien y en el teléfono no. Esto es lo único que hace falta: no reacciona a
+   nada, solo destraba :active en todos lados (el fundido de las menciones,
+   el fondo al tocar una fila, el scale(.97) de los botones...) de una vez. */
+document.addEventListener('touchstart',()=>{},{passive:true});
 /* El destello sale del punto exacto que tocaste — nació en las filas del
    Máster y ahora también vive en los botones de la nav. Va por delegación en
    document porque r() reescribe el innerHTML entero en cada pintada y un
