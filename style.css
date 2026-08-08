@@ -320,18 +320,30 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   86%{opacity:calc(var(--op,.9) * .38)}
   100%{transform:translate(calc(var(--dx,14px) * -.4),-360px) scale(1.18);opacity:0}}
 
-/* entrada: el retrato aparece con un pequeño empuje */
-.page.gmpage .hero{animation:invocar .75s cubic-bezier(.2,.85,.25,1) both}
-@keyframes invocar{
-  from{opacity:0;transform:translateY(12px) scale(.95)}
+/* entrada de cualquier ficha, no solo la del Máster: en cascada, no en
+   bloque — retrato, tipo, nombre, cada uno 60ms después del anterior (la
+   franja de 30-80ms que separa un stagger legible de uno que se siente
+   picado). Ocasional —se abre cada vez que tocás una ficha— y previene el
+   salto de que todo aparezca de golpe; antes esto vivía solo acá, moviendo
+   todo .hero como una sola unidad, ahora es la entrada de todas. */
+.hero .av,.hero .avbtn{animation:hero-in .22s cubic-bezier(.2,.85,.25,1) both}
+.hero .eyebrow{animation:hero-in .22s cubic-bezier(.2,.85,.25,1) .06s both}
+.hero h1{animation:hero-in .22s cubic-bezier(.2,.85,.25,1) .12s both}
+@keyframes hero-in{
+  from{opacity:0;transform:translateY(10px) scale(.96)}
   to{opacity:1;transform:none}}
 
-/* el nombre en degradado, con un destello que lo recorre una vez al entrar */
+/* el nombre del Máster, además, en degradado con un destello que lo recorre
+   una vez — specificidad más alta que ".hero h1" de arriba, así que hace
+   falta repetir la entrada acá en vez de heredarla: el shorthand de
+   animation no se combina entre reglas, gana la que compite. El destello
+   arranca a los 340ms, justo cuando termina de entrar (.12s + .22s). */
 .page.gmpage h1{background:linear-gradient(100deg,
     #F8E8C2 0%,var(--gm) 30%,#FFFDF6 45%,var(--gm) 60%,#D6ADE8 100%);
   background-size:280% 100%;background-position:100% 0;
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:destello 1.6s ease-out .25s both}
+  animation:hero-in .22s cubic-bezier(.2,.85,.25,1) .12s both,
+    destello 1.6s ease-out .34s both}
 @keyframes destello{from{background-position:100% 0}to{background-position:0 0}}
 .btn.sec2.gm.on{border-color:var(--gm);color:var(--gm)}
 /* quién sos, en el banner */
@@ -341,7 +353,8 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
 /* con movimiento reducido queda todo quieto, pero sigue distinguiéndose */
 @media(prefers-reduced-motion:reduce){
   .av.gmring::before,.av.gmring::after,.orb i,
-  .gmfx i,.page.gmpage .hero,.page.gmpage h1,.onda{animation:none}
+  .gmfx i,.hero .av,.hero .avbtn,.hero .eyebrow,.hero h1,.page.gmpage h1,
+  .onda{animation:none}
   .orb,.gmfx,.onda{display:none}
   .page.gmpage h1{background-position:0 0}
   /* quieto, el halo vuelve a ser parejo — descentrado y sin girar se leería
