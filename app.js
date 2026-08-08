@@ -685,7 +685,7 @@ const AVFRAME=`<svg class="avfr" width="40" height="46" viewBox="0 0 40 46" fill
 /* ================= HOME ================= */
 function vHome(){
   const list = st.err
-    ? `<div class="empty"><div class="ei">${ic("hazard")}</div><div class="et">Sin conexión</div>
+    ? `<div class="empty entra"><div class="ei">${ic("hazard")}</div><div class="et">Sin conexión</div>
        <div class="es">${esc(st.err)}</div></div>`
     : CAMPS.length
     ? CAMPS.map((c,i)=>`
@@ -812,10 +812,11 @@ function vIdx(){
             value="${att(st.q)}" data-act="search" oninput="st.q=this.value;r()">
         </label>
         <div class="seg">
+          <span class="thumb" data-thumb></span>
           <button class="${st.view==='list'?'on':''}" data-act="view" data-v="list">Lista</button>
           <button class="${st.view==='cards'?'on':''}" data-act="view" data-v="cards">Cards</button>
-        </div></div>`+body
-      :`<div class="empty"><div class="ei">${ic("scroll")}</div><div class="et">Campaña en blanco</div>
+        </div></div><div id="idxbody">${body}</div>`
+      :`<div class="empty entra"><div class="ei">${ic("scroll")}</div><div class="et">Campaña en blanco</div>
         <div class="es">Todavía no hay fichas acá. Creá la primera y empezá a enlazar.</div>
         <button class="btn pri narrow" data-act="new">Crear la primera ficha</button></div>`}
     </div>`;
@@ -1260,10 +1261,10 @@ function vEd(){
           ${(st.busy||!dirty)?'disabled':''}>${st.busy?'Guardando…':'Guardar'}</button>`
         :`<span class="tag push">FICHA NUEVA</span>`}</div></div>
   <div class="page">
-    <div class="segrow"><div class="seg">${
+    <div class="segrow"><div class="seg"><span class="thumb" data-thumb></span>${
       tabs.map(([k,l])=>`<button class="${T===k?'on':''}"
         data-act="edtab" data-v="${k}">${esc(l)}</button>`).join('')}</div></div>
-    ${T==='id'?identidad:T==='det'?detalles:texto}
+    <div id="edpanel">${T==='id'?identidad:T==='det'?detalles:texto}</div>
     ${e?'':`<div class="savebar"><button class="btn pri" data-act="save" ${st.busy?'disabled':''}>
       ${st.busy?'Guardando…':'Guardar'}</button></div>`}
   </div>`;
@@ -2369,7 +2370,7 @@ function vImp(){
       : nm(x.e.n)===nm(x.nombre)
       ? '<span class="impest ya">Ya existe</span> · se le agrega lo que trae'
       : `<span class="impest ya">Ya existe como ${esc(x.e.n)}</span> · se le agrega lo que trae`;
-    return `<div class="improw${x.acc==='nada'?' off':''}${x.abierto?' open':''}">
+    return `<div class="improw${x.acc==='nada'?' off':''}${x.abierto?' open':''}" data-improw="${i}">
       <div class="impcab">
         <span class="dot" style="color:${TYT(x.tipo).c};background:currentColor"></span>
         <div class="grow" data-act="impver" data-v="${i}">
@@ -2381,7 +2382,7 @@ function vImp(){
       <button class="impver" data-act="impver" data-v="${i}"
         aria-expanded="${x.abierto?'true':'false'}">${
         x.abierto?'Ocultar el detalle':'Ver qué se escribe'}${ic('arrow')}</button>
-      ${x.abierto?detalle(x):''}
+      <div class="detalle-wrap"><div class="detalle-inner">${detalle(x)}</div></div>
     </div>`;
   };
   const nuevas=cuenta('crear'), suman=cuenta('sumar'), fuera=cuenta('nada');
@@ -2444,7 +2445,7 @@ function vHist(){
   const cuerpo=H.rows===null
     ? `<div class="card">${'<div class="row"><div class="grow"><div class="skel" style="height:13px;width:38%"></div><div class="skel" style="height:11px;width:80%;margin-top:8px"></div></div></div>'.repeat(3)}</div>`
     : !H.rows.length
-    ? `<div class="empty"><div class="ei">${ic("hourglass")}</div><div class="et">Sin versiones anteriores</div>
+    ? `<div class="empty entra"><div class="ei">${ic("hourglass")}</div><div class="et">Sin versiones anteriores</div>
        <div class="es">Se guarda una cada vez que cambia el nombre, la descripción,
        el resumen, las notas o cualquier otro dato de la ficha.</div></div>`
     : `<div class="card">
@@ -2510,7 +2511,14 @@ function openImg(slug){
   const d=document.createElement('div');
   d.className='lightbox';
   d.innerHTML=`<button class="lbx" aria-label="Cerrar">${ic('x')}</button><img src="${att(e.img)}" alt="${att(e.n)}">`;
-  const close=()=>{d.remove();removeEventListener('keydown',onk)};
+  const close=()=>{
+    removeEventListener('keydown',onk);
+    d.classList.add('sale');
+    const sacar=()=>d.remove();
+    d.addEventListener('animationend',sacar,{once:true});
+    setTimeout(sacar,200);
+    d.onclick=null;
+  };
   const onk=ev=>{if(ev.key==='Escape')close()};
   d.onclick=close;addEventListener('keydown',onk);
   document.body.appendChild(d);
@@ -2551,7 +2559,7 @@ const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function vGrafo(){
   if(!D.length)return `<div class="top"><div class="topin">
       <button class="back actbtn" data-act="back">Atrás</button></div></div>
-    <div class="empty"><div class="ei">${ic("mesh")}</div><div class="et">Nada que dibujar</div>
+    <div class="empty entra"><div class="ei">${ic("mesh")}</div><div class="et">Nada que dibujar</div>
     <div class="es">Creá algunas fichas y enlazalas con @ para ver el grafo.</div></div>`;
   if(!byS[st.ent]){const top=D.slice().sort((a,b)=>deg(b.s)-deg(a.s))[0];st.ent=top?top.s:null}
   const opts=D.slice().sort((a,b)=>a.n.localeCompare(b.n))
@@ -2606,7 +2614,7 @@ function gControls(){
   const b=(v,l,on)=>`<button class="${on?'on':''}" data-act="gmode" data-v="${v}">${l}</button>`;
   return `<div class="gfila">
       <span class="gfr">Saltos desde la ficha</span>
-      <div class="seg gseg">
+      <div class="seg gseg"><span class="thumb" data-thumb></span>
         ${b('1','1',G.mode==='ego'&&G.depth===1)}
         ${b('2','2',G.mode==='ego'&&G.depth===2)}
         ${b('3','3',G.mode==='ego'&&G.depth===3)}
@@ -2711,17 +2719,20 @@ function gTick(){
   G.alpha*=.973;
   if(G.alpha<.006)G.alpha=0;
 }
-function gFit(pad){
+function calcFit(pad){
   pad=pad||52;
-  if(!G.nodes.length||!G.W)return;
+  if(!G.nodes.length||!G.W)return null;
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
   G.nodes.forEach(n=>{x0=Math.min(x0,n.x-n.r);y0=Math.min(y0,n.y-n.r);
     x1=Math.max(x1,n.x+n.r);y1=Math.max(y1,n.y+n.r)});
   const w=Math.max(1,x1-x0),h=Math.max(1,y1-y0);
   const bottom=(G.sel&&G.map[G.sel])?92:0;    // deja aire para la tarjeta flotante
-  G.cam.k=Math.max(.22,Math.min((G.W-pad*2)/w,(G.H-pad*2-bottom)/h,1.9));
-  G.cam.x=G.W/2-((x0+x1)/2)*G.cam.k;
-  G.cam.y=(G.H-bottom)/2-((y0+y1)/2)*G.cam.k;
+  const k=Math.max(.22,Math.min((G.W-pad*2)/w,(G.H-pad*2-bottom)/h,1.9));
+  return {k,x:G.W/2-((x0+x1)/2)*k,y:(G.H-bottom)/2-((y0+y1)/2)*k};
+}
+function gFit(pad){
+  const d=calcFit(pad);if(!d)return;
+  G.cam.k=d.k;G.cam.x=d.x;G.cam.y=d.y;
 }
 function gZoom(f,px,py){
   const c=G.cam,k=Math.max(.18,Math.min(3.2,c.k*f));
@@ -3063,11 +3074,10 @@ function soltarPins(){
 
 /* La cámara viaja hasta el nodo en vez de aparecer ya encima: ubica mucho
    mejor de dónde a dónde se fue. */
-function volarA(id,k){
-  const n=G.map[id];if(!n||!G.W)return;
-  const destino={k:k||Math.max(G.cam.k,.95)};
-  destino.x=G.W/2-n.x*destino.k;
-  destino.y=G.H/2-n.y*destino.k;
+/* cámara compartida por volarA (ir a un nodo) y volarFit (reencuadrar):
+   ambas terminan siendo "interpolar G.cam hacia un destino", solo cambia
+   cómo se calcula el destino. */
+function volarCam(destino){
   if(REDUCED){Object.assign(G.cam,destino);gPaint();return}
   const desde={...G.cam}, t0=performance.now(), dur=420;
   const paso=()=>{
@@ -3079,8 +3089,24 @@ function volarA(id,k){
     gDraw();
     if(t<1)requestAnimationFrame(paso);
   };
-  G.autofit=false;
   requestAnimationFrame(paso);
+}
+function volarA(id,k){
+  const n=G.map[id];if(!n||!G.W)return;
+  const destino={k:k||Math.max(G.cam.k,.95)};
+  destino.x=G.W/2-n.x*destino.k;
+  destino.y=G.H/2-n.y*destino.k;
+  G.autofit=false;
+  volarCam(destino);
+}
+/* la versión animada de gFit(): solo para el gesto puntual de "encuadrar"
+   (botón o filtro de etiqueta), nunca para el autoencuadre continuo mientras
+   la simulación se asienta — ahí perseguir un blanco que se mueve con un
+   tween se ve peor que seguirlo directo. */
+function volarFit(pad){
+  const d=calcFit(pad);if(!d)return;
+  G.autofit=false;
+  volarCam(d);
 }
 
 /* Qué cambió desde la última vez que miré este grafo. */
@@ -3243,6 +3269,21 @@ function porQue(aId,bId){
   mirar(aId,bId);mirar(bId,aId);
   return out;
 }
+/* la vieja tarjeta (si había) se desvanece por su cuenta en vez de
+   desaparecer en el mismo innerHTML que trae la nueva — así cambiar de
+   selección funde una con la otra en vez de cortar. */
+function pintarGCard(host,html){
+  const anterior=host.querySelector('.gcard');
+  if(!anterior){if(html)host.innerHTML=html;return}
+  anterior.classList.add('sale');
+  const sacar=()=>{if(anterior.isConnected)anterior.remove()};
+  anterior.addEventListener('animationend',sacar,{once:true});
+  setTimeout(sacar,180);
+  if(html){
+    const tmp=document.createElement('div');tmp.innerHTML=html;
+    host.appendChild(tmp.firstElementChild);
+  }
+}
 function gCard(){
   const host=document.getElementById('gcard');if(!host)return;
   const hint=document.getElementById('ghint');
@@ -3263,7 +3304,7 @@ function gCard(){
       return (k===E.a||k===E.b)
         ? `<b style="color:${TY(e).c}">${esc(e.n)}</b>`:esc(e.n);
     });
-    host.innerHTML=`<div class="gcard gecard">
+    pintarGCard(host,`<div class="gcard gecard">
       <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('x')}</button>
       <div class="eyebrow">${titulo}</div>
       <div class="gehead">
@@ -3285,19 +3326,19 @@ function gCard(){
         : (!rels.length&&!razones.length
           ? `<div class="gewhy"><div class="gefr dim">Se nombran, pero no encontré
                la frase. Puede que el enlace esté en el resumen.</div></div>`:'')}
-    </div>`;
+    </div>`);
     return;
   }
   const n=G.sel&&G.map[G.sel];
-  if(!n){host.innerHTML='';if(hint)hint.hidden=false;return}
+  if(!n){pintarGCard(host,'');if(hint)hint.hidden=false;return}
   if(hint)hint.hidden=true;              // si no, la tarjeta lo tapa
   const e=n.e;
-  host.innerHTML=`<div class="gcard">${av(e,AV.lg,{ring:1})}
+  pintarGCard(host,`<div class="gcard">${av(e,AV.lg,{ring:1})}
     <div class="grow">
       <div class="gcn">${esc(e.n)}</div>
       <div class="gcs">${esc(TY(e).s)} · ${n.d} vínculo${n.d===1?'':'s'}</div></div>
     <button class="gco" data-go="${att(e.s)}">Abrir</button>
-    <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('x')}</button></div>`;
+    <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('x')}</button></div>`);
 }
 function gCenter(slug){
   if(!byS[slug])return;
@@ -3456,6 +3497,89 @@ function vCarga(tab){
   return `<div class="page first">${barra('52%',26)}${barra('34%',13,12)}
     <div class="card" style="margin-top:24px">${fila.repeat(5)}</div></div>`;
 }
+/* el thumb del segmentado (.seg): r() destruye y reconstruye el botón "on"
+   en cada click, así que una transición CSS normal sobre "el mismo" elemento
+   no es posible — se resuelve con FLIP: medimos dónde estaba el thumb antes,
+   dejamos que el redibujado lo ponga en su lugar final (instantáneo), y
+   recién ahí invertimos esa diferencia con un transform y la soltamos, para
+   que el navegador la anime de una posición real a la otra. */
+function colocarThumb(seg){
+  const thumb=seg.querySelector('[data-thumb]'), on=seg.querySelector('button.on');
+  if(!thumb||!on)return;
+  thumb.style.left=on.offsetLeft+'px';
+  thumb.style.width=on.offsetWidth+'px';
+}
+function colocarThumbs(){document.querySelectorAll('.seg').forEach(colocarThumb)}
+function medirThumb(sel){
+  const t=document.querySelector(sel+' [data-thumb]');
+  return t?{left:t.offsetLeft,width:t.offsetWidth}:null;
+}
+function volarThumb(sel,antes){
+  colocarThumbs();
+  if(!antes||REDUCED)return;
+  const thumb=document.querySelector(sel+' [data-thumb]');
+  if(!thumb)return;
+  const despues={left:thumb.offsetLeft,width:thumb.offsetWidth};
+  if(antes.left===despues.left&&antes.width===despues.width)return;
+  const dx=antes.left-despues.left, sx=antes.width/Math.max(1,despues.width);
+  thumb.style.transition='none';
+  thumb.style.transform='translateX('+dx+'px) scaleX('+sx+')';
+  thumb.getBoundingClientRect();   // fuerza el reflow antes de soltar la transición
+  thumb.style.transition='transform .22s cubic-bezier(.2,.85,.25,1)';
+  requestAnimationFrame(()=>{thumb.style.transform='none'});
+}
+/* r() reemplaza la página entera en cada redibujado, así que un cambio de
+   contenido (vista, pestaña) no tiene con qué fundirse solo: el nodo viejo no
+   sobrevive al cambio de estado. Este puente desvanece lo que había, recién
+   ejecuta el cambio cuando terminó, y deja que lo nuevo entre con su propia
+   animación — ya lo verificamos: cambiar de pestaña reconstruye el nodo, no
+   solo su contenido, así que no hay transición CSS posible sobre "el mismo"
+   elemento. */
+function conCrossfade(sel,cambiar){
+  const el=document.querySelector(sel);
+  if(!el||REDUCED){cambiar();return}
+  el.classList.add('cfout');
+  setTimeout(()=>{
+    cambiar();
+    const nuevo=document.querySelector(sel);
+    if(nuevo)nuevo.classList.add('cfin');
+  },120);
+}
+/* quitar un chip (etiqueta o "otros nombres") hacía splice+r() en el mismo
+   tick — el chip se iba de un tirón. Achica y funde el que tocaste antes de
+   mutar el estado; usa el VALOR (no el índice) para sacarlo recién al final,
+   por si el usuario suelta dos chips seguidos antes de que termine el primero. */
+function quitarChip(campo,v,act){
+  keepDraft();
+  const arr=st.editing[campo]||[];
+  const valor=arr[+v];
+  const btn=document.querySelector('[data-act="'+act+'"][data-v="'+v+'"]');
+  const chip=btn&&btn.closest('.tagch');
+  if(!chip||REDUCED){arr.splice(+v,1);r();return}
+  chip.classList.add('sale');
+  setTimeout(()=>{
+    const arr2=st.editing[campo]||[];
+    const idx=arr2.indexOf(valor);
+    if(idx>=0)arr2.splice(idx,1);
+    r();
+  },130);
+}
+/* los diálogos (.dlgwrap/.dlg) entran animados solos, pero r() los reemplaza
+   por completo en cada redibujado — sin este puente, cerrar uno los saca del
+   DOM en el mismo tick, sin ninguna salida. Si había uno abierto, lo separamos
+   del contenedor que se va a reescribir, lo dejamos terminar de desvanecerse
+   por su cuenta y recién ahí lo sacamos. */
+function pintarDialogos(dlgEl,html){
+  const abierto=dlgEl.querySelector('.dlgwrap');
+  if(!abierto){dlgEl.innerHTML=html;return}
+  abierto.classList.add('sale');
+  const dc=abierto.querySelector('.dlg');if(dc)dc.classList.add('sale');
+  document.body.appendChild(abierto);
+  const sacar=()=>abierto.remove();
+  abierto.addEventListener('animationend',sacar,{once:true});
+  setTimeout(sacar,200);   // con prefers-reduced-motion la animación no corre y animationend nunca llega
+  dlgEl.innerHTML=html;
+}
 function r(){
   if(ARRANCANDO){
     app.innerHTML=vCarga(ARRANCANDO);
@@ -3472,7 +3596,7 @@ function r(){
   const navEl=document.querySelector('.nav');
   const dlgEl=document.getElementById('dialogs');
   if(st.tab==='home'||!cur){
-    app.innerHTML=vHome();dlgEl.innerHTML='';
+    app.innerHTML=vHome();pintarDialogos(dlgEl,'');
     navEl.style.display='none';RENDERED='home';restFocus(f);return;
   }
   navEl.style.display='';
@@ -3485,8 +3609,8 @@ function r(){
   if(st.tab==='imp'&&!st.imp)st.tab='idx';
   const v={idx:vIdx,ficha:vFicha,grafo:vGrafo,ed:vEd,edcamp:vEdCamp,hist:vHist,imp:vImp}[st.tab]||vIdx;
   app.innerHTML=v();
-  dlgEl.innerHTML=(st.conf?vConf():'')+(st.dup?vDup():'')+(st.del?vDel():'')
-    +(st.fus?vFus():'')+(st.pick?vPick():'');
+  pintarDialogos(dlgEl,(st.conf?vConf():'')+(st.dup?vDup():'')+(st.del?vDel():'')
+    +(st.fus?vFus():'')+(st.pick?vPick():''));
   const on=st.tab==='grafo'?'grafo':(st.tab==='ed'?'nueva':'idx');
   document.getElementById('nav').innerHTML=NAV
     .map(([k,l,i])=>`<button class="nb ${on===k?'on':''}" data-act="nav" data-v="${k}">
@@ -3494,7 +3618,7 @@ function r(){
   RENDERED=st.tab;
   if(st.tab==='ed'){wireEd();st.editing._live=true}
   if(st.tab==='grafo')requestAnimationFrame(gMount);
-  restFocus(f);syncNavH();
+  restFocus(f);syncNavH();colocarThumbs();
 }
 /* La navegación no siempre mide lo mismo (safe-area del teléfono, tamaño de
    fuente del sistema), y de ese alto dependen el relleno de la página y dónde
@@ -3513,7 +3637,8 @@ const ACT={
   nav:v=>{if(v==='nueva')edit(null);else tab(v)},
   camp:v=>setCamp(+v),
   newcamp:newCamp,
-  view:v=>{st.view=v;r()},
+  view:v=>{const antes=medirThumb('.seg');
+    conCrossfade('#idxbody',()=>{st.view=v;r();volarThumb('.seg',antes)})},
   nocover:()=>saveCover(null),
   edcamp:editCamp,
   savecamp:saveCamp,
@@ -3547,7 +3672,8 @@ const ACT={
   cancel:()=>cerrar(),
   save,
   type:v=>{keepDraft();st.editing.type=v;r()},
-  edtab:v=>{keepDraft();st.editing.edtab=v;r()},
+  edtab:v=>{const antes=medirThumb('.seg');
+    conCrossfade('#edpanel',()=>{keepDraft();st.editing.edtab=v;r();volarThumb('.seg',antes)})},
   /* data-v viene como "clase:mago"; sin valor, lo borra */
   atr:v=>{keepDraft();
     const i=v.indexOf(':'), k=v.slice(0,i), x=v.slice(i+1);
@@ -3563,8 +3689,8 @@ const ACT={
   atrotro:v=>{keepDraft();
     st.editing.atNuevo=st.editing.atNuevo===v?null:v;r()},
 
-  rmtag:v=>{keepDraft();(st.editing.tags||[]).splice(+v,1);r()},
-  rmals:v=>{keepDraft();(st.editing.als||[]).splice(+v,1);r()},
+  rmtag:v=>quitarChip('tags',v,'rmtag'),
+  rmals:v=>quitarChip('als',v,'rmals'),
   rmrel:v=>{keepDraft();(st.editing.rels||[]).splice(+v,1);r()},
   reladd:()=>{if(relAdd())r()},
   tiponuevo:()=>{keepDraft();st.editing.tipoNuevo=!st.editing.tipoNuevo;r()},
@@ -3591,7 +3717,22 @@ const ACT={
     x.acc=ciclo[(ciclo.indexOf(x.acc)+1)%ciclo.length];r();
   },
   /* abrir una fila para ver qué se escribe */
-  impver:v=>{const x=st.imp.plan[+v];if(x){x.abierto=!x.abierto;r()}},
+  /* r() de acá reconstruye la fila entera —así funcionaba el detalle también
+     antes— y con eso ninguna transición CSS puede correr sobre "el mismo"
+     nodo. Acá el contenido siempre está en el DOM (ver arriba, detalle-wrap)
+     y solo hace falta tocar clases/atributos, sin pasar por r(). */
+  impver:v=>{
+    const x=st.imp.plan[+v];if(!x)return;
+    x.abierto=!x.abierto;
+    const row=document.querySelector('[data-improw="'+v+'"]');
+    if(!row){r();return}
+    row.classList.toggle('open',x.abierto);
+    const btn=row.querySelector('.impver');
+    if(btn){
+      btn.setAttribute('aria-expanded',x.abierto?'true':'false');
+      btn.innerHTML=(x.abierto?'Ocultar el detalle':'Ver qué se escribe')+ic('arrow');
+    }
+  },
   /* de las parecidas, elegir cuál es */
   impelegir:(v,el)=>{
     const i=+el.getAttribute('data-i'), x=st.imp.plan[i];
@@ -3612,22 +3753,24 @@ const ACT={
   graphof:v=>{hist.push({tab:'ficha',ent:st.ent});st.ent=v;G.sel=v;G.selUser=false;
     st.tab='grafo';r();alTope();marcarNav()},
   gmode:v=>{
+    const antes=medirThumb('.gseg');
     if(v==='all')G.mode='all';else{G.mode='ego';G.depth=+v}
     G.pos={};gRefrescar();gBuild();gCard();
+    volarThumb('.gseg',antes);
   },
   gtype:v=>{
     if(G.off.has(v))G.off.delete(v);else G.off.add(v);
     gRefrescar();gBuild();gCard();
   },
   reheat:()=>{G.pos={};gBuild();},
-  fit:()=>{G.autofit=false;gFit();gDraw()},
+  fit:()=>volarFit(),
   full:gFull,
   gclose:()=>{G.sel=null;G.selUser=false;G.selEdge=null;gCard();gPaint()},
   gsoltar:soltarPins,
   /* al soltar o prender grupos hay que redibujar esa fila */
   gexport:exportarGrafo,
   gtag:v=>{G.tag=(G.tag===v?null:v);G.pos={};gBuild();
-    gRefrescar();gFit();gPaint();},
+    gRefrescar();volarFit();},
   ggrupos:()=>{G.verGrupos=!G.verGrupos;
     G.grupos=G.verGrupos?detectarGrupos(G.nodes,G.edges):null;
     gRefrescar();gPaint();
@@ -3675,7 +3818,7 @@ document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t&&t.id==='gsel')gCenter(t.value);
 });
-addEventListener('resize',()=>{syncNavH();
+addEventListener('resize',()=>{syncNavH();colocarThumbs();
   if(st.tab==='grafo'&&G.cv){gSize();if(G.autofit)gFit();gDraw()}});
 addEventListener('keydown',ev=>{
   if(st.tab!=='grafo')return;

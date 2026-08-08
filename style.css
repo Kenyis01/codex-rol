@@ -346,8 +346,9 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   text-decoration:underline;
   text-decoration-color:color-mix(in srgb,var(--c) 45%,transparent);
   text-decoration-thickness:1.5px;text-underline-offset:.18em;
-  transition:text-decoration-color .15s,background .15s}
+  transition:text-decoration-color .15s,background .15s,opacity .1s}
 @media(hover:hover){.men:hover{text-decoration-color:var(--c)}}
+.men:active{opacity:.65}
 .tok{white-space:nowrap}
 /* En el editor el enlace solo toma cuerpo cuando queda marcado, que es el paso
    previo a borrarlo: ahí conviene que se note bien qué está seleccionado. */
@@ -419,6 +420,8 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   padding:0 var(--s1) 0 var(--s3);border-radius:var(--rf);
   background:var(--surf3);border:1px solid var(--line2);color:var(--ink);
   font-family:var(--mono);font-size:var(--f-xs);line-height:1;white-space:nowrap}
+.tagch.sale{transition:opacity .12s ease-in,transform .12s ease-in;
+  opacity:0;transform:scale(.85);pointer-events:none}
 .tagch button{width:20px;height:20px;padding:0;border:none;background:none;
   color:var(--dim);cursor:pointer;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;line-height:1}
@@ -465,6 +468,11 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   color:var(--dim);line-height:1}
 .impver .gi{width:8px;height:8px;transition:transform .18s}
 .improw:not(.open) .impver .gi{transform:rotate(-90deg)}
+/* el detalle vive siempre en el DOM (ver impver en app.js) y se revela con
+   una fila de grid que crece de 0fr a 1fr — así la flecha ya no gira sola */
+.detalle-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .2s ease-out}
+.improw.open .detalle-wrap{grid-template-rows:1fr}
+.detalle-wrap > .detalle-inner{overflow:hidden;min-height:0}
 @media(hover:hover){.impver:hover{color:var(--muted)}}
 /* lo que no se toca, dicho antes de lo que sí */
 .impaviso{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--muted)}
@@ -814,10 +822,10 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    botones— con las mismas esquinas de 8px que el resto (nada de píldora
    entera), y la elegida se lee por bloque de color, no por un tono apenas
    más claro. */
-.seg{display:flex;flex:1;gap:4px;padding:4px;
+.seg{position:relative;display:flex;flex:1;gap:4px;padding:4px;
   background:#374046;border:none;border-radius:8px}
-.seg button{flex:1;height:var(--h-md);padding:0 var(--s4);border-radius:8px;
-  border:2px solid transparent;background:none;color:#C4CBCE;white-space:nowrap;
+.seg button{position:relative;z-index:1;flex:1;height:var(--h-md);padding:0 var(--s4);
+  border-radius:8px;border:2px solid transparent;background:none;color:#C4CBCE;white-space:nowrap;
   font-family:var(--inter);font-size:14px;font-weight:700;
   text-transform:uppercase;letter-spacing:0}
 @media(min-width:680px){
@@ -826,7 +834,13 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   .seg{flex:0 0 auto}
   .seg button{flex:0 0 auto}
 }
-.seg button.on{background:#D7D2BE;border-color:#fff;color:#121812}
+/* el bloque de color ya no lo pinta el botón "on": lo pinta el thumb de
+   abajo, que puede deslizarse entre uno y otro con FLIP (ver volarThumb en
+   app.js, r() los destruye y reconstruye en cada click) */
+.seg button.on{color:#121812}
+.seg .thumb{position:absolute;z-index:0;top:4px;bottom:4px;left:0;width:0;
+  background:#D7D2BE;border:2px solid #fff;border-radius:8px;
+  transform-origin:left center;pointer-events:none}
 @media(hover:hover){.seg button:not(.on):hover{color:#fff;box-shadow:var(--hover-w)}}
 
 .btn{width:100%;height:var(--h-lg);padding:0 var(--s5);border-radius:var(--r2);
@@ -986,6 +1000,8 @@ canvas.pointing{cursor:pointer}
   padding:var(--s3) var(--s4);border:1px solid var(--line2);border-radius:var(--r3);
   background:rgba(30,36,47,.94);backdrop-filter:blur(14px);box-shadow:var(--shadow);
   animation:rise .18s ease-out}
+.gcard.sale{pointer-events:none;animation:gcard-cae .14s ease-in forwards}
+@keyframes gcard-cae{to{opacity:0;transform:translateY(6px) scale(.98)}}
 .gcn{font-size:var(--f-md);font-weight:600;line-height:var(--lh-snug);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gcs{font-family:var(--mono);font-size:var(--f-xs);color:var(--muted);
@@ -1063,6 +1079,10 @@ canvas.pointing{cursor:pointer}
 .dlg{width:100%;max-width:420px;max-height:86vh;overflow-y:auto;
   padding:var(--s6);border:1px solid var(--line2);border-radius:var(--r4);
   background:var(--surf2);box-shadow:var(--shadow);animation:rise .2s ease-out}
+.dlgwrap.sale{pointer-events:none;animation:dlg-fade-out .14s ease-in forwards}
+.dlg.sale{animation:dlg-cae .14s ease-in forwards}
+@keyframes dlg-fade-out{to{opacity:0}}
+@keyframes dlg-cae{to{opacity:0;transform:translateY(6px) scale(.96)}}
 .dlgh{font-family:var(--disp);font-size:var(--f-h2);font-weight:600;
   line-height:var(--lh-tight);margin:0 0 var(--s3)}
 .dlgtx{font-size:var(--f-md);line-height:var(--lh-snug);color:var(--ink2)}
@@ -1091,6 +1111,7 @@ canvas.pointing{cursor:pointer}
 .lightbox{position:fixed;inset:0;z-index:80;display:flex;align-items:center;
   justify-content:center;padding:var(--s6);
   background:rgba(8,10,14,.88);backdrop-filter:blur(8px);animation:fade .18s ease-out}
+.lightbox.sale{pointer-events:none;animation:dlg-fade-out .14s ease-in forwards}
 .lightbox img{width:min(420px,84vw);height:min(420px,84vw);object-fit:cover;
   border-radius:var(--r4);box-shadow:0 30px 80px rgba(0,0,0,.65),0 0 0 1px rgba(237,231,218,.12)}
 .lbx{position:absolute;top:calc(var(--s5) + env(safe-area-inset-top));right:var(--s5);
@@ -1167,6 +1188,17 @@ canvas.pointing{cursor:pointer}
 .card .skel{background-image:linear-gradient(90deg,
   var(--surf2) 25%,var(--surf3) 37%,var(--surf2) 63%)}
 .empty{text-align:center;padding:var(--s9) var(--s6);color:var(--muted)}
+/* solo en los estados vacíos que se ven una vez (sin conexión, campaña
+   recién creada, sin historial, grafo sin datos) — el de "nada parecido" en
+   la búsqueda se redibuja en cada tecla, ahí animar se sentiría como demora */
+.empty.entra{animation:empty-in .25s cubic-bezier(.2,.85,.25,1) both}
+@keyframes empty-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+
+/* puente genérico para fundir contenido que r() reemplaza entero —
+   índice Lista/Cards y pestañas del editor, ver conCrossfade() en app.js */
+.cfout{opacity:0;transition:opacity .12s ease-in}
+.cfin{animation:cfin .15s ease-out both}
+@keyframes cfin{from{opacity:0}to{opacity:1}}
 .empty .ei{line-height:1;margin-bottom:var(--s4);opacity:.5;color:var(--muted)}
 .empty .ei .gi{width:44px;height:44px;margin:0 auto}
 .empty .et{font-family:var(--disp);font-size:var(--f-h2);color:var(--ink);
