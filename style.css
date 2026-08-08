@@ -12,8 +12,11 @@
   /* ---- tinta (4 niveles, nada más) ---- */
   --ink:#EDE7DA;      /* títulos y texto principal   */
   --ink2:#D6D0C4;     /* prosa                        */
-  --muted:#95A1B4;    /* secundario                   */
-  --dim:#68758B;      /* terciario, metadatos         */
+  /* El secundario salió de la portada (el "Campaña" y el "N fichas" de
+     arriba de todo) y se fue extendiendo desde ahí: es un gris neutro, no
+     el azulado de antes, que al lado de la tinta cálida se leía viejo. */
+  --muted:#C4CBCE;    /* secundario                   */
+  --dim:#8A9A9E;      /* terciario, metadatos         */
 
   /* ---- acentos por tipo ---- */
   --character:#E0B25C; --location:#4FB795; --item:#B48BD8;
@@ -633,12 +636,12 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 /* tipografía y color de la portada, tomados de la maqueta —solo acá; el
    resto de la app sigue con su propia escala. */
 .bnin .eyebrow{font-family:var(--inter);font-size:12px;font-weight:700;
-  letter-spacing:0;line-height:1.35;color:#C4CBCE;margin-bottom:0}
+  letter-spacing:0;line-height:1.35;color:var(--muted);margin-bottom:0}
 .bnin h1{font-family:'Alegreya',var(--disp);font-weight:700;font-size:24px;
   line-height:1.5;letter-spacing:0;color:#D7D2BE;text-shadow:none}
 @media(min-width:680px){.bnin h1{font-size:32px}}
 .bnin .hint{margin-top:var(--s2);display:flex;align-items:center;gap:var(--s2);
-  flex-wrap:wrap;font-family:var(--inter);font-size:14px;line-height:20px;color:#C4CBCE}
+  flex-wrap:wrap;font-family:var(--inter);font-size:14px;line-height:20px;color:var(--muted)}
 .bnin .hint .st{display:inline-flex;align-items:center;gap:var(--s1)}
 .bnin .hint .gi{width:18px;height:18px;color:var(--gold)}
 /* margin-left:auto los manda contra el borde derecho, como en la maqueta.
@@ -765,7 +768,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    tag de ícono al lado del nombre —ver el commit que lo sacó. No es una
    regla de .frow en general porque búsqueda no lo pidió. */
 .frow .rn.cty{color:var(--c)}
-.frow .rs{font-family:var(--inter);font-size:14px;color:#C4CBCE}
+.frow .rs{font-family:var(--inter);font-size:14px;color:var(--muted)}
 /* el crédito de los iconos: obligatorio por la licencia, pero al fondo */
 .credits{margin-top:var(--s8);padding-top:var(--s5);border-top:1px solid var(--line);
   font-size:var(--f-sm);line-height:var(--lh-snug);color:var(--dim);text-align:center}
@@ -837,7 +840,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
 .seg{position:relative;display:flex;flex:1;gap:4px;padding:4px;
   background:#374046;border:none;border-radius:8px}
 .seg button{position:relative;z-index:1;flex:1;height:var(--h-md);padding:0 var(--s4);
-  border-radius:8px;border:2px solid transparent;background:none;color:#C4CBCE;white-space:nowrap;
+  border-radius:8px;border:2px solid transparent;background:none;color:var(--muted);white-space:nowrap;
   font-family:var(--inter);font-size:14px;font-weight:700;
   text-transform:uppercase;letter-spacing:0}
 @media(min-width:680px){
@@ -1016,21 +1019,38 @@ canvas.pointing{cursor:pointer}
 @keyframes gcard-cae{to{opacity:0;transform:translateY(6px) scale(.98)}}
 .gcn{font-size:var(--f-md);font-weight:600;line-height:var(--lh-snug);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gcs{font-family:var(--mono);font-size:var(--f-xs);color:var(--muted);
-  line-height:var(--lh-snug);margin-top:3px;letter-spacing:.04em;
+/* mismo secundario que la fila del índice y la portada: Inter, no mono */
+.gcs{font-family:var(--inter);font-size:14px;color:var(--muted);
+  line-height:20px;margin-top:2px;letter-spacing:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gco{flex:none;padding:0 var(--s4);background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.gcx{flex:none;width:var(--h-sm);height:var(--h-sm);padding:0;border:none;background:none;
-  color:var(--dim);cursor:pointer;border-radius:var(--rf);line-height:1;
-  display:inline-flex;align-items:center;justify-content:center}
-.gcx .gi{width:13px;height:13px}
+/* Abrir deja de ser el bloque crema macizo y toma la chrome de los botones
+   de un solo golpe, la misma de los flotantes del grafo */
+.gco{flex:none;height:var(--h-md);padding:0 var(--s4);
+  background:var(--bg);border:2px solid #D7D2BE;border-radius:8px;
+  color:#fff;font-family:var(--inter);font-size:14px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0}
+@media(hover:hover){.gco:hover{box-shadow:var(--hover-w);border-color:#D7D2BE;color:#fff}}
+/* El ✕, uno solo para toda la app: la tarjeta del grafo y la foto a pantalla
+   completa. Misma caja y misma chrome que los flotantes del grafo
+   (.gzoom button) y que los botones de ícono de la portada (.bnbtn.ico), así
+   cerrar se ve igual en todos lados. La posición la pone cada contexto. */
+.gcx,.lbx{width:var(--h-md);height:var(--h-md);padding:0;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;line-height:1;
+  background:var(--bg);border:2px solid #D7D2BE;border-radius:8px;
+  color:#fff;cursor:pointer}
+.gcx .gi,.lbx .gi{width:14px;height:14px}
+@media(hover:hover){.gcx:hover,.lbx:hover{box-shadow:var(--hover-w);border-color:#D7D2BE}}
 
 /* tarjeta de una línea: por qué esas dos fichas están conectadas */
 /* el ✕ va absoluto, así que el contenido tiene que terminar donde él empieza:
    8px de margen + 32px de botón */
+/* el ✕ pasó de 32 a 44, así que el contenido tiene que cortar más a la
+   izquierda: 8 de margen + 44 de botón + 8 de aire = 60 */
 .gecard{flex-direction:column;align-items:stretch;gap:var(--s2);
-  padding-right:var(--s8)}
-.gecard .eyebrow{margin:0}
+  padding-right:60px}
+/* el rótulo, con la tipografía de la portada en vez de la vieja versalita */
+.gecard .eyebrow{margin:0;font-family:var(--inter);font-size:12px;font-weight:700;
+  letter-spacing:0;text-transform:none;color:var(--muted)}
 .gecard .gcx{position:absolute;top:var(--s2);right:var(--s2)}
 /* nombre, icono, nombre. La raya estirada de antes dejaba un hueco enorme
    entre las dos fichas y no decía nada. */
@@ -1045,8 +1065,8 @@ canvas.pointing{cursor:pointer}
 .gefr{font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--ink2);
   padding-left:var(--s3);border-left:2px solid var(--line2)}
 .gefr.dim{color:var(--dim)}
-.gede{display:block;font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);
-  letter-spacing:.04em;margin-bottom:2px}
+.gede{display:block;font-family:var(--inter);font-size:12px;font-weight:700;
+  color:var(--dim);letter-spacing:0;margin-bottom:2px}
 
 /* ============ vínculos con nombre ============ */
 .relrow{gap:var(--s3)}
@@ -1067,7 +1087,7 @@ canvas.pointing{cursor:pointer}
 .gerel{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s1);
   font-size:var(--f-cap);line-height:var(--lh-snug);color:var(--ink2)}
 .gerel .gi{width:11px;height:11px;color:var(--dim);flex:none}
-.gerl{font-family:var(--mono);font-size:var(--f-xs);color:var(--gold);
+.gerl{font-family:var(--inter);font-size:12px;font-weight:700;color:var(--gold);
   padding:0 var(--s1);letter-spacing:.04em}
 
 /* qué cambió desde la última vez que miré el grafo */
@@ -1126,11 +1146,8 @@ canvas.pointing{cursor:pointer}
 .lightbox.sale{pointer-events:none;animation:dlg-fade-out .14s ease-in forwards}
 .lightbox img{width:min(420px,84vw);height:min(420px,84vw);object-fit:cover;
   border-radius:var(--r4);box-shadow:0 30px 80px rgba(0,0,0,.65),0 0 0 1px rgba(237,231,218,.12)}
-.lbx{position:absolute;top:calc(var(--s5) + env(safe-area-inset-top));right:var(--s5);
-  width:var(--h-ic);height:var(--h-ic);border-radius:50%;
-  display:inline-flex;align-items:center;justify-content:center;
-  background:var(--surf2);border:1px solid var(--line2);color:var(--ink);cursor:pointer;line-height:1}
-.lbx .gi{width:15px;height:15px}
+/* la caja y el color viven en la regla compartida con .gcx; acá solo dónde va */
+.lbx{position:absolute;top:calc(var(--s5) + env(safe-area-inset-top));right:var(--s5)}
 
 /* ============ toasts ============ */
 /* Arriba y no abajo: abajo chocaban con el botón de guardar y con la barra de

@@ -2510,7 +2510,7 @@ function openImg(slug){
   const e=byS[slug];if(!e||!e.img)return;
   const d=document.createElement('div');
   d.className='lightbox';
-  d.innerHTML=`<button class="lbx" aria-label="Cerrar">${ic('x')}</button><img src="${att(e.img)}" alt="${att(e.n)}">`;
+  d.innerHTML=`<button class="lbx" aria-label="Cerrar">${ic('cerrar')}</button><img src="${att(e.img)}" alt="${att(e.n)}">`;
   const close=()=>{
     removeEventListener('keydown',onk);
     d.classList.add('sale');
@@ -3305,7 +3305,7 @@ function gCard(){
         ? `<b style="color:${TY(e).c}">${esc(e.n)}</b>`:esc(e.n);
     });
     pintarGCard(host,`<div class="gcard gecard">
-      <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('x')}</button>
+      <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('cerrar')}</button>
       <div class="eyebrow">${titulo}</div>
       <div class="gehead">
         <span class="genom" style="color:${TY(a).c}" data-go="${att(a.s)}">${esc(a.n)}</span>
@@ -3338,7 +3338,7 @@ function gCard(){
       <div class="gcn">${esc(e.n)}</div>
       <div class="gcs">${esc(TY(e).s)} · ${n.d} vínculo${n.d===1?'':'s'}</div></div>
     <button class="gco" data-go="${att(e.s)}">Abrir</button>
-    <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('x')}</button></div>`);
+    <button class="gcx" data-act="gclose" aria-label="Cerrar">${ic('cerrar')}</button></div>`);
 }
 function gCenter(slug){
   if(!byS[slug])return;
