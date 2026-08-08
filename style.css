@@ -933,11 +933,14 @@ canvas.pointing{cursor:pointer}
 .ghint{position:absolute;left:var(--gut);bottom:var(--s3);pointer-events:none;
   font-family:var(--mono);font-size:var(--f-xs);color:var(--dim);letter-spacing:.04em}
 .gzoom{position:absolute;top:var(--s3);right:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
-/* Mismo look que el botón de ajustes del índice (.bnbtn.ico) y el resto
-   de los botones de un solo golpe (.actbtn): fondo sólido, borde crema
-   de 2px, ícono blanco. Antes era vidrio translúcido con borde gris fino
-   —el estilo de antes del rediseño de Figma, que acá nunca se actualizó. */
-.gzoom button{width:var(--h-ic);height:var(--h-ic);padding:0;border-radius:8px;
+/* Mismo look Y mismo tamaño que el botón de ajustes del índice
+   (.bnbtn.ico) y el resto de los botones de un solo golpe (.actbtn):
+   var(--h-md), no var(--h-ic) —eran 8px más chicos y quedaban
+   desparejos contra el resto de los botones cuadrados de la app.
+   Fondo sólido, borde crema de 2px, ícono blanco. Antes era vidrio
+   translúcido con borde gris fino, el estilo de antes del rediseño de
+   Figma que acá nunca se actualizó. */
+.gzoom button{width:var(--h-md);height:var(--h-md);padding:0;border-radius:8px;
   background:var(--bg);border:2px solid #D7D2BE;color:#fff}
 @media(hover:hover){.gzoom button:hover{box-shadow:var(--hover-w);border-color:#D7D2BE}}
 .gzoom button.on{color:var(--gold);border-color:var(--gold)}
