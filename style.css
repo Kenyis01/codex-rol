@@ -918,10 +918,13 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
              linear-gradient(to bottom,var(--bg2),var(--bg))}
 .gwrap.full{position:fixed;inset:0;z-index:70;border:none;background:var(--bg)}
 /* #app > * (línea 118) le pone max-width:var(--appmax) a todo hijo directo,
-   para centrar el contenido normal — acá hace que el grafo en pantalla
-   completa se quede angosto en vez de ocupar todo. #app le gana en
-   especificidad a .gwrap.full solo, así que hace falta igualarla. */
-#app>.gwrap.full{max-width:none;margin-inline:0}
+   para centrar el contenido normal — acá hace que el grafo, adentro o
+   afuera de pantalla completa, se quede angosto en vez de ocupar todo el
+   ancho disponible para acomodar nodos. Es el único hijo de #app que
+   quiere el ancho completo sin estar en modo pantalla completa: los
+   demás (banner, topin) siguen centrados a propósito. #app le gana en
+   especificidad a una sola clase, así que hace falta igualarla. */
+#app>.gwrap{max-width:none;margin-inline:0}
 /* sin la nav abajo, la tarjeta se apoya en el borde real de la pantalla */
 .gwrap.full .gcard{bottom:calc(var(--s3) + env(safe-area-inset-bottom))}
 canvas{display:block;width:100%;touch-action:none;cursor:grab}
