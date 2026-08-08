@@ -3562,10 +3562,23 @@ function pintarBrilloNav(c){
   const w=svg.getBoundingClientRect().width;
   halo.style.transform='translate('+(c*w)+'px,'+(48*c*(1-c))+'px)';
 }
+/* la capa de las ondas cubre toda la barra, así que hay que recortarla con la
+   forma de la curva o la luz se derrama por encima del filo dorado, sobre el
+   contenido. clip-path:path() va en píxeles de la propia caja, no en
+   fracciones, así que se rehace cada vez que cambia el ancho. La panza de
+   16px es la misma del path del svg y no depende del alto: por eso el
+   safe-area de abajo no la deforma. */
+function recortarNavFx(){
+  const fx=document.getElementById('navFx');if(!fx)return;
+  const w=fx.offsetWidth, h=fx.offsetHeight;
+  if(!w||!h)return;
+  fx.style.clipPath=`path('M0,0 C${w*.25},16 ${w*.75},16 ${w},0 L${w},${h} L0,${h} Z')`;
+}
 let navGlowC=null, navGlowRaf=null;
 function colocarBrilloNav(){
   navGlowC=fraccionNav(document.querySelector('.nb.on'));
   pintarBrilloNav(navGlowC);
+  recortarNavFx();
 }
 function moverBrilloNav(){
   const destino=fraccionNav(document.querySelector('.nb.on'));
@@ -3671,7 +3684,7 @@ function r(){
   RENDERED=st.tab;
   if(st.tab==='ed'){wireEd();st.editing._live=true}
   if(st.tab==='grafo')requestAnimationFrame(gMount);
-  restFocus(f);syncNavH();colocarThumbs();moverBrilloNav();
+  restFocus(f);syncNavH();colocarThumbs();moverBrilloNav();recortarNavFx();
 }
 /* La navegación no siempre mide lo mismo (safe-area del teléfono, tamaño de
    fuente del sistema), y de ese alto dependen el relleno de la página y dónde
@@ -3853,14 +3866,22 @@ document.addEventListener('click',ev=>{
 document.addEventListener('pointerdown',ev=>{
   const t=ev.target.closest&&ev.target.closest('.gmrow,.gmcard,.nb');
   if(!t)return;
-  const caja=t.getBoundingClientRect();
+  /* en la nav la onda no vive dentro del botón: un .nb es un rectángulo
+     angosto y encerrarla ahí le dibujaba un cuadrado marcado del tamaño del
+     botón. Va en la capa que cubre la barra entera, recortada con la forma
+     de la curva, así el toque ilumina toda la superficie como en la fila del
+     Máster. */
+  const enNav=t.classList.contains('nb');
+  const host=enNav?document.getElementById('navFx'):t;
+  if(!host)return;
+  const caja=host.getBoundingClientRect();
   const o=document.createElement('span');
   o.className='onda';
   o.style.left=(ev.clientX-caja.left)+'px';
   o.style.top=(ev.clientY-caja.top)+'px';
-  t.appendChild(o);
+  host.appendChild(o);
   o.addEventListener('animationend',()=>o.remove());
-  t.classList.add('sostenido');
+  if(!enNav)t.classList.add('sostenido');
 });
 /* pointerleave no burbujea, así que soltar se resuelve limpiando todo:
    si el dedo se levanta en cualquier lado, ya no hay nada sostenido */
@@ -3871,7 +3892,7 @@ document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t&&t.id==='gsel')gCenter(t.value);
 });
-addEventListener('resize',()=>{syncNavH();colocarThumbs();colocarBrilloNav();
+addEventListener('resize',()=>{syncNavH();colocarThumbs();colocarBrilloNav();recortarNavFx();
   if(st.tab==='grafo'&&G.cv){gSize();if(G.autofit)gFit();gDraw()}});
 addEventListener('keydown',ev=>{
   if(st.tab!=='grafo')return;

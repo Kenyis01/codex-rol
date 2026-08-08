@@ -813,8 +813,11 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
     rgba(232,197,114,.32) 60%,transparent);
   animation:expandir .6s cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes expandir{to{transform:scale(26);opacity:0}}
-/* mientras sostenés, el dorado sube */
-.row.gmrow.sostenido,.ccard.gmcard.sostenido,.nb.sostenido{
+/* mientras sostenés, el dorado sube. Los botones de la nav quedan afuera a
+   propósito: son rectángulos angostos y el inset les dibujaba un cuadrado
+   marcado en vez de teñir una superficie. Ahí el acuse es la onda, que se
+   expande por toda la barra. */
+.row.gmrow.sostenido,.ccard.gmcard.sostenido{
   box-shadow:inset 0 0 0 999px rgba(232,197,114,.09)}
 
 /* ============ botones ============ */
@@ -1195,6 +1198,13 @@ canvas.pointing{cursor:pointer}
   background:radial-gradient(ellipse closest-side,
     rgba(255,247,226,.95),rgba(255,225,166,.55) 52%,transparent 88%);
   filter:blur(1.1px)}
+/* Donde viven las ondas del toque. Es toda la barra y no cada botón: apretar
+   una pestaña tiene que iluminar la superficie entera, como pasa en la fila
+   del Máster, no dibujar un cuadrado del tamaño del botón. El recorte lo
+   pone app.js con la forma exacta de la curva —clip-path:path() va en
+   píxeles, así que hay que rehacerlo cuando cambia el ancho— para que la luz
+   no se derrame por encima del filo dorado. */
+.navfx{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
 /* La franja de la curva y la fila de íconos son dos bloques apilados, no uno
    solo: si comparten alto, la curva cruza los íconos apenas la barra es
    angosta. Pero la franja mide justo lo que baja la curva, ni un pixel más:
@@ -1203,7 +1213,7 @@ canvas.pointing{cursor:pointer}
    para que no se estire hacia el safe-area. */
 .navin{position:absolute;top:16px;left:0;right:0;height:56px;max-width:var(--appmax);margin:0 auto;
   display:grid;grid-template-columns:repeat(3,1fr)}
-.nb{position:relative;overflow:hidden;display:flex;flex-direction:column;
+.nb{position:relative;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   gap:var(--s1);height:100%;background:none;border:none;cursor:pointer;
   color:var(--muted);font-family:var(--body);font-weight:500;font-size:12px;
