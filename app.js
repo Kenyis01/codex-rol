@@ -3544,11 +3544,23 @@ function fraccionNav(btn){
 }
 function pintarBrilloNav(c){
   const g=document.getElementById('navGlow');
-  if(!g||g.children.length<3)return;
-  const a=Math.max(0,c-.18)*100, m=c*100, d=Math.min(1,c+.18)*100;
-  g.children[0].setAttribute('offset',a+'%');
-  g.children[1].setAttribute('offset',m+'%');
-  g.children[2].setAttribute('offset',d+'%');
+  if(g&&g.children.length>=3){
+    const a=Math.max(0,c-.18)*100, m=c*100, d=Math.min(1,c+.18)*100;
+    g.children[0].setAttribute('offset',a+'%');
+    g.children[1].setAttribute('offset',m+'%');
+    g.children[2].setAttribute('offset',d+'%');
+  }
+  /* y la lámpara viaja con él, apoyada sobre la curva. La curva es
+     M0,0 C25,16 75,16 100,0 en un viewBox de 72 de alto con
+     preserveAspectRatio:none — solo el ancho se reescala, el alto no, así
+     que el alto en unidades del viewBox ya son píxeles. Para una bezier
+     cúbica con y = 0,16,16,0 eso da 48·t·(1-t). Uso la fracción de ancho
+     como t: no es exacto (x(t) no es lineal), pero en esta curva la
+     diferencia no llega a medio píxel. */
+  const svg=document.querySelector('.navbg'), halo=document.getElementById('navHalo');
+  if(!svg||!halo)return;
+  const w=svg.getBoundingClientRect().width;
+  halo.style.transform='translate('+(c*w)+'px,'+(48*c*(1-c))+'px)';
 }
 let navGlowC=null, navGlowRaf=null;
 function colocarBrilloNav(){

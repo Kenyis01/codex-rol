@@ -1170,6 +1170,31 @@ canvas.pointing{cursor:pointer}
 .navbg-fill{fill:color-mix(in srgb,var(--bg) 95%,transparent)}
 .navbg-edge{fill:none;stroke:url(#navGlow);stroke-width:1.5px;stroke-linecap:round;
   vector-effect:non-scaling-stroke}
+/* La lámpara de la barra. El degradado del trazo (navGlow) dice DÓNDE está
+   encendida; esto es la luz que esa parte encendida tira sobre la superficie
+   de abajo. El div en sí no se ve —mide 0— y solo hace de ancla: app.js lo
+   mueve con transform y los dos pseudo-elementos cuelgan de él. */
+.navhalo{position:absolute;top:0;left:0;width:0;height:0;
+  pointer-events:none;will-change:transform}
+/* el derrame, en dos capas dentro del mismo elemento: la de cerca, más
+   definida y pegada al trazo, y una vela mucho más ancha y tenue que la
+   disuelve. Con una sola capa el derrame se lee como una mancha con
+   contorno. El "at 50% 0%" es lo que hace que la luz caiga hacia abajo en
+   vez de flotar centrada. */
+.navhalo::before{content:'';position:absolute;left:-90px;top:-1px;
+  width:180px;height:64px;
+  background:
+    radial-gradient(ellipse 30% 62% at 50% 0%,
+      rgba(255,240,204,.32),rgba(232,178,92,.13) 44%,transparent 78%),
+    radial-gradient(ellipse 58% 100% at 50% 0%,
+      rgba(232,178,92,.11),rgba(232,178,92,.04) 46%,transparent 88%);
+  filter:blur(6px)}
+/* el núcleo: chato y angosto, tumbado SOBRE el trazo, no apoyado encima */
+.navhalo::after{content:'';position:absolute;left:-21px;top:-2px;
+  width:42px;height:4px;border-radius:50%;
+  background:radial-gradient(ellipse closest-side,
+    rgba(255,247,226,.95),rgba(255,225,166,.55) 52%,transparent 88%);
+  filter:blur(1.1px)}
 /* La franja de la curva y la fila de íconos son dos bloques apilados, no uno
    solo: si comparten alto, la curva cruza los íconos apenas la barra es
    angosta. Pero la franja mide justo lo que baja la curva, ni un pixel más:
