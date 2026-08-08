@@ -265,11 +265,14 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   -webkit-mask:radial-gradient(closest-side,transparent 79%,#000 81%);
           mask:radial-gradient(closest-side,transparent 79%,#000 81%);
   animation:girar 3.6s linear infinite}
-/* halo detrás, con latido */
+/* halo detrás: ya no es un brillo parejo alrededor de todo el avatar — sale
+   del mismo punto que ilumina el anillo (88% 20% cae justo donde el conic de
+   arriba llega a su pico, 52deg desde las 12) y gira con él, misma
+   animación y arranque, así quedan sincronizados sin ningún cálculo extra */
 .av.gmring::after{content:'';position:absolute;inset:-26%;border-radius:50%;z-index:-1;
-  background:radial-gradient(closest-side,
-    rgba(232,197,114,.5),rgba(201,160,232,.22) 55%,transparent 72%);
-  animation:latir 3.4s ease-in-out infinite}
+  background:radial-gradient(closest-side at 88% 20%,
+    rgba(255,244,214,.6),rgba(232,197,114,.3) 45%,transparent 68%);
+  animation:girar 3.6s linear infinite,respira 3.4s ease-in-out infinite}
 /* chispas en órbita */
 .orb{position:absolute;inset:-7%;pointer-events:none;z-index:4}
 .orb i{position:absolute;left:50%;top:0;width:9%;height:9%;margin-left:-4.5%;
@@ -280,8 +283,10 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   animation-delay:var(--dl,0s),var(--dl,0s)}
 @keyframes girar{to{transform:rotate(1turn)}}
 @keyframes orbita{to{transform:rotate(1turn)}}
-@keyframes latir{0%,100%{opacity:.6;transform:scale(1)}
-                 50%{opacity:1;transform:scale(1.07)}}
+/* solo opacidad, nunca transform: al halo ya le toca girar (girar, arriba)
+   y dos animaciones no pueden repartirse la misma propiedad — la segunda
+   pisaría a la primera en cada cuadro en vez de sumarse */
+@keyframes respira{0%,100%{opacity:.65}50%{opacity:1}}
 @keyframes chispa{0%,100%{opacity:.35}50%{opacity:1}}
 
 .gmgrp .grph{color:var(--gm)}
@@ -335,7 +340,11 @@ select.sfield option{background:var(--surf2);color:var(--ink)}
   .av.gmring::before,.av.gmring::after,.orb i,
   .gmfx i,.page.gmpage .hero,.page.gmpage h1,.onda{animation:none}
   .orb,.gmfx,.onda{display:none}
-  .page.gmpage h1{background-position:0 0}}
+  .page.gmpage h1{background-position:0 0}
+  /* quieto, el halo vuelve a ser parejo — descentrado y sin girar se leería
+     como un error de layout, no como una decisión */
+  .av.gmring::after{background:radial-gradient(closest-side,
+    rgba(232,197,114,.5),rgba(201,160,232,.22) 55%,transparent 72%)}}
 
 /* ============ menciones y enlaces del editor ============
    Tanto en la prosa como dentro del editor, una mención es texto: el nombre en
