@@ -389,7 +389,7 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
   -webkit-mask-image:var(--wave);mask-image:var(--wave);
   -webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;
   -webkit-mask-position:center;mask-position:center}
-.aka{font-family:var(--mono);font-size:var(--f-sm);color:var(--dim);margin-top:var(--s3)}
+.aka{font-family:var(--mono);font-size:var(--f-sm);color:var(--muted);margin-top:var(--s3)}
 /* ---- lo que describe a la ficha ----
    Sin píldora: icono y texto sueltos sobre el fondo, separados por un punto
    medio. El icono va a 18px porque a 13 varios de los dibujos de raza se
@@ -404,9 +404,11 @@ h1{font-family:var(--disp);font-size:var(--f-h1);line-height:var(--lh-tight);
    sí (20): si no, envolver se ve igual que cambiar de grupo. */
 .atrs{display:flex;flex-wrap:wrap;align-items:center;
   column-gap:var(--s2);row-gap:var(--s2);margin-top:var(--s4)}
+/* mismo lenguaje que el renglón de "N fichas · N vínculos" de la portada:
+   ícono en dorado, texto en el secundario */
 .atr{display:inline-flex;align-items:center;
-  font-size:14px;line-height:20px;color:var(--ink2);white-space:nowrap}
-.atr .gi{width:18px;height:18px;flex:none;margin-right:var(--s1)}
+  font-size:14px;line-height:20px;color:var(--muted);white-space:nowrap}
+.atr .gi{width:18px;height:18px;flex:none;margin-right:var(--s1);color:var(--gold)}
 .atr:not(:last-child)::after{content:'·';color:var(--dim);margin-left:var(--s2)}
 /* los dos conteos van abajo, separados de la fila de arriba */
 .atrs.cuenta{margin-top:var(--s5);margin-bottom:var(--s5)}
