@@ -1013,7 +1013,8 @@ canvas.pointing{cursor:pointer}
 .gcard{position:absolute;left:var(--s3);right:var(--s3);bottom:var(--s3);
   display:flex;gap:var(--s3);align-items:center;max-width:520px;margin:0 auto;
   padding:var(--s3) var(--s4);border:1px solid var(--line2);border-radius:var(--r3);
-  background:rgba(30,36,47,.94);backdrop-filter:blur(14px);box-shadow:var(--shadow);
+  background:color-mix(in srgb,var(--surf) 94%,transparent);
+  backdrop-filter:blur(14px);box-shadow:var(--shadow);
   animation:rise .18s ease-out}
 .gcard.sale{pointer-events:none;animation:gcard-cae .14s ease-in forwards}
 @keyframes gcard-cae{to{opacity:0;transform:translateY(6px) scale(.98)}}
